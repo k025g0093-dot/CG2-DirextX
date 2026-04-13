@@ -1,2 +1,13 @@
 ﻿[*.{cpp,h}]
 chsrset=utf-8
+
+splling_error_severity=error
+
+splling_chekable_typs=identifier,commentd
+
+splling_language=en-us
+
+splling_use_default_exclusion_dictionary=true
+
+splling_exclusion_path=./exclusion.dic
+
