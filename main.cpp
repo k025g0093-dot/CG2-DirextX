@@ -4,4 +4,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	MessageBoxA(NULL, "Hello, World!", "My First Windows App", MB_OK);
 	return 0;
-}
+} 
