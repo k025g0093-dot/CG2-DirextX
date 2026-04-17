@@ -3,7 +3,7 @@ chsrset=utf-8
 
 splling_error_severity=error
 
-splling_chekable_typs=identifier,commentd
+splling_chekable_typs=identifiers,comments
 
 splling_language=en-us
 
