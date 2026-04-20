@@ -1,7 +1,11 @@
-﻿#include <Windows.h>
+#include <Windows.h>
 #include <cstdint>
 #include <string>
 #include <format>
+#include <filesystem>
+#include <fstream>
+#include <chrono>
+
 
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -16,9 +20,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-std::string str0{"Hello World"};
-
-void Log(const std::string& message) {
+void Log(std::ostream& os, const std::string& message) {
+	os << message << std::endl;
 	OutputDebugStringA(message.c_str());
 }
 
@@ -51,6 +54,27 @@ std::string ConvertString(const std::wstring& str) {
 }
 
 
+std::string str0{ "Hello,DirectX!" };
+
+#pragma region LogFileGeneration
+
+// get current time
+std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+// convert to seconds precision
+std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> 
+nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+// convert to local (Japan) time zone
+std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
+// format to string
+std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+
+std::string logFilePath = std::string("logs/") + dateString +".log";
+
+std::ofstream logStream(logFilePath);
+
+#pragma endregion
+
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 
@@ -81,6 +105,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		nullptr
 	);
 
+	std::filesystem::create_directory("logs");
+
+
 	int wstringValue = 0;
 
 
@@ -93,8 +120,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
 
-			// str0 を一度ワイドに変換してあげる必要がある
-			Log(ConvertString(std::format(L"WSTRING: {}\n", ConvertString(str0))));
+			// Need to convert str0 to wide string before formatting
+			Log(logStream, ConvertString(std::format(L"WSTRING: {}\n", ConvertString(str0))));
 		}
 		else {
 
