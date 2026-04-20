@@ -120,7 +120,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
 
-			// Need to convert str0 to wide string before formatting
 			Log(logStream, ConvertString(std::format(L"WSTRING: {}\n", ConvertString(str0))));
 		}
 		else {
