@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <fstream>
 #include <chrono>
+#include <dbghelp.h>
+#include <strsafe.h>
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -12,6 +14,7 @@
 
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
+#pragma comment(lib,"DbgHelp.lib")
 
 
 void Log(std::ostream& os, const std::string& message) {
@@ -89,6 +92,7 @@ std::ofstream logStream(logFilePath);
 #pragma endregion
 
 
+#pragma region DXfactory
 void IDXGIFactory() {
 	//DXGIファクトリー
 	IDXGIFactory7* dxgiFactory = nullptr;
@@ -144,12 +148,48 @@ void IDXGIFactory() {
 
 }
 
+#pragma endregion 
 
 
+static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+
+int  Dump() {
+
+	PEXCEPTION_POINTERS exception{};
+
+	SYSTEMTIME time;
+	GetLocalTime(&time);
+	wchar_t filePath[MAX_PATH] = { 0 };
+	CreateDirectory(L"./Dumps", nullptr);
+	StringCchPrintfW(filePath,MAX_PATH,L"./Dumps/%04d_%02d_%02d_%02d%02d%02d.dmp",
+		time.wYear, time.wMonth, time.wDay,
+		time.wHour, time.wMinute);
+
+	HANDLE dumpFileHandle = CreateFile(filePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
+	
+	DWORD processID = GetCurrentProcessId();
+	DWORD threaID = GetCurrentThreadId();
+
+	MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{0};
+	minidumpInformation.ThreadId = threaID;
+	minidumpInformation.ExceptionPointers = exception;
+	minidumpInformation.ClientPointers = true;
+
+	MiniDumpWriteDump(GetCurrentProcess(), processID, dumpFileHandle, MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
+
+	return EXCEPTION_EXECUTE_HANDLER;
+
+
+}
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+
+	SetUnhandledExceptionFilter(ExportDump);
 
 	WNDCLASS wc{};
 	wc.lpfnWndProc = WindowProc;
@@ -184,7 +224,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	std::filesystem::create_directory("logs");
 
 
+	
 	int wstringValue = 0;
+
+
 
 
 	ShowWindow(hwnd, nCmdShow);
@@ -195,6 +238,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
+			Dump();
+
+			uint32_t* p = nullptr;
+			*p = 100;
 
 			//Log(logStream, ConvertString(std::format(L"WSTRING: {}\n", ConvertString(str0))));
 		}
