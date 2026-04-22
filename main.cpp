@@ -53,28 +53,6 @@ std::string ConvertString(const std::wstring& str) {
 	return result;
 }
 
-
-std::string str0{ "Hello,DirectX!" };
-
-#pragma region LogFileGeneration
-
-// get current time
-std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-// convert to seconds precision
-std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> 
-nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-// convert to local (Japan) time zone
-std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
-// format to string
-std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
-
-std::string logFilePath = std::string("logs/") + dateString +".log";
-
-std::ofstream logStream(logFilePath);
-
-#pragma endregion
-
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 
@@ -105,10 +83,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		nullptr
 	);
 
+
+#pragma region LogFileGeneration
+
 	std::filesystem::create_directory("logs");
 
 
-	int wstringValue = 0;
+	// get current time
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	// convert to seconds precision
+	std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
+		nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+	// convert to local (Japan) time zone
+	std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
+	// format to string
+	std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+
+	std::string logFilePath = std::string("logs/") + dateString + ".log";
+
+	std::ofstream logStream(logFilePath);
+
+#pragma endregion
+
+
+	std::string str0{ "Hello,DirectX!" };
 
 
 	ShowWindow(hwnd, nCmdShow);
