@@ -194,9 +194,24 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 
 	// Clear render target
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+	D3D12_RESOURCE_BARRIER barrier{};
+
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = swapChainResources[backBufferIndex];
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	commandList->ResourceBarrier(1, &barrier);
+
 	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
 	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	commandList->ResourceBarrier(1, &barrier);
+
 
 	hr = commandList->Close();
 	assert(SUCCEEDED(hr));
@@ -209,6 +224,24 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	assert(SUCCEEDED(hr));
 	hr = commandList->Reset(commandAllocator, nullptr);
 	assert(SUCCEEDED(hr));
+
+
+	ID3D12Fence* fence = nullptr;
+	uint64_t fenceValue = 0;
+	hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	assert(SUCCEEDED(hr));
+
+	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	assert(fenceEvent != nullptr);
+
+	fenceValue++;
+	commandQueue->Signal(fence, fenceValue);
+
+	if (fence->GetCompletedValue() < fenceValue) {
+		fence->SetEventOnCompletion(fenceValue, fenceEvent);
+		WaitForSingleObject(fenceEvent, INFINITE);
+
+	}
 
 
 }
@@ -264,7 +297,7 @@ void EnableDebugLayer() {
 	}
 }
 
-void SetupInfoQueue(ID3D12Device* device) {
+static void SetupInfoQueue(ID3D12Device* device) {
 	ID3D12InfoQueue* infoQueue = nullptr;
 	if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
@@ -320,7 +353,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	);
 
 #ifdef _DEBUG
-	EnableDebugLayer(); 
+	EnableDebugLayer();
 #endif
 
 	IDXGIFactory7* dxgiFactory;
@@ -328,7 +361,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	IDXGIFactory(dxgiFactory, device, kClineWidth, kClineHeight, hwnd);
 
 #ifdef _DEBUG
-	SetupInfoQueue(device); 
+	SetupInfoQueue(device);
 #endif
 
 
@@ -336,6 +369,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	ShowWindow(hwnd, nCmdShow);
 	MSG msg{};
+
+
+
 
 	while (msg.message != WM_QUIT) {
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
