@@ -93,9 +93,9 @@ std::ofstream logStream(logFilePath);
 
 
 #pragma region DXfactory
-void IDXGIFactory() {
+void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device) {
 	//DXGIファクトリー
-	IDXGIFactory7* dxgiFactory = nullptr;
+	dxgiFactory = nullptr;
 
 	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
 
@@ -122,7 +122,7 @@ void IDXGIFactory() {
 	assert(useAdapter != nullptr);
 
 
-	ID3D12Device* device = nullptr;
+	device = nullptr;
 	D3D_FEATURE_LEVEL featureLevels[] = {
 		D3D_FEATURE_LEVEL_12_2,
 		D3D_FEATURE_LEVEL_12_1,
@@ -151,20 +151,18 @@ void IDXGIFactory() {
 #pragma endregion 
 
 
-static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
-	return EXCEPTION_EXECUTE_HANDLER;
-}
 
 
-int  Dump() {
 
-	PEXCEPTION_POINTERS exception{};
+int  Dump(EXCEPTION_POINTERS* exception) {
+
+	exception;
 
 	SYSTEMTIME time;
 	GetLocalTime(&time);
 	wchar_t filePath[MAX_PATH] = { 0 };
 	CreateDirectory(L"./Dumps", nullptr);
-	StringCchPrintfW(filePath,MAX_PATH,L"./Dumps/%04d_%02d_%02d_%02d%02d%02d.dmp",
+	StringCchPrintfW(filePath,MAX_PATH,L"./Dumps//%04d_%02d_%02d_%02d%02d.dmp",
 		time.wYear, time.wMonth, time.wDay,
 		time.wHour, time.wMinute);
 
@@ -183,6 +181,11 @@ int  Dump() {
 	return EXCEPTION_EXECUTE_HANDLER;
 
 
+}
+
+static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
+	Dump(exception);
+	return EXCEPTION_EXECUTE_HANDLER;
 }
 
 
@@ -219,7 +222,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	);
 
 	//ファクトリー
-	IDXGIFactory();
+	IDXGIFactory7* dxgiFactory;
+	ID3D12Device* device;
+	IDXGIFactory(dxgiFactory, device);
 
 	std::filesystem::create_directory("logs");
 
@@ -238,12 +243,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
-			Dump();
 
 			uint32_t* p = nullptr;
 			*p = 100;
 
-			//Log(logStream, ConvertString(std::format(L"WSTRING: {}\n", ConvertString(str0))));
 		}
 		else {
 
