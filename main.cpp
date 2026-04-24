@@ -80,6 +80,20 @@ std::ofstream logStream(logFilePath);
 #pragma endregion
 
 #pragma region DXfactory
+void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device) {
+	//DXGIファクトリー
+	dxgiFactory = nullptr;
+
+	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
+
+	assert(SUCCEEDED(hr));
+
+	IDXGIAdapter4* useAdapter = nullptr;
+	for (UINT i = 0;dxgiFactory->EnumAdapterByGpuPreference(i,
+		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter))
+		!= DXGI_ERROR_NOT_FOUND;i++) {
+
+		DXGI_ADAPTER_DESC3 adapterDesc{};
 
 void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
     const int32_t kClineWidth, const int32_t kClineHeight, HWND hwnd) {
@@ -215,22 +229,23 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 
 #pragma region dump
 
-static int Dump(EXCEPTION_POINTERS* exception) {
-    SYSTEMTIME time;
-    GetLocalTime(&time);
-    wchar_t filePath[MAX_PATH] = { 0 };
-    CreateDirectory(L"./Dumps", nullptr);
-    StringCchPrintfW(filePath, MAX_PATH, L"./Dumps//%04d_%02d_%02d_%02d%02d.dmp",
-        time.wYear, time.wMonth, time.wDay,
-        time.wHour, time.wMinute);
+	device = nullptr;
+	D3D_FEATURE_LEVEL featureLevels[] = {
+		D3D_FEATURE_LEVEL_12_2,
+		D3D_FEATURE_LEVEL_12_1,
+		D3D_FEATURE_LEVEL_12_0
+	};
 
     HANDLE dumpFileHandle = CreateFile(filePath,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_WRITE | FILE_SHARE_READ,
         0, CREATE_ALWAYS, 0, 0);
 
-    DWORD processID = GetCurrentProcessId();
-    DWORD threadID = GetCurrentThreadId();
+	for (size_t i = 0;i < _countof(featureLevels);++i) {
+		hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
+
+		if (SUCCEEDED(hr)) {
+			Log(logStream, std::format("Feature Level {} is supported.\n", featureLevelStrings[i]));
 
     MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{ 0 };
     minidumpInformation.ThreadId = threadID;
@@ -244,61 +259,112 @@ static int Dump(EXCEPTION_POINTERS* exception) {
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
-    Dump(exception);
-    return EXCEPTION_EXECUTE_HANDLER;
+#pragma endregion 
+
+
+
+
+
+int  Dump(EXCEPTION_POINTERS* exception) {
+
+	exception;
+
+	SYSTEMTIME time;
+	GetLocalTime(&time);
+	wchar_t filePath[MAX_PATH] = { 0 };
+	CreateDirectory(L"./Dumps", nullptr);
+	StringCchPrintfW(filePath, MAX_PATH, L"./Dumps//%04d_%02d_%02d_%02d%02d.dmp",
+		time.wYear, time.wMonth, time.wDay,
+		time.wHour, time.wMinute);
+
+	HANDLE dumpFileHandle = CreateFile(filePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
+
+	DWORD processID = GetCurrentProcessId();
+	DWORD threaID = GetCurrentThreadId();
+
+	MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{ 0 };
+	minidumpInformation.ThreadId = threaID;
+	minidumpInformation.ExceptionPointers = exception;
+	minidumpInformation.ClientPointers = true;
+
+	MiniDumpWriteDump(GetCurrentProcess(), processID, dumpFileHandle, MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
+
+	return EXCEPTION_EXECUTE_HANDLER;
+
+
 }
 
-#pragma endregion
+static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
+	Dump(exception);
+	return EXCEPTION_EXECUTE_HANDLER;
+}
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
-    SetUnhandledExceptionFilter(ExportDump);
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
 
-    WNDCLASS wc{};
-    wc.lpfnWndProc = WindowProc;
-    wc.lpszClassName = L"MyWindowClass";
-    wc.hInstance = GetModuleHandle(nullptr);
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    RegisterClass(&wc);
+	SetUnhandledExceptionFilter(ExportDump);
 
-    const int32_t kClineWidth = 1280;
-    const int32_t kClineHeight = 720;
+	WNDCLASS wc{};
+	wc.lpfnWndProc = WindowProc;
+	wc.lpszClassName = L"MyWindowClass";
+	wc.hInstance = GetModuleHandle(nullptr);
+	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	RegisterClass(&wc);
 
-    RECT wrc = { 0, 0, kClineWidth, kClineHeight };
-    AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+	const int32_t kClineWidth = 1280;
+	const int32_t kClineHeight = 720;
 
-    HWND hwnd = CreateWindow(
-        wc.lpszClassName,
-        L"CG2",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        wrc.right - wrc.left,
-        wrc.bottom - wrc.top,
-        nullptr,
-        nullptr,
-        wc.hInstance,
-        nullptr
-    );
+	RECT wrc = { 0,0,kClineWidth,kClineHeight };
+	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
-    IDXGIFactory7* dxgiFactory;
-    ID3D12Device* device;
-    IDXGIFactory(dxgiFactory, device, kClineWidth, kClineHeight, hwnd);
+	HWND hwnd = CreateWindow(
+		wc.lpszClassName,
+		L"CG2",
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		wrc.right - wrc.left,
+		wrc.bottom - wrc.top,
+		nullptr,
+		nullptr,
+		wc.hInstance,
+		nullptr
+	);
 
-    std::filesystem::create_directory("logs");
+	//ファクトリー
+	IDXGIFactory7* dxgiFactory;
+	ID3D12Device* device;
+	IDXGIFactory(dxgiFactory, device);
 
-    ShowWindow(hwnd, nCmdShow);
-    MSG msg{};
+	std::filesystem::create_directory("logs");
 
-    while (msg.message != WM_QUIT) {
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-        }
-        else {
-        }
-    }
 
-    return 0;
+
+	int wstringValue = 0;
+
+
+
+
+	ShowWindow(hwnd, nCmdShow);
+	MSG msg{};
+
+	while (msg.message != WM_QUIT)
+	{
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+
+			uint32_t* p = nullptr;
+			*p = 100;
+
+		}
+		else {
+
+		}
+
+
+	}
+
+	return 0;
 }
