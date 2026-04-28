@@ -11,7 +11,9 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <cassert>
+#include<dxgidebug.h>
 
+#pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"DbgHelp.lib")
@@ -244,6 +246,17 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	}
 
 
+	CloseHandle(fenceEvent);
+	fence->Release();
+	rtvDescriptorHeap->Release();
+	swapChainResources[0]->Release();
+	swapChainResources[1]->Release();
+	swapChain->Release();
+	commandList->Release();
+	commandAllocator->Release();
+	commandQueue->Release();
+	useAdapter->Release();
+
 }
 
 #pragma endregion
@@ -295,6 +308,10 @@ void EnableDebugLayer() {
 		debugController->SetEnableGPUBasedValidation(TRUE);
 		debugController->Release();
 	}
+
+#ifdef _DEBUG
+	debugController->Release();
+#endif // _DEBUG
 }
 
 static void SetupInfoQueue(ID3D12Device* device) {
@@ -302,7 +319,7 @@ static void SetupInfoQueue(ID3D12Device* device) {
 	if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+		//infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
 
 		D3D12_MESSAGE_ID denyIds[] = {
 			D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
@@ -317,6 +334,8 @@ static void SetupInfoQueue(ID3D12Device* device) {
 		infoQueue->Release();
 	}
 }
+
+
 
 #endif
 
@@ -381,6 +400,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		else {
 		}
 	}
+
+
+	IDXGIDebug1* debug;
+	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
+		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
+		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
+		debug->Release();
+	}
+	device->Release();
+	CloseWindow(hwnd);
 
 	return 0;
 }
