@@ -64,18 +64,19 @@ std::string str0{ "Hello,DirectX!" };
 
 #pragma region LogFileGeneration
 
-// get current time
-std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-// convert to seconds precision
-std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-// convert to local time zone
-std::chrono::zoned_time localTime{ std::chrono::current_zone(), nowSeconds };
-// format to string
-std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+// グローバルにストリームだけ宣言（初期化はしない）
+std::ofstream logStream;
 
-std::string logFilePath = std::string("logs/") + dateString + ".log";
-std::ofstream logStream(logFilePath);
+// 初期化関数
+void InitializeLog() {
+    auto now = std::chrono::system_clock::now();
+    auto nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+    std::chrono::zoned_time localTime{ std::chrono::current_zone(), nowSeconds };
+    std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+
+    std::string logFilePath = std::string("logs/") + dateString + ".log";
+    logStream.open(logFilePath);
+}
 
 #pragma endregion
 
@@ -254,6 +255,7 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
     SetUnhandledExceptionFilter(ExportDump);
+    InitializeLog();
 
     WNDCLASS wc{};
     wc.lpfnWndProc = WindowProc;
