@@ -418,14 +418,21 @@ CreatePipelineStateDesc(device, rootSignature, hr);
 		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 		debug->Release();
 	}
-	device->Release();
-		rtvDescriptorHeap->Release();
+	// リソース解放
+	vertexResource->Release();
+	graphicsPipelineState->Release();
+	rootSignature->Release();
+
+	// DX関連解放
+	rtvDescriptorHeap->Release();
 	swapChainResources[0]->Release();
 	swapChainResources[1]->Release();
 	swapChain->Release();
 	commandList->Release();
 	commandAllocator->Release();
 	commandQueue->Release();
+	dxgiFactory->Release();
+	device->Release();
 
 	CloseWindow(hwnd);
 
