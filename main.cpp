@@ -343,7 +343,7 @@ static void SetupInfoQueue(ID3D12Device* device) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
 	SetUnhandledExceptionFilter(ExportDump);
-　InitializeLog();
+	InitializeLog();
 
 	WNDCLASS wc{};
 	wc.lpfnWndProc = WindowProc;
