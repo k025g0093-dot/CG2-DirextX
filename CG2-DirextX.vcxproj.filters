@@ -13,10 +13,61 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine">
+      <UniqueIdentifier>{9321c593-34c3-4ea4-8c30-ba64cc5f1918}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\.h">
+      <UniqueIdentifier>{3c1f6f7c-4735-4bc1-9648-a45e27303166}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\.cpp">
+      <UniqueIdentifier>{210b12b8-3397-4fa6-a9b2-4dc8d80a85c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="TUFEngine.cpp">
+      <Filter>ソース ファイル\TUFengine</Filter>
+    </ClCompile>
+    <ClCompile Include="ConvertString.cpp">
+      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="DXC.cpp">
+      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="LogSistem.cpp">
+      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="PSO.cpp">
+      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexResource.cpp">
+      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Object3d.VS.hlsl" />
+    <FxCompile Include="Object3d.PS.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TUFEngine.h">
+      <Filter>ソース ファイル\TUFengine</Filter>
+    </ClInclude>
+    <ClInclude Include="ConvertString.h">
+      <Filter>ソース ファイル\TUFengine\.h</Filter>
+    </ClInclude>
+    <ClInclude Include="DXC.h">
+      <Filter>ソース ファイル\TUFengine\.h</Filter>
+    </ClInclude>
+    <ClInclude Include="LogSistem.h">
+      <Filter>ソース ファイル\TUFengine\.h</Filter>
+    </ClInclude>
+    <ClInclude Include="PSO.h">
+      <Filter>ソース ファイル\TUFengine\.h</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexResource.h">
+      <Filter>ソース ファイル\TUFengine\.h</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
