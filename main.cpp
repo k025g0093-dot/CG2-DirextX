@@ -66,7 +66,6 @@ std::string str0{ "Hello,DirectX!" };
 
 #pragma region LogFileGeneration
 
-// グローバルにストリームだけ宣言（初期化はしない）
 std::ofstream logStream;
 
 // 初期化関数
@@ -85,7 +84,14 @@ void InitializeLog() {
 #pragma region DXfactory
 
 void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
-	const int32_t kClineWidth, const int32_t kClineHeight, HWND hwnd) {
+    const int32_t kClineWidth, const int32_t kClineHeight, HWND hwnd,
+    ID3D12CommandQueue*& commandQueue,
+    ID3D12CommandAllocator*& commandAllocator,
+    ID3D12GraphicsCommandList*& commandList,
+    IDXGISwapChain4*& swapChain,
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2],
+    ID3D12DescriptorHeap*& rtvDescriptorHeap,
+    ID3D12Resource* swapChainResources[2]) {
 
 	// Create DXGI factory
 	dxgiFactory = nullptr;
@@ -129,64 +135,64 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	assert(device != nullptr);
 	Log(logStream, "Complete DirectX 12 Device Creation.\n");
 
-	// Create command queue
-	ID3D12CommandQueue* commandQueue = nullptr;
-	D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
-	hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue));
-	assert(SUCCEEDED(hr));
+    // Create command queue
+    commandQueue = nullptr;
+    D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
+    hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue));
+    assert(SUCCEEDED(hr));
 
-	// Create command allocator
-	ID3D12CommandAllocator* commandAllocator = nullptr;
-	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-		IID_PPV_ARGS(&commandAllocator));
-	assert(SUCCEEDED(hr));
+    // Create command allocator
+    commandAllocator = nullptr;
+    hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+        IID_PPV_ARGS(&commandAllocator));
+    assert(SUCCEEDED(hr));
 
-	// Create command list
-	ID3D12GraphicsCommandList* commandList = nullptr;
-	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
-		commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
-	assert(SUCCEEDED(hr));
+    // Create command list
+    commandList = nullptr;
+    hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+        commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
+    assert(SUCCEEDED(hr));
 
-	// Create swap chain
-	IDXGISwapChain4* swapChain = nullptr;
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
-	swapChainDesc.Width = kClineWidth;
-	swapChainDesc.Height = kClineHeight;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.SampleDesc.Count = 1;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = 2;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    // Create swap chain
+    swapChain = nullptr;
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
+    swapChainDesc.Width = kClineWidth;
+    swapChainDesc.Height = kClineHeight;
+    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferCount = 2;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue, hwnd,
 		&swapChainDesc, nullptr, nullptr,
 		reinterpret_cast<IDXGISwapChain1**>(&swapChain));
 	assert(SUCCEEDED(hr));
 
-	// Create descriptor heap for RTV
-	ID3D12DescriptorHeap* rtvDescriptorHeap = nullptr;
-	D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};
-	rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvDescriptorHeapDesc.NumDescriptors = 2;
-	hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
-		IID_PPV_ARGS(&rtvDescriptorHeap));
-	assert(SUCCEEDED(hr));
+    // Create descriptor heap for RTV
+    rtvDescriptorHeap = nullptr;
+    D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};
+    rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    rtvDescriptorHeapDesc.NumDescriptors = 2;
+    hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
+        IID_PPV_ARGS(&rtvDescriptorHeap));
+    assert(SUCCEEDED(hr));
 
-	// Get swap chain buffers
-	ID3D12Resource* swapChainResources[2] = { nullptr };
-	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-	assert(SUCCEEDED(hr));
-	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
-	assert(SUCCEEDED(hr));
+    // Get swap chain buffers
+    swapChainResources[0] = nullptr;
+    hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
+    assert(SUCCEEDED(hr));
+    swapChainResources[1] = nullptr;
+    hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
+    assert(SUCCEEDED(hr));
 
 	// Create RTV
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle =
-		rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2]{};
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle =
+        rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
 	rtvHandles[0] = rtvStarHandle;
 	device->CreateRenderTargetView(swapChainResources[0], &rtvDesc, rtvHandles[0]);
@@ -259,7 +265,6 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	useAdapter->Release();
 
 }
-
 #pragma endregion
 
 #pragma region dump
@@ -343,7 +348,7 @@ static void SetupInfoQueue(ID3D12Device* device) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
 	SetUnhandledExceptionFilter(ExportDump);
-　InitializeLog();
+	InitializeLog();
 
 	WNDCLASS wc{};
 	wc.lpfnWndProc = WindowProc;
@@ -372,13 +377,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		nullptr
 	);
 
-#ifdef _DEBUG
-	EnableDebugLayer();
-#endif
+    IDXGIFactory7* dxgiFactory = nullptr;
+    ID3D12Device* device = nullptr;
+    ID3D12CommandQueue* commandQueue = nullptr;
+    ID3D12CommandAllocator* commandAllocator = nullptr;
+    ID3D12GraphicsCommandList* commandList = nullptr;
+    IDXGISwapChain4* swapChain = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2]{};
+    ID3D12DescriptorHeap* rtvDescriptorHeap = nullptr;
+    ID3D12Resource* swapChainResources[2] = { nullptr };
 
-	IDXGIFactory7* dxgiFactory;
-	ID3D12Device* device;
-	IDXGIFactory(dxgiFactory, device, kClineWidth, kClineHeight, hwnd);
+    IDXGIFactory(dxgiFactory, device, kClineWidth, kClineHeight, hwnd,
+        commandQueue, commandAllocator, commandList,
+        swapChain, rtvHandles, rtvDescriptorHeap, swapChainResources);
 
 #ifdef _DEBUG
 	SetupInfoQueue(device);
@@ -410,8 +421,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 		debug->Release();
 	}
-	device->Release();
 	CloseWindow(hwnd);
 
-	return 0;
+    swapChainResources[0]->Release();
+    swapChainResources[1]->Release();
+    rtvDescriptorHeap->Release();
+    swapChain->Release();
+    commandList->Release();
+    commandAllocator->Release();
+    commandQueue->Release();
+    dxgiFactory->Release();
+    device->Release();
+
+    return 0;
 }
