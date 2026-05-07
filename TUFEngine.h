@@ -3,12 +3,18 @@
 #include <cstdint>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include <dxgidebug.h>
 #include <cassert>
 #include <filesystem>
+#include <dbghelp.h>
+#include <strsafe.h>
+#include <string>
+#include <format>
 
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"dxguid.lib")
+#pragma comment(lib,"DbgHelp.lib")
 
 #include "ConvertString.h"
 #include "LogSistem.h"
@@ -28,6 +34,9 @@ public:
     ID3D12GraphicsCommandList* GetCommandList() { return commandList; }
     ID3D12RootSignature* GetRootSignature() { return rootSignature; }
     ID3D12PipelineState* GetPipelineState() { return pipelineState; }
+
+    void EnableDebugLayer();
+    void SetupInfoQueue();
 
 private:
     int32_t width = 0;

@@ -1,31 +1,15 @@
 #include <Windows.h>
 #include <cstdint>
-#include <string>
-#include <format>
-#include <filesystem>
-#include <fstream>
-#include <chrono>
 #include <dbghelp.h>
 #include <strsafe.h>
+#include <dxgidebug.h>
 
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <cassert>
-#include<dxgidebug.h>
-
-
-
-#pragma comment(lib,"dxguid.lib")
-#pragma comment(lib,"d3d12.lib")
-#pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"DbgHelp.lib")
-
+#pragma comment(lib,"dxguid.lib")
 
 #include "LogSistem.h"
-#include "ConvertString.h"
 #include "TUFEngine.h"
 #include "VertexResource.h"
-#include "PSO.h"
 
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
