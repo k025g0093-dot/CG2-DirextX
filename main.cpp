@@ -162,6 +162,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexData[1] = { 0.0f,  0.5f, 0.0f, 1.0f };
 	vertexData[2] = { 0.5f, -0.5f, 0.0f, 1.0f };
 
+	//色データの設定
+	ID3D12Resource* materialResource = CreateBufferResource(engine->GetDevice(), sizeof(Vector4));
+	Vector4* materialData = nullptr;
+	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+	*materialData = { 1.0f, 0.0f, 0.0f, 1.0f };
+
+
 	MSG msg{};
 	while (msg.message != WM_QUIT) {
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -175,6 +182,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());
 			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
 			engine->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			engine->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
 			engine->PostDraw();
@@ -182,6 +190,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	vertexResource->Release();
+	materialResource->Release();
 	delete engine;
 
 	return 0;

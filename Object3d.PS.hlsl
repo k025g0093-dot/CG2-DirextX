@@ -1,5 +1,12 @@
 #define float32_t4 float4
 
+struct Material
+{
+    float32_t4 color;
+};
+
+ConstantBuffer<Material> gMaterial : register(b0);
+
 // --- ピクセルシェーダー関連 ---
 struct PixelShaderOutput
 {
@@ -11,7 +18,7 @@ PixelShaderOutput main()
 {
     PixelShaderOutput output;
     
-    output.color = float32_t4(1.0f, 1.0f, 1.0f, 1.0f);
+    output.color = gMaterial.color;
     
     return output;
 }
