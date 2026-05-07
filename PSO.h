@@ -8,6 +8,8 @@
 #include "ConvertString.h"
 #include <format>
 #include <string>  
+#include "VertexResource.h"
+
 
 ID3D12PipelineState* CreatePipelineStateDesc(
     ID3D12Device* device,

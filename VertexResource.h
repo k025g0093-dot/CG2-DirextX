@@ -24,4 +24,7 @@ D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(
 	size_t strideInBytes);
 
 
-
+ID3D12Resource* CreateBufferResource(
+	ID3D12Device* device,
+	size_t sizeInBytes
+);

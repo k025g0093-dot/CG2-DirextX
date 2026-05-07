@@ -4,23 +4,31 @@
 #include "ConvertString.h"
 #include <format>
 
+// DXCコンパイラの初期化
+// シェーダーのコンパイルに必要なオブジェクトを生成する
 void DxcCompilerInclude(HRESULT& hr,
     IDxcUtils*& dxcUtils,
     IDxcCompiler3*& dxcCompiler,
     IDxcIncludeHandler*& includeHandler) {
 
+    // DXCユーティリティの生成（ファイル読み込みなどに使用）
     dxcUtils = nullptr;
     dxcCompiler = nullptr;
     hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
     assert(SUCCEEDED(hr));
+
+    // DXCコンパイラの生成
     hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
     assert(SUCCEEDED(hr));
 
+    // インクルードハンドラの生成（シェーダー内の#includeを処理する）
     includeHandler = nullptr;
     hr = dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
     assert(SUCCEEDED(hr));
 }
 
+// シェーダーのコンパイル
+// HLSLファイルを読み込んでGPUが実行できる形式に変換する
 IDxcBlob* CompileShader(
     const std::wstring& filePath,
     const wchar_t* profile,
@@ -30,24 +38,28 @@ IDxcBlob* CompileShader(
 
     Log(logStream, ConvertString(std::format(L"Begin CompileShader, path:{}, profile:{}\n", filePath, profile)));
 
+    // シェーダーファイルの読み込み
     IDxcBlobEncoding* shaderSource = nullptr;
     HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
     assert(SUCCEEDED(hr));
 
+    // 読み込んだファイルの情報を設定
     DxcBuffer shaderSourceBuffer{};
     shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
     shaderSourceBuffer.Size = shaderSource->GetBufferSize();
     shaderSourceBuffer.Encoding = DXC_CP_UTF8;
 
+    // コンパイルオプションの設定
     LPCWSTR arguments[] = {
-        L"-E", L"main",
-        L"-T", profile,
-        L"-Zi",
-        L"-Qembed_debug",
-        L"-Od",
-        L"-Zpr"
+        L"-E", L"main",       // エントリーポイントはmain関数
+        L"-T", profile,       // シェーダーの種類（vs_6_0やps_6_0など）
+        L"-Zi",               // デバッグ情報を生成
+        L"-Qembed_debug",     // デバッグ情報をバイナリに埋め込む
+        L"-Od",               // 最適化を無効化（デバッグ用）
+        L"-Zpr"               // メモリレイアウトを行優先に
     };
 
+    // シェーダーのコンパイル実行
     IDxcResult* shaderResult = nullptr;
     hr = dxcCompiler->Compile(
         &shaderSourceBuffer,
@@ -57,6 +69,7 @@ IDxcBlob* CompileShader(
         IID_PPV_ARGS(&shaderResult));
     assert(SUCCEEDED(hr));
 
+    // コンパイルエラーの確認
     IDxcBlobUtf8* shaderError = nullptr;
     shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
     if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
@@ -64,12 +77,14 @@ IDxcBlob* CompileShader(
         assert(false);
     }
 
+    // コンパイル済みシェーダーバイナリの取得
     IDxcBlob* shaderBlob = nullptr;
     hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
     assert(SUCCEEDED(hr));
 
     Log(logStream, ConvertString(std::format(L"Compile Succeeded, path:{}, profile:{}\n", filePath, profile)));
 
+    // 不要になったリソースを解放
     shaderSource->Release();
     shaderResult->Release();
     return shaderBlob;

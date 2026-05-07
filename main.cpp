@@ -1,31 +1,15 @@
 #include <Windows.h>
 #include <cstdint>
-#include <string>
-#include <format>
-#include <filesystem>
-#include <fstream>
-#include <chrono>
 #include <dbghelp.h>
 #include <strsafe.h>
+#include <dxgidebug.h>
 
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <cassert>
-#include<dxgidebug.h>
-
-
-
-#pragma comment(lib,"dxguid.lib")
-#pragma comment(lib,"d3d12.lib")
-#pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"DbgHelp.lib")
-
+#pragma comment(lib,"dxguid.lib")
 
 #include "LogSistem.h"
-#include "ConvertString.h"
 #include "TUFEngine.h"
 #include "VertexResource.h"
-#include "PSO.h"
 
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -41,140 +25,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 
 
-#pragma region DXfactory
 
-void IDXGIFactory(
-	IDXGIFactory7*& dxgiFactory,
-	ID3D12Device*& device,
-	const int32_t kClineWidth,
-	const int32_t kClineHeight,
-	HWND hwnd,
-
-	ID3D12CommandQueue*& commandQueue,
-	ID3D12CommandAllocator*& commandAllocator,
-	ID3D12GraphicsCommandList*& commandList,
-	IDXGISwapChain4*& swapChain,
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2],
-	ID3D12DescriptorHeap*& rtvDescriptorHeap,
-	ID3D12Resource* swapChainResources[2]) {
-
-	// Create DXGI factory
-	dxgiFactory = nullptr;
-	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
-	assert(SUCCEEDED(hr));
-
-	// Select adapter
-	IDXGIAdapter4* useAdapter = nullptr;
-	for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(i,
-		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter))
-		!= DXGI_ERROR_NOT_FOUND; i++) {
-
-		DXGI_ADAPTER_DESC3 adapterDesc{};
-		hr = useAdapter->GetDesc3(&adapterDesc);
-		assert(SUCCEEDED(hr));
-
-		if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
-			Log(logStream, ConvertString(std::format(L"Use Adapter:{}\n", adapterDesc.Description)));
-			break;
-		}
-		useAdapter = nullptr;
-	}
-	assert(useAdapter != nullptr);
-
-	// Create device
-	device = nullptr;
-	D3D_FEATURE_LEVEL featureLevels[] = {
-		D3D_FEATURE_LEVEL_12_2,
-		D3D_FEATURE_LEVEL_12_1,
-		D3D_FEATURE_LEVEL_12_0
-	};
-	const char* featureLevelStrings[] = { "12.2","12.1","12.0" };
-
-	for (size_t i = 0; i < _countof(featureLevels); ++i) {
-		hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
-		if (SUCCEEDED(hr)) {
-			Log(logStream, std::format("Feature Level {} is supported.\n", featureLevelStrings[i]));
-			break;
-		}
-	}
-	assert(device != nullptr);
-	Log(logStream, "Complete DirectX 12 Device Creation.\n");
-
-	// Create command queue
-	commandQueue = nullptr;
-	D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
-	hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue));
-	assert(SUCCEEDED(hr));
-
-	// Create command allocator
-	commandAllocator = nullptr;
-	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-		IID_PPV_ARGS(&commandAllocator));
-	assert(SUCCEEDED(hr));
-
-	// Create command list
-	commandList = nullptr;
-	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
-		commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
-	assert(SUCCEEDED(hr));
-
-	// Create swap chain
-	swapChain = nullptr;
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
-	swapChainDesc.Width = kClineWidth;
-	swapChainDesc.Height = kClineHeight;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.SampleDesc.Count = 1;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = 2;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-
-	hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue, hwnd,
-		&swapChainDesc, nullptr, nullptr,
-		reinterpret_cast<IDXGISwapChain1**>(&swapChain));
-	assert(SUCCEEDED(hr));
-
-	// Create descriptor heap for RTV
-	rtvDescriptorHeap = nullptr;
-	D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};
-	rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvDescriptorHeapDesc.NumDescriptors = 2;
-	hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
-		IID_PPV_ARGS(&rtvDescriptorHeap));
-	assert(SUCCEEDED(hr));
-
-	// Get swap chain buffers
-	swapChainResources[0] = nullptr;
-	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-	assert(SUCCEEDED(hr));
-	swapChainResources[1] = nullptr;
-	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
-	assert(SUCCEEDED(hr));
-
-	// Create RTV
-	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle =
-		rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	rtvHandles[2];
-
-	rtvHandles[0] = rtvStarHandle;
-	device->CreateRenderTargetView(swapChainResources[0], &rtvDesc, rtvHandles[0]);
-
-	rtvHandles[1].ptr = rtvHandles[0].ptr +
-		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	device->CreateRenderTargetView(swapChainResources[1], &rtvDesc, rtvHandles[1]);
-
-	// Clear render target
-	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-
-	useAdapter->Release();
-
-}
-
-#pragma endregion
 
 #pragma region dump
 
@@ -256,6 +107,9 @@ static void SetupInfoQueue(ID3D12Device* device) {
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
+	
+
+
 	SetUnhandledExceptionFilter(ExportDump);
 	InitializeLog();
 
@@ -290,151 +144,54 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	EnableDebugLayer();
 #endif
 
-	IDXGIFactory7* dxgiFactory;
-	ID3D12Device* device;
-	ID3D12CommandQueue* commandQueue = nullptr;
-	ID3D12CommandAllocator* commandAllocator = nullptr;
-	ID3D12GraphicsCommandList* commandList = nullptr;
-	IDXGISwapChain4* swapChain = nullptr;
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2]{};
-	ID3D12DescriptorHeap* rtvDescriptorHeap = nullptr;
-	ID3D12Resource* swapChainResources[2] = { nullptr };
-
-	IDXGIFactory(dxgiFactory, device, kClineWidth, kClineHeight, hwnd,
-		commandQueue, commandAllocator, commandList,
-		swapChain, rtvHandles, rtvDescriptorHeap, swapChainResources);
+	TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, hwnd);
+	ShowWindow(hwnd, nCmdShow);
 
 #ifdef _DEBUG
-	SetupInfoQueue(device);
+	SetupInfoQueue(engine->GetDevice());
 #endif
 
+	HRESULT hr = S_OK;
+	ID3D12Resource* vertexResource = CreateVertexResource(
+		engine->GetDevice(), sizeof(Vector4) * 3, hr);
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
+		vertexResource, sizeof(Vector4) * 3, sizeof(Vector4));
+	Vector4* vertexData = nullptr;
+	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+	vertexData[0] = { -0.5f, -0.5f, 0.0f, 1.0f };
+	vertexData[1] = { 0.0f,  0.5f, 0.0f, 1.0f };
+	vertexData[2] = { 0.5f, -0.5f, 0.0f, 1.0f };
 
-	std::filesystem::create_directory("logs");
+	//色データの設定
+	ID3D12Resource* materialResource = CreateBufferResource(engine->GetDevice(), sizeof(Vector4));
+	Vector4* materialData = nullptr;
+	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+	*materialData = { 1.0f, 0.0f, 0.0f, 1.0f };
 
-HRESULT hr = S_OK;
-ID3D12Resource* vertexResource =CreateVertexResource(
-    device, sizeof(Vector4) * 3, hr);
 
-D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
-    vertexResource, sizeof(Vector4) * 3, sizeof(Vector4));
-
-Vector4* vertexData = nullptr;
-vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-vertexData[0] = { -0.5f, -0.5f, 0.0f, 1.0f }; 
-vertexData[1] = {  0.0f,  0.5f, 0.0f, 1.0f }; 
-vertexData[2] = {  0.5f, -0.5f, 0.0f, 1.0f }; 
-
-ID3D12RootSignature* rootSignature = nullptr;
-ID3D12PipelineState* graphicsPipelineState =
-CreatePipelineStateDesc(device, rootSignature, hr);
-
-	ShowWindow(hwnd, nCmdShow);
 	MSG msg{};
-
-
-
-
 	while (msg.message != WM_QUIT) {
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
 		}
 		else {
+			engine->PreDraw();
 
+			engine->GetCommandList()->SetGraphicsRootSignature(engine->GetRootSignature());
+			engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());
+			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+			engine->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+			engine->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-
-			D3D12_RESOURCE_BARRIER barrier{};
-			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-			barrier.Transition.pResource = swapChainResources[backBufferIndex];
-			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-			commandList->ResourceBarrier(1, &barrier);
-
-			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
-			float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
-
-			D3D12_VIEWPORT viewport{};
-			viewport.Width = kClineWidth;
-			viewport.Height = kClineHeight;
-			viewport.TopLeftX = 0;
-			viewport.TopLeftY = 0;
-			viewport.MinDepth = 0.0f;
-			viewport.MaxDepth = 1.0f;
-			commandList->RSSetViewports(1, &viewport);
-
-			D3D12_RECT scissorRect{};
-			scissorRect.left = 0;
-			scissorRect.right = kClineWidth;
-			scissorRect.top = 0;
-			scissorRect.bottom = kClineHeight;
-			commandList->RSSetScissorRects(1, &scissorRect);
-
-			commandList->SetGraphicsRootSignature(rootSignature);
-			commandList->SetPipelineState(graphicsPipelineState);
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			commandList->DrawInstanced(3, 1, 0, 0);
-
-			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-			commandList->ResourceBarrier(1, &barrier);
-
-			hr = commandList->Close();
-			assert(SUCCEEDED(hr));
-			ID3D12CommandList* commandLists[] = { commandList };
-			commandQueue->ExecuteCommandLists(1, commandLists);
-			swapChain->Present(1, 0);
-
-			ID3D12Fence* fence = nullptr;
-			uint64_t fenceValue = 0;
-			hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-			assert(SUCCEEDED(hr));
-			HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-			fenceValue++;
-			commandQueue->Signal(fence, fenceValue);
-			if (fence->GetCompletedValue() < fenceValue) {
-				fence->SetEventOnCompletion(fenceValue, fenceEvent);
-				WaitForSingleObject(fenceEvent, INFINITE);
-			}
-			CloseHandle(fenceEvent);
-			fence->Release();
-
-			hr = commandAllocator->Reset();
-			assert(SUCCEEDED(hr));
-			hr = commandList->Reset(commandAllocator, nullptr);
-			assert(SUCCEEDED(hr));
-
+			engine->PostDraw();
 		}
 	}
 
-
-	IDXGIDebug1* debug;
-	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
-		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
-		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
-		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
-		debug->Release();
-	}
-	// リソース解放
 	vertexResource->Release();
-	graphicsPipelineState->Release();
-	rootSignature->Release();
-
-	// DX関連解放
-	rtvDescriptorHeap->Release();
-	swapChainResources[0]->Release();
-	swapChainResources[1]->Release();
-	swapChain->Release();
-	commandList->Release();
-	commandAllocator->Release();
-	commandQueue->Release();
-	dxgiFactory->Release();
-	device->Release();
-
-	CloseWindow(hwnd);
+	materialResource->Release();
+	delete engine;
 
 	return 0;
 }

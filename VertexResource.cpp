@@ -49,3 +49,30 @@ D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(
 	return vertexBufferView;
 
 }
+
+ID3D12Resource* CreateBufferResource(
+	ID3D12Device* device,
+	size_t sizeInBytes
+) {
+	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	D3D12_RESOURCE_DESC bufferResourceDesc{};
+	bufferResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferResourceDesc.Width = sizeInBytes;
+	bufferResourceDesc.Height = 1;
+	bufferResourceDesc.DepthOrArraySize = 1;
+	bufferResourceDesc.MipLevels = 1;
+	bufferResourceDesc.SampleDesc.Count = 1;
+	bufferResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	ID3D12Resource* bufferResource = nullptr;
+	HRESULT hr = device->CreateCommittedResource(
+		&uploadHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferResourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&bufferResource));
+	assert(SUCCEEDED(hr));
+	return bufferResource;
+
+}
