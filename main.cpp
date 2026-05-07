@@ -82,7 +82,18 @@ std::ofstream logStream(logFilePath);
 #pragma region DXfactory
 
 void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
-	const int32_t kClineWidth, const int32_t kClineHeight, HWND hwnd) {
+	const int32_t kClineWidth, const int32_t kClineHeight, HWND hwnd,
+	ID3D12CommandQueue*& commandQueue,
+	ID3D12CommandAllocator*& commandAllocator,
+	ID3D12GraphicsCommandList*& commandList,
+	IDXGISwapChain4*& swapChain,
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2],
+	ID3D12DescriptorHeap*& rtvDescriptorHeap,
+	ID3D12Resource* swapChainResources[2],
+	ID3D12Fence*& fence,          
+	uint64_t& fenceValue,         
+	HANDLE& fenceEvent)           
+{
 
 	// Create DXGI factory
 	dxgiFactory = nullptr;
@@ -127,25 +138,25 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	Log(logStream, "Complete DirectX 12 Device Creation.\n");
 
 	// Create command queue
-	ID3D12CommandQueue* commandQueue = nullptr;
+	commandQueue = nullptr;
 	D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
 	hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue));
 	assert(SUCCEEDED(hr));
 
 	// Create command allocator
-	ID3D12CommandAllocator* commandAllocator = nullptr;
+	commandAllocator = nullptr;
 	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
 		IID_PPV_ARGS(&commandAllocator));
 	assert(SUCCEEDED(hr));
 
 	// Create command list
-	ID3D12GraphicsCommandList* commandList = nullptr;
+	commandList = nullptr;
 	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
 		commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
 	assert(SUCCEEDED(hr));
 
 	// Create swap chain
-	IDXGISwapChain4* swapChain = nullptr;
+	swapChain = nullptr;
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
 	swapChainDesc.Width = kClineWidth;
 	swapChainDesc.Height = kClineHeight;
@@ -161,7 +172,7 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	assert(SUCCEEDED(hr));
 
 	// Create descriptor heap for RTV
-	ID3D12DescriptorHeap* rtvDescriptorHeap = nullptr;
+	rtvDescriptorHeap = nullptr;
 	D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};
 	rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvDescriptorHeapDesc.NumDescriptors = 2;
@@ -170,9 +181,10 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	assert(SUCCEEDED(hr));
 
 	// Get swap chain buffers
-	ID3D12Resource* swapChainResources[2] = { nullptr };
+	swapChainResources[0] = nullptr;
 	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
 	assert(SUCCEEDED(hr));
+	swapChainResources[1] = nullptr;
 	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
 	assert(SUCCEEDED(hr));
 
@@ -183,7 +195,6 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle =
 		rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2]{};
 
 	rtvHandles[0] = rtvStarHandle;
 	device->CreateRenderTargetView(swapChainResources[0], &rtvDesc, rtvHandles[0]);
@@ -196,7 +207,6 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
 	D3D12_RESOURCE_BARRIER barrier{};
-
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	barrier.Transition.pResource = swapChainResources[backBufferIndex];
@@ -212,7 +222,6 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	commandList->ResourceBarrier(1, &barrier);
 
-
 	hr = commandList->Close();
 	assert(SUCCEEDED(hr));
 
@@ -220,30 +229,28 @@ void IDXGIFactory(IDXGIFactory7*& dxgiFactory, ID3D12Device*& device,
 	commandQueue->ExecuteCommandLists(1, commandLists);
 	swapChain->Present(1, 0);
 
+
+	fence = nullptr;
+	fenceValue = 0;
+	hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	assert(SUCCEEDED(hr));
+
+	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	assert(fenceEvent != nullptr);
+
+	fenceValue++;
+	commandQueue->Signal(fence, fenceValue);
+	if (fence->GetCompletedValue() < fenceValue) {
+		fence->SetEventOnCompletion(fenceValue, fenceEvent);
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
+
 	hr = commandAllocator->Reset();
 	assert(SUCCEEDED(hr));
 	hr = commandList->Reset(commandAllocator, nullptr);
 	assert(SUCCEEDED(hr));
 
-
-	ID3D12Fence* fence = nullptr;
-	uint64_t fenceValue = 0;
-	hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-	assert(SUCCEEDED(hr));
-
-	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	assert(fenceEvent != nullptr);
-
-	fenceValue++;
-	commandQueue->Signal(fence, fenceValue);
-
-	if (fence->GetCompletedValue() < fenceValue) {
-		fence->SetEventOnCompletion(fenceValue, fenceEvent);
-		WaitForSingleObject(fenceEvent, INFINITE);
-
-	}
-
-
+	useAdapter->Release();
 }
 
 #pragma endregion
@@ -356,9 +363,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	EnableDebugLayer();
 #endif
 
-	IDXGIFactory7* dxgiFactory;
-	ID3D12Device* device;
-	IDXGIFactory(dxgiFactory, device, kClineWidth, kClineHeight, hwnd);
+	IDXGIFactory7* dxgiFactory = nullptr;
+	ID3D12Device* device = nullptr;
+	ID3D12CommandQueue* commandQueue = nullptr;
+	ID3D12CommandAllocator* commandAllocator = nullptr;
+	ID3D12GraphicsCommandList* commandList = nullptr;
+	IDXGISwapChain4* swapChain = nullptr;
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2]{};
+	ID3D12DescriptorHeap* rtvDescriptorHeap = nullptr;
+	ID3D12Resource* swapChainResources[2] = { nullptr };
+
+	ID3D12Fence* fence = nullptr;
+	uint64_t fenceValue = 0;
+	HANDLE fenceEvent = nullptr;
+
+	IDXGIFactory(dxgiFactory, device, kClineWidth, kClineHeight, hwnd,
+		commandQueue, commandAllocator, commandList,
+		swapChain, rtvHandles, rtvDescriptorHeap, swapChainResources, fence, fenceValue, fenceEvent);
+
 
 #ifdef _DEBUG
 	SetupInfoQueue(device);
@@ -381,6 +403,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		else {
 		}
 	}
+
+	swapChainResources[0]->Release();
+	swapChainResources[1]->Release();
+	rtvDescriptorHeap->Release();
+	swapChain->Release();
+	commandList->Release();
+	commandAllocator->Release();
+	commandQueue->Release();
+	dxgiFactory->Release();
+	device->Release();
+
+	CloseHandle(fenceEvent);
+	fence->Release();
+
+	swapChainResources[0]->Release();
 
 	return 0;
 }
