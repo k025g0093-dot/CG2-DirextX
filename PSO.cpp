@@ -12,16 +12,22 @@ ID3D12RootSignature* CreateRootSignature(
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	// ルートパラメータの設定（シェーダーに渡すリソースの種類を定義）
-	D3D12_ROOT_PARAMETER rootParameter[1] = {};
+	D3D12_ROOT_PARAMETER rootParameter[2] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使用
-	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全シェーダーから参照可能
+	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // 全シェーダーから参照可能
 	rootParameter[0].Descriptor.ShaderRegister = 0; // register(b0)に対応
+	rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // シェーダーリソースビューを使用
+	rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 全シェーダーから参照可能
+	rootParameter[1].Descriptor.ShaderRegister = 0; // register(b0)に対応
+
+
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);
 
 	// ルートシグネチャをバイナリに変換
 	ID3DBlob* signatureBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
+	// L"Object3d.VS.hlsl" を L"VertexShader.hlsl" に変更
 	hr = D3D12SerializeRootSignature(&descriptionRootSignature,
 		D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
 
@@ -93,9 +99,11 @@ ID3D12PipelineState* CreatePipelineStateDesc(
 	IDxcBlob* vertexShaderBlob = CompileShader(
 		L"Object3d.VS.hlsl", L"vs_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
+	
 	IDxcBlob* pixelShaderBlob = CompileShader(
 		L"Object3d.PS.hlsl", L"ps_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
+
 
 	// 各設定の生成
 	D3D12_INPUT_LAYOUT_DESC inputLayout = CreateLayout();

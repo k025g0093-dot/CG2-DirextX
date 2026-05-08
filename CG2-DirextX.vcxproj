@@ -92,6 +92,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="TUFEngine.cpp" />
+    <ClCompile Include="Vector.cpp" />
     <ClCompile Include="VertexResource.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -114,6 +115,7 @@
     <ClInclude Include="LogSistem.h" />
     <ClInclude Include="PSO.h" />
     <ClInclude Include="TUFEngine.h" />
+    <ClInclude Include="Vector.h" />
     <ClInclude Include="VertexResource.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
