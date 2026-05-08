@@ -12,15 +12,6 @@
 #include "VertexResource.h"
 #include "Vector.h"
 
-// --- ウィンドウプロシージャ：Windowsからのメッセージ（閉じるボタンなど）を処理 ---
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	switch (msg) {
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
-}
 
 #pragma region dump
 // --- クラッシュ時にメモリの状態（ダンプファイル）を保存するための関数群 ---
@@ -128,6 +119,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, hwnd);
 	ShowWindow(hwnd, nCmdShow);
 
+
+
 #ifdef _DEBUG
 	SetupInfoQueue(engine->GetDevice()); // エラー情報の取得設定
 #endif
@@ -201,6 +194,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			);
 			SetWindowText(hwnd, debugText.c_str());
 
+#ifdef USE_IMGUI
+			ImGui_ImplDX12_NewFrame();
+			ImGui_ImplWin32_NewFrame();
+
+			ImGui::NewFrame();
+
+			ImGui::ShowDemoWindow();
+
+			ImGui::Render();
+
+#endif // USE_IMGUI
+
+
+
+
 			// 6. 描画開始処理（コマンドリストのリセットなど）
 			engine->PreDraw();
 
@@ -221,6 +229,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->PostDraw();
 		}
 	}
+
+#ifdef USE_IMGUI
+		ImGui_ImplDX12_Shutdown();
+		ImGui_ImplWin32_Shutdown();
+		ImGui::DestroyContext();
+#endif // USE_IMGUI
 
 	// --- 解放処理：使ったメモリを返す ---
 	vertexResource->Release();
