@@ -1,20 +1,22 @@
-#define float32_t4 float4
+struct TransformationMatrix
+{
+    row_major float4x4 WVP;
+};
+ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0); // b1に合わせる
 
-// --- 頂点シェーダー関連 ---
 struct VertexShaderInput
 {
-    float32_t4 position : POSITION;
+    float4 position : POSITION;
 };
-
 struct VertexShaderOutput
 {
-    float32_t4 position : SV_POSITION;
+    float4 position : SV_POSITION;
 };
 
-// 頂点シェーダーのメイン
 VertexShaderOutput main(VertexShaderInput input)
 {
     VertexShaderOutput output;
-    output.position = input.position;
+    // ここで mul を使って行列を掛ける！
+    output.position = mul(input.position, gTransformationMatrix.WVP);
     return output;
 }

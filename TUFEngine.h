@@ -21,6 +21,7 @@
 #include "DXC.h"
 #include "PSO.h"
 #include "VertexResource.h"
+#include "Vector.h"
 
 class TUFEngine {
 public:
