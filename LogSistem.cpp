@@ -1,7 +1,5 @@
 #include "LogSistem.h"
-#include <Windows.h>
-#include <chrono>
-#include <format>
+
 
 std::ofstream logStream;
 
@@ -18,4 +16,43 @@ void InitializeLog() {
 
     std::string logFilePath = std::string("logs/") + dateString + ".log";
     logStream.open(logFilePath);
+
 }
+
+
+#pragma region dump
+
+static int Dump(EXCEPTION_POINTERS* exception) {
+	SYSTEMTIME time;
+	GetLocalTime(&time);
+	wchar_t filePath[MAX_PATH] = { 0 };
+	CreateDirectory(L"./Dumps", nullptr);
+	StringCchPrintfW(filePath, MAX_PATH, L"./Dumps//%04d_%02d_%02d_%02d%02d.dmp",
+		time.wYear, time.wMonth, time.wDay,
+		time.wHour, time.wMinute);
+
+	HANDLE dumpFileHandle = CreateFile(filePath,
+		GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_WRITE | FILE_SHARE_READ,
+		0, CREATE_ALWAYS, 0, 0);
+
+	DWORD processID = GetCurrentProcessId();
+	DWORD threadID = GetCurrentThreadId();
+
+	MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{ 0 };
+	minidumpInformation.ThreadId = threadID;
+	minidumpInformation.ExceptionPointers = exception;
+	minidumpInformation.ClientPointers = true;
+
+	MiniDumpWriteDump(GetCurrentProcess(), processID, dumpFileHandle,
+		MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
+
+	CloseHandle(dumpFileHandle);
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
+	Dump(exception);
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+#pragma endregion

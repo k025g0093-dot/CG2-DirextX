@@ -39,7 +39,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 class TUFEngine {
 public:
-    TUFEngine(int32_t width, int32_t height, HWND hwnd);
+    TUFEngine(int32_t width, int32_t height, std::wstring name);
     ~TUFEngine();
 
     void PreDraw();
@@ -49,6 +49,7 @@ public:
     ID3D12GraphicsCommandList* GetCommandList() { return commandList; }
     ID3D12RootSignature* GetRootSignature() { return rootSignature; }
     ID3D12PipelineState* GetPipelineState() { return pipelineState; }
+    HWND GetHwnd() const { return hwnd; }
 
     void EnableDebugLayer();
     void SetupInfoQueue();
@@ -80,7 +81,12 @@ private:
     HRESULT hr = S_OK;
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+    HWND hwnd = nullptr;
 
+    void InitWindow();
     void InitializeDXGI(HWND hwnd);
 	void InitializeImGui(HWND hwnd);
+
+
+
 };

@@ -19,13 +19,55 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 
+void TUFEngine::InitWindow() {
+	// 1. ウィンドウクラスの登録
+	WNDCLASS wc{};
+	wc.lpfnWndProc = WindowProc;
+	wc.lpszClassName = L"MyWindowClass";
+	wc.hInstance = GetModuleHandle(nullptr);
+	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	RegisterClass(&wc);
 
-TUFEngine::TUFEngine(int32_t width, int32_t height, HWND hwnd)
+	// 2. クライアント領域のサイズからウィンドウ全体のサイズを計算
+	// width と height はクラスのメンバ変数として保持しているものを使います
+	RECT wrc = { 0, 0, width, height };
+	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+
+	// 3. ウィンドウ作成
+	// 作成したハンドルはメンバ変数の hwnd に格納します
+	hwnd = CreateWindow(
+		wc.lpszClassName,
+		L"CG2",
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		wrc.right - wrc.left,
+		wrc.bottom - wrc.top,
+		nullptr,
+		nullptr,
+		wc.hInstance,
+		nullptr
+	);
+
+	assert(hwnd != nullptr); // 作成に失敗していないかチェック
+}
+
+
+TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	: width(width), height(height) {
+	InitWindow();//windowの初期化と作成
 
-	std::filesystem::create_directory("logs");
+	std::filesystem::create_directory("logs");//logsフォルダの作成
 	InitializeLog();
-	InitializeDXGI(hwnd);
+
+#ifdef _DEBUG
+	EnableDebugLayer(); // デバッグレイヤー有効化
+#endif
+	InitializeDXGI(hwnd);//DirectX12の初期化
+
+#ifdef _DEBUG
+	SetupInfoQueue(); // InfoQueueのセットアップ
+#endif
 
 #ifdef USE_IMGUI
 	InitializeImGui(hwnd);
@@ -251,3 +293,37 @@ ID3D12DescriptorHeap* TUFEngine::CreateDescriptorHeap(
     
     return descriptorHeap;
 }
+
+
+#ifdef _DEBUG
+// --- デバッグ層：エラーがあった時にコンソールに詳細を出してくれる機能 ---
+void TUFEngine::EnableDebugLayer() {
+	ID3D12Debug1* debugController = nullptr;
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+		debugController->EnableDebugLayer();
+		debugController->SetEnableGPUBasedValidation(TRUE);
+		debugController->Release();
+	}
+}
+
+// --- メッセージフィルタ：特定の警告や情報を無視する設定 ---
+void TUFEngine::SetupInfoQueue() {
+	ID3D12InfoQueue* infoQueue = nullptr;
+	if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+
+		D3D12_MESSAGE_ID denyIds[] = {
+			D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
+		};
+		D3D12_MESSAGE_SEVERITY severities[] = { D3D12_MESSAGE_SEVERITY_INFO };
+		D3D12_INFO_QUEUE_FILTER filter{};
+		filter.DenyList.NumIDs = _countof(denyIds);
+		filter.DenyList.pIDList = denyIds;
+		filter.DenyList.NumSeverities = _countof(severities);
+		filter.DenyList.pSeverityList = severities;
+		infoQueue->PushStorageFilter(&filter);
+		infoQueue->Release();
+	}
+}
+#endif
