@@ -1,17 +1,4 @@
-#include <Windows.h>
-#include <cstdint>
-#include <dbghelp.h>
-#include <strsafe.h>
-#include <dxgidebug.h>
-
-#pragma comment(lib,"DbgHelp.lib")
-#pragma comment(lib,"dxguid.lib")
-
-#include "LogSistem.h"
 #include "TUFEngine.h"
-#include "VertexResource.h"
-#include "Vector.h"
-
 
 
 // --- メイン関数：ここからプログラムが始まる ---
