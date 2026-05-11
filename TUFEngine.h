@@ -58,6 +58,7 @@ public:
     HWND GetHwnd() const { return hwnd; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetTextureSrvHandleGPU() const { return textureSrvHandleGPU; }
     ID3D12DescriptorHeap* GetSrvDescriptorHeap() const { return srvDescriptorHeap; }
+    ID3D12DescriptorHeap* GetDsvDescriptorHeap() const { return dsvDescriptorHeap; }
 
     void EnableDebugLayer();
     void SetupInfoQueue();
@@ -105,11 +106,14 @@ private:
     ID3D12PipelineState* pipelineState = nullptr;       // シェーダーや各種描画ルール
 
     // --- 6. テクスチャ・リソース作成用（追加分） ---
-    D3D12_RESOURCE_DESC resourceDesc{};                 // リソースの詳細設定
+    D3D12_RESOURCE_DESC resourceDesc{};   // リソースの詳細設定
+    D3D12_RESOURCE_DESC depthResourceDesc{};//深度バッファ用
     ID3D12Resource* resource = nullptr;                 // 汎用リソースポインタ
     ID3D12Resource* texture = nullptr;          // テクスチャ用リソースポインタ
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU{};    // テクスチャ用のGPUハンドルを保持する変数
     ID3D12Resource* intermediateResource{};
+    ID3D12Resource* depthStencilResource = nullptr;//深度バッファ専用のリソース
+    ID3D12DescriptorHeap* dsvDescriptorHeap = {}; // 深度ステンシルビュー用のデスクリプタヒープ
 
     // --- 内部初期化用メソッド ---
     void InitWindow();                                  // 窓を作る
@@ -118,6 +122,6 @@ private:
 
     // テクスチャリソースの作成（内部処理用）
     ID3D12Resource* CreateTextureResource(const DirectX::TexMetadata& metadata);
-
+    ID3D12Resource* CreateDepthStencilTextureResource(int32_t width, int32_t height);//深度バッファーのリソース作成
     void CreateTextureSRV(ID3D12Resource* textureResource, const DirectX::TexMetadata& metadata); // SRVの設定情報を作る
 };
