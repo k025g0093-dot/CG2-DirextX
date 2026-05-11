@@ -1,15 +1,14 @@
 #pragma once
 #include <cmath>
 #include<assert.h>
+#include "Vector3.h"
 
 struct Matrix4x4
 {
     float m[4][4];
 };
 
-struct Vector3 {
-    float x, y, z;
-};
+
 
 struct TransformData {
     Vector3 scale;

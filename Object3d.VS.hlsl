@@ -1,3 +1,7 @@
+#define float32_t4 float4
+#include "Object3d.hlsli"
+
+
 struct TransformationMatrix
 {
     row_major float4x4 WVP;
@@ -6,17 +10,18 @@ ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0); // b1
 
 struct VertexShaderInput
 {
-    float4 position : POSITION;
+    float32_t4 position : POSITION;
+    float2 texcoord : TEXCOORD;
 };
-struct VertexShaderOutput
-{
-    float4 position : SV_POSITION;
-};
+
 
 VertexShaderOutput main(VertexShaderInput input)
 {
     VertexShaderOutput output;
     // ここで mul を使って行列を掛ける！
     output.position = mul(input.position, gTransformationMatrix.WVP);
+  
+    output.texcoord = input.texcoord;
+
     return output;
 }

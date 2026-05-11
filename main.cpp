@@ -1,5 +1,9 @@
 #include "TUFEngine.h"
 
+struct VertexData {
+	Vector4 position;
+	Vector2 texcoord; // テクスチャのどこを使うかの指定
+};
 
 // --- メイン関数：ここからプログラムが始まる ---
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -14,24 +18,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 3. 窓の表示
 	ShowWindow(engine->GetHwnd(), nCmdShow);
 
+	// リソース読み込み
+	ID3D12Resource* myTexture = engine->LoadTexture("resources/uvChecker.png");
+
 	HRESULT hr = S_OK;
 
 	// --- 頂点リソースの作成：三角形の形を作る ---
-	ID3D12Resource* vertexResource = CreateVertexResource(engine->GetDevice(), sizeof(Vector4) * 3, hr);
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(vertexResource, sizeof(Vector4) * 3, sizeof(Vector4));
+// サイズもstrideもVertexDataに合わせる
+	ID3D12Resource* vertexResource = CreateVertexResource(
+		engine->GetDevice(), sizeof(VertexData) * 3, hr);
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
+		vertexResource, sizeof(VertexData) * 3, sizeof(VertexData)); // ← VertexDataに変更
 
-	// 頂点座標を書き込む（Mapでメモリを繋いで直接代入）
-	Vector4* vertexData = nullptr;
+
+	// ③ データ書き込み（Map）
+	VertexData* vertexData = nullptr;
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	vertexData[0] = { -0.5f, -0.5f, 0.0f, 1.0f }; // 左下
-	vertexData[1] = { 0.0f,  0.5f, 0.0f, 1.0f };  // 上
-	vertexData[2] = { 0.5f, -0.5f, 0.0f, 1.0f };  // 右下
+	vertexData[0] = { {-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 1.0f} }; // 左下
+	vertexData[1] = { { 0.0f,  0.5f, 0.0f, 1.0f}, {0.5f, 0.0f} }; // 上
+	vertexData[2] = { { 0.5f, -0.5f, 0.0f, 1.0f}, {1.0f, 1.0f} }; // 右下
+	vertexResource->Unmap(0, nullptr); // 書き終わったら Unmap するのが安全
+
 
 	// --- マテリアル（色）リソースの作成 ---
 	ID3D12Resource* materialResource = CreateBufferResource(engine->GetDevice(), sizeof(Vector4));
 	Vector4* materialData = nullptr;
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-	*materialData = { 1.0f, 0.0f, 0.0f, 1.0f }; // 初期の色は赤
+	*materialData = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
 
 	// --- 行列（トランスフォーム）の初期データ準備 ---
 	TransformData transformData{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // オブジェクト用
@@ -43,6 +56,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Matrix4x4* wvpData = nullptr;
 	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
 	*wvpData = MakeIdentity4x4();
+
+
+
+
 
 	// カメラの配置を決定する行列
 	Matrix4x4 cameraMatrix = MakeAffineMatrix(
@@ -58,7 +75,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		else {
 			// 1. オブジェクトを回転させる（更新）
-			transformData.rotate.y += 0.13f;
+			transformData.rotate.y += 0.05f;
 			worldMatrix = MakeAffineMatrix(transformData.scale, transformData.rotate, transformData.translate);
 
 			// 2. カメラ行列からビュー行列（カメラの逆の動き）を作成
@@ -104,6 +121,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// RootParameter[0] に色の情報、[1] に行列の情報をバインド
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
 
 			// 三角形の描画（頂点3つ分）
 			engine->GetCommandList()->DrawInstanced(3, 1, 0, 0);
