@@ -257,39 +257,59 @@ ID3D12Resource* TUFEngine::CreateTextureResource(
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metadata.dimension);
 
 	D3D12_HEAP_PROPERTIES heapProperties{};
-	heapProperties.Type = D3D12_HEAP_TYPE_CUSTOM;
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 
 	resource = {};
 	hr = device->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		D3D12_RESOURCE_STATE_COPY_DEST,//データ転送設定
 		nullptr,
-		IID_PPV_ARGS(&resource)
+		IID_PPV_ARGS(&resource)//作成するリソースポインタへ
 	);
 	assert(SUCCEEDED(hr));
 	return resource;
 }
 
-void TUFEngine::UploadTexture(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages) {
-	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 
-	// 全てのミップレベルをループして転送
-	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel) {
-		const DirectX::Image* img = mipImages.GetImage(mipLevel, 0, 0);
+[[nodiscard]]//属性定義：この関数の戻り値を無視しないでね、という意味
+ID3D12Resource* TUFEngine::UploadTexture(
+	ID3D12Resource* texture,
+	const DirectX::ScratchImage& mipImages)
+{
+	//中間バッファの作成と転送の準備
+	std::vector<D3D12_SUBRESOURCE_DATA>subresources;
 
-		hr = texture->WriteToSubresource(
-			static_cast<UINT>(mipLevel),
-			nullptr,
-			img->pixels,
-			static_cast<UINT>(img->rowPitch),
-			static_cast<UINT>(img->slicePitch)
-		);
-		assert(SUCCEEDED(hr));
-	}
+	DirectX::PrepareUpload(
+		device,
+		mipImages.GetImages(),
+		mipImages.GetImageCount(),
+		mipImages.GetMetadata(),
+		subresources);
+	uint64_t intermediateSize = GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
+	ID3D12Resource* intermediateResource = CreateBufferResource(device, intermediateSize);
+	
+	//データ転送コマンドの作成と積み込み
+	UpdateSubresources(
+		commandList, texture,
+		intermediateResource, 0, 0, 
+		UINT(subresources.size()), subresources.data()
+	);
+
+	//Tetrueへの転送が終わったら、テクスチャの使用目的をコピー先からシェーダーリソースへ変更する
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = texture;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	commandList->ResourceBarrier(1, &barrier);
+	return intermediateResource;
+
 }
 
 

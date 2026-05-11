@@ -24,6 +24,8 @@
 #include "PSO.h"
 #include "VertexResource.h"
 #include "externals/DirectXTex/DirectXTex.h"
+#include "externals/DirectXTex/d3dx12.h"
+#include <vector>
 
 #include "allVector.h"
 
@@ -69,7 +71,9 @@ public:
 
     ID3D12Resource* LoadTexture(const std::string& filePath);
 
-    void UploadTexture(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages);
+    ID3D12Resource* UploadTexture(
+        ID3D12Resource* texture,
+        const DirectX::ScratchImage& mipImages);
 
 private:
     // --- 1. ウィンドウ・システム関連 ---
@@ -105,7 +109,7 @@ private:
     ID3D12Resource* resource = nullptr;                 // 汎用リソースポインタ
     ID3D12Resource* texture = nullptr;          // テクスチャ用リソースポインタ
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU{};    // テクスチャ用のGPUハンドルを保持する変数
-
+    ID3D12Resource* intermediateResource{};
 
     // --- 内部初期化用メソッド ---
     void InitWindow();                                  // 窓を作る
