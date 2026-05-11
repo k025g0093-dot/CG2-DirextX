@@ -7,7 +7,7 @@ struct VertexData {
 
 // --- メイン関数：ここからプログラムが始まる ---
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	
+
 	SetUnhandledExceptionFilter(ExportDump);
 
 	// 2. エンジンの起動（この中で窓も作られる）
@@ -26,9 +26,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// --- 頂点リソースの作成：三角形の形を作る ---
 // サイズもstrideもVertexDataに合わせる
 	ID3D12Resource* vertexResource = CreateVertexResource(
-		engine->GetDevice(), sizeof(VertexData) * 3, hr);
+		engine->GetDevice(), sizeof(VertexData) * 6, hr);
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
-		vertexResource, sizeof(VertexData) * 3, sizeof(VertexData)); // ← VertexDataに変更
+		vertexResource, sizeof(VertexData) * 6, sizeof(VertexData)); // ← VertexDataに変更
 
 
 	// ③ データ書き込み（Map）
@@ -37,6 +37,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexData[0] = { {-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 1.0f} }; // 左下
 	vertexData[1] = { { 0.0f,  0.5f, 0.0f, 1.0f}, {0.5f, 0.0f} }; // 上
 	vertexData[2] = { { 0.5f, -0.5f, 0.0f, 1.0f}, {1.0f, 1.0f} }; // 右下
+	vertexData[3] = { {-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f} }; // 左下
+	vertexData[4] = { { 0.0f,  0.0f, 0.0f, 1.0f}, {0.5f, 0.0f} }; // 右上
+	vertexData[5] = { { 0.5f,  -0.5f,-0.5f, 1.0f}, {1.0f, 1.0f} }; // 上
 	vertexResource->Unmap(0, nullptr); // 書き終わったら Unmap するのが安全
 
 
@@ -75,7 +78,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		else {
 			// 1. オブジェクトを回転させる（更新）
-			transformData.rotate.y += 0.05f;
+			transformData.rotate.y += 0.01f;
 			worldMatrix = MakeAffineMatrix(transformData.scale, transformData.rotate, transformData.translate);
 
 			// 2. カメラ行列からビュー行列（カメラの逆の動き）を作成
@@ -112,6 +115,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// 6. 描画開始処理（コマンドリストのリセットなど）
 			engine->PreDraw();
 
+
+
 			// 7. GPUへの命令発行
 			engine->GetCommandList()->SetGraphicsRootSignature(engine->GetRootSignature());
 			engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());
@@ -124,7 +129,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
 
 			// 三角形の描画（頂点3つ分）
-			engine->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+			engine->GetCommandList()->DrawInstanced(6, 1, 0, 0);
 
 			// 8. 描画終了処理（バッファの入れ替えなど）
 			engine->PostDraw();

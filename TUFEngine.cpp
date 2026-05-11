@@ -85,7 +85,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	InitializeImGui(hwnd);
 #endif
 
-
+	CreateDepthStencilTextureResource(width, height);
 }
 
 TUFEngine::~TUFEngine() {
@@ -313,6 +313,57 @@ ID3D12Resource* TUFEngine::UploadTexture(
 }
 
 
+ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
+	int32_t width, int32_t height)
+{
+	depthResourceDesc = {};
+	depthResourceDesc.Width = width;//幅
+	depthResourceDesc.Height = height;//高さ
+	depthResourceDesc.MipLevels = 1;//mipmapの数
+	depthResourceDesc.DepthOrArraySize = 1;//深度バッファーは配列もミップマップも不要
+	depthResourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;//利用可能なフォーマット
+	depthResourceDesc.SampleDesc.Count = 1;//1固定のサンプリングカウント
+	depthResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;//2Dテクスチャ
+	depthResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;//深度バッファーとして使うためのフラグ
+
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+	D3D12_CLEAR_VALUE depthClearValue{};
+	depthClearValue.DepthStencil.Depth = 1.0f;//深度バッファーは1.0で初期化
+	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	depthStencilResource = {};
+	hr = device->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&depthResourceDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthClearValue, // ← 正しい
+		IID_PPV_ARGS(&depthStencilResource)
+	);
+	assert(SUCCEEDED(hr));
+	
+	//DSV用のヒープ作成
+	dsvDescriptorHeap = CreateDescriptorHeap(
+		device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false
+	);
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;//Format。基本的にはリソースに合わせる
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;//2Dテクスチャ
+	//DSVHeapの先頭にDSVを作る
+	device->CreateDepthStencilView(
+		depthStencilResource, &dsvDesc,
+		dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+
+	return depthStencilResource;
+
+}
+
+
+
 #pragma endregion
 
 #pragma region 描画のコマンド
@@ -334,6 +385,13 @@ void TUFEngine::PreDraw() {
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap };
 	commandList->SetDescriptorHeaps(1, descriptorHeaps);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
+		dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	D3D12_VIEWPORT viewport{};
 	viewport.Width = static_cast<float>(width);
