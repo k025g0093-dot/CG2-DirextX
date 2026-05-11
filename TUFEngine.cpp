@@ -55,31 +55,44 @@ void TUFEngine::InitWindow() {
 
 TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	: width(width), height(height) {
-	InitWindow();//windowの初期化と作成
 
-	std::filesystem::create_directory("logs");//logsフォルダの作成
+	// --- 1. システム基盤の初期化 ---
+	// COMは一番最初に初期化しておくのが Windows プログラミングの定石
+	HRESULT hrCo = CoInitializeEx(0, COINIT_MULTITHREADED);
+
+	// フォルダ作成とログ初期化
+	std::filesystem::create_directory("logs");
 	InitializeLog();
 
-#ifdef _DEBUG
-	EnableDebugLayer(); // デバッグレイヤー有効化
-#endif
-	InitializeDXGI(hwnd);//DirectX12の初期化
+	// --- 2. ウィンドウとレンダラーの準備 ---
+	InitWindow();
 
 #ifdef _DEBUG
-	SetupInfoQueue(); // InfoQueueのセットアップ
+	EnableDebugLayer(); // デバッグレイヤーはデバイス作成前に呼ぶ必要があるためここがベスト
 #endif
+
+	InitializeDXGI(hwnd); // ここで device, rootSignature などが作られる
+
+#ifdef _DEBUG
+	SetupInfoQueue();
+#endif
+
+	// --- 3. 描画ルールの構築 ---
+	// InitializeDXGI で device と rootSignature が作られた後に実行する
+	pipelineState = CreatePipelineStateDesc(device, rootSignature, hr);
 
 #ifdef USE_IMGUI
 	InitializeImGui(hwnd);
-#endif // USE_IMGUI
+#endif
 
-	pipelineState = CreatePipelineStateDesc(device, rootSignature, hr);
+
 }
 
 TUFEngine::~TUFEngine() {
 	pipelineState->Release();
 	rootSignature->Release();
 	rtvDescriptorHeap->Release();
+	srvDescriptorHeap->Release();
 	swapChainResources[0]->Release();
 	swapChainResources[1]->Release();
 	swapChain->Release();
@@ -89,6 +102,7 @@ TUFEngine::~TUFEngine() {
 	dxgiFactory->Release();
 	device->Release();
 	logStream.close();
+	CoUninitialize();
 }
 
 #ifdef USE_IMGUI
@@ -104,11 +118,13 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 		srvDescriptorHeap,
 		srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
-		);
+	);
 	ImGuiIO& io = ImGui::GetIO();
 	io.Fonts->Build();
 }
 #endif // USE_IMGUI
+
+#pragma region DirectX 12 初期化関連
 
 void TUFEngine::InitializeDXGI(HWND hwnd) {
 	hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
@@ -174,11 +190,11 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	assert(SUCCEEDED(hr));
 
 	rtvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
-	
+
 	srvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
 
-		hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
+	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
 	assert(SUCCEEDED(hr));
 	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
 	assert(SUCCEEDED(hr));
@@ -197,6 +213,89 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 
 	useAdapter->Release();
 }
+#pragma endregion
+
+
+//ファイルの読み込みトミニマップの作成、そして転送まで
+#pragma region テクスチャのロード
+ID3D12Resource* TUFEngine::LoadTexture(const std::string& filePath) {
+
+	// ① テクスチャファイル読み込み
+	DirectX::ScratchImage image{};
+	std::wstring filePathW = ConvertString(filePath);
+	hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	assert(SUCCEEDED(hr));
+
+	// ② ミップマップの作成
+	DirectX::ScratchImage mipImages{};
+	hr = DirectX::GenerateMipMaps(
+		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
+		DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	assert(SUCCEEDED(hr));
+
+	ID3D12Resource* texResource = CreateTextureResource(mipImages.GetMetadata());
+
+	UploadTexture(texResource, mipImages);
+
+	//SRVの作成
+	CreateTextureSRV(texResource, mipImages.GetMetadata());
+
+	return texResource;
+}
+
+
+ID3D12Resource* TUFEngine::CreateTextureResource(
+	const DirectX::TexMetadata& metadata) {
+	resourceDesc = {};
+	resourceDesc.Width = static_cast<UINT>(metadata.width);
+	resourceDesc.Height = static_cast<UINT>(metadata.height);
+	resourceDesc.MipLevels = static_cast<UINT16>(metadata.mipLevels);
+	resourceDesc.DepthOrArraySize = static_cast<UINT16>(metadata.arraySize);
+
+	resourceDesc.Format = metadata.format;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metadata.dimension);
+
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_CUSTOM;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+
+	resource = {};
+	hr = device->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&resource)
+	);
+	assert(SUCCEEDED(hr));
+	return resource;
+}
+
+void TUFEngine::UploadTexture(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages) {
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+
+	// 全てのミップレベルをループして転送
+	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel) {
+		const DirectX::Image* img = mipImages.GetImage(mipLevel, 0, 0);
+
+		hr = texture->WriteToSubresource(
+			static_cast<UINT>(mipLevel),
+			nullptr,
+			img->pixels,
+			static_cast<UINT>(img->rowPitch),
+			static_cast<UINT>(img->slicePitch)
+		);
+		assert(SUCCEEDED(hr));
+	}
+}
+
+
+#pragma endregion
+
+#pragma region 描画のコマンド
 
 void TUFEngine::PreDraw() {
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
@@ -233,6 +332,7 @@ void TUFEngine::PreDraw() {
 	commandList->RSSetScissorRects(1, &scissorRect);
 }
 
+
 void TUFEngine::PostDraw() {
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
@@ -241,6 +341,8 @@ void TUFEngine::PostDraw() {
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	barrier.Transition.pResource = swapChainResources[backBufferIndex];
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 #endif // USE_IMGUI
@@ -274,24 +376,24 @@ void TUFEngine::PostDraw() {
 	assert(SUCCEEDED(hr));
 }
 
+#pragma endregion
 
-// 修正後：関数名の前に TUFEngine:: を追加
 ID3D12DescriptorHeap* TUFEngine::CreateDescriptorHeap(
-    ID3D12Device* device,
-    D3D12_DESCRIPTOR_HEAP_TYPE heapType,
-    uint32_t numDescriptors,
-    bool shaderVisible)
+	ID3D12Device* device,
+	D3D12_DESCRIPTOR_HEAP_TYPE heapType,
+	uint32_t numDescriptors,
+	bool shaderVisible)
 {
-    ID3D12DescriptorHeap* descriptorHeap = nullptr;
-    D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
-    descriptorHeapDesc.Type = heapType;
-    descriptorHeapDesc.NumDescriptors = numDescriptors;
-    descriptorHeapDesc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    
-    HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
-    assert(SUCCEEDED(hr));
-    
-    return descriptorHeap;
+	ID3D12DescriptorHeap* descriptorHeap = nullptr;
+	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
+	descriptorHeapDesc.Type = heapType;
+	descriptorHeapDesc.NumDescriptors = numDescriptors;
+	descriptorHeapDesc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
+	assert(SUCCEEDED(hr));
+
+	return descriptorHeap;
 }
 
 
@@ -327,3 +429,36 @@ void TUFEngine::SetupInfoQueue() {
 	}
 }
 #endif
+
+
+void TUFEngine::CreateTextureSRV(
+	ID3D12Resource* textureResource,
+	const DirectX::TexMetadata& metadata)
+{
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = metadata.format;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;//2Dテクスチャ
+	srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata.mipLevels);
+
+
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+
+	//先頭ではIMGUIが使ってるのでその次を使用
+	textureSrvHandleCPU.ptr += device->
+		GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+		);
+
+	textureSrvHandleGPU.ptr += device->
+		GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+		);
+
+	this->textureSrvHandleGPU = textureSrvHandleGPU;
+
+	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
+
+}

@@ -3,30 +3,30 @@
 #include <cmath>
 
 struct Vector3 : public DirectX::XMFLOAT3 {
-    // ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+    // ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
     Vector3(float _x = 0, float _y = 0, float _z = 0) : XMFLOAT3(_x, _y, _z) {}
     Vector3(const DirectX::XMFLOAT3& f) : XMFLOAT3(f.x, f.y, f.z) {}
 
-    // Šî–{ŒvZiƒI[ƒo[ƒ[ƒhj
+    // åŸºæœ¬è¨ˆç®—ï¼ˆã‚ªãƒ¼ãƒãƒ¼ãƒ­ãƒ¼ãƒ‰ï¼‰
     Vector3 operator+(const Vector3& v) const { return Vector3(x + v.x, y + v.y, z + v.z); }
     Vector3 operator-(const Vector3& v) const { return Vector3(x - v.x, y - v.y, z - v.z); }
     Vector3 operator*(float s) const { return Vector3(x * s, y * s, z * s); }
     Vector3& operator+=(const Vector3& v) { x += v.x; y += v.y; z += v.z; return *this; }
     Vector3& operator*=(float s) { x *= s; y *= s; z *= s; return *this; }
 
-    // ƒQ[ƒ€‚Åâ‘Îg‚¤•Ö—˜‹@”\
+    // ã‚²ãƒ¼ãƒ ã§çµ¶å¯¾ä½¿ã†ä¾¿åˆ©æ©Ÿèƒ½
     float Length() const { return std::sqrt(x * x + y * y + z * z); }
 
     Vector3 Normalized() const {
-        float len = Length();
+        float len = this->Length(); // this-> ã‚’è¿½åŠ 
         if (len == 0) return Vector3(0, 0, 0);
         return *this * (1.0f / len);
     }
 
-    // ƒhƒbƒgÏi“àÏjF‹ŠE”»’è‚âƒ‰ƒCƒeƒBƒ“ƒO‚Åg‚¤
+    // ãƒ‰ãƒƒãƒˆç©ï¼ˆå†…ç©ï¼‰ï¼šè¦–ç•Œåˆ¤å®šã‚„ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°ã§ä½¿ã†
     float Dot(const Vector3& v) const { return x * v.x + y * v.y + z * v.z; }
 
-    // ƒNƒƒXÏiŠOÏjF–Ê‚ÌŒü‚«‚ğo‚·‚Ì‚Ég‚¤
+    // ã‚¯ãƒ­ã‚¹ç©ï¼ˆå¤–ç©ï¼‰ï¼šé¢ã®å‘ãã‚’å‡ºã™ã®ã«ä½¿ã†
     Vector3 Cross(const Vector3& v) const {
         return Vector3(
             y * v.z - z * v.y,
