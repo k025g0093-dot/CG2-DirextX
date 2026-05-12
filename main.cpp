@@ -30,6 +30,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
 		vertexResource, sizeof(VertexData) * 6, sizeof(VertexData)); // ← VertexDataに変更
 
+	ID3D12Resource*vertexResourceSprite=CreateBufferResource(
+		engine->GetDevice(), sizeof(VertexData) * 6
+	);
+
+
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
+	vertexBufferViewSprite.BufferLocation = vertexResourceSprite->GetGPUVirtualAddress();
+	vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
 	// ③ データ書き込み（Map）
 	VertexData* vertexData = nullptr;
@@ -41,6 +50,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexData[4] = { { 0.0f,  0.0f, 0.0f, 1.0f}, {0.5f, 0.0f} }; // 右上
 	vertexData[5] = { { 0.5f,  -0.5f,-0.5f, 1.0f}, {1.0f, 1.0f} }; // 上
 	vertexResource->Unmap(0, nullptr); // 書き終わったら Unmap するのが安全
+
+
+	VertexData* vertexDataSprite = nullptr;
+	vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSprite));
+	vertexDataSprite[0] = { {0.0f, 360.0f, 0.0f, 1.0f}, {0.0f, 1.0f} }; // 左下
+	vertexDataSprite[1] = { {0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f} };//左上
+	vertexDataSprite[2] = { {640.0f,360.0f,0.0f,1.0f},{1.0f,1.0f} };//右下
+	
+	vertexDataSprite[3] = { {0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f} };//左上
+	vertexDataSprite[4] = { {640.0f,0.0f,0.0f,1.0f},{1.0f,0.0f} };//右上
+	vertexDataSprite[5] = { {640.0f,360.0f,0.0f,1.0f},{1.0f,1.0f} };//右下
+	vertexResourceSprite->Unmap(0, nullptr); // 書き終わったら Unmap するのが安全
 
 
 	// --- マテリアル（色）リソースの作成 ---
@@ -61,7 +82,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	*wvpData = MakeIdentity4x4();
 
 
-
+	//transformSprite用のリソース作成
+	ID3D12Resource* transformationMatrixResourceSprite = 
+		CreateBufferResource(engine->GetDevice(), sizeof(Matrix4x4));
+	Matrix4x4* transformationMatrixDataSprite = nullptr;
+	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
+	*transformationMatrixDataSprite = MakeIdentity4x4();
+	TransformData transformDataSprite{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
 
 
 	// カメラの配置を決定する行列
@@ -80,33 +107,59 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// 1. オブジェクトを回転させる（更新）
 			transformData.rotate.y += 0.01f;
 			worldMatrix = MakeAffineMatrix(transformData.scale, transformData.rotate, transformData.translate);
-
 			// 2. カメラ行列からビュー行列（カメラの逆の動き）を作成
 			Matrix4x4 viwMatrix = Inverse(cameraMatrix);
-
 			// 3. プロジェクション行列（遠近感）を作成
 			Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
 				0.45f, static_cast<float>(kClineWidth) / kClineHeight, 0.1f, 100.0f
 			);
-
 			// 4. 全部掛け合わせて WVP 行列を完成させる (World -> View -> Projection)
 			Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viwMatrix, projectionMatrix));
-
 			// 5. GPU側のメモリに書き込む
 			*wvpData = worldViewProjectionMatrix;
 
+
+			//スプライト用のWVPを作成
+			Matrix4x4 worldMatrixSprite = MakeAffineMatrix(
+				transformDataSprite.scale,
+				transformDataSprite.rotate,
+				transformDataSprite.translate
+			);
+
+			Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
+			Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
+				0.0f, 0.0f, 
+				static_cast<float>(kClineWidth),
+				static_cast<float>(kClineHeight),
+				0.1f, 100.0f
+			);
+
+			Matrix4x4 worldViewProjectSprite = Multiply(
+				worldMatrixSprite, Multiply(
+					viewMatrixSprite, projectionMatrixSprite
+				)
+			);
+
+			*transformationMatrixDataSprite = worldViewProjectSprite;
 
 
 #ifdef USE_IMGUI
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
-
 			ImGui::NewFrame();
 
+			ImGui::Begin("Sprite Settings"); // ウィンドウを作成
+
+			// スライドバーで座標を動かせるようにする
+			// 0〜1280（横幅）, 0〜720（縦幅）の範囲で調整
+			ImGui::DragFloat2("Position", &transformDataSprite.translate.x, 1.0f, 0.0f, 1280.0f);
+			ImGui::DragFloat3("Scale", &transformDataSprite.scale.x, 0.1f, 0.1f, 10.0f);
+			ImGui::DragFloat3("Rotate", &transformDataSprite.rotate.z, 0.01f); // 2DなのでZ軸回転
+
+			ImGui::End();
+
 			ImGui::ShowDemoWindow();
-
 			ImGui::Render();
-
 #endif // USE_IMGUI
 
 
@@ -129,6 +182,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
 
 			// 三角形の描画（頂点3つ分）
+			engine->GetCommandList()->DrawInstanced(6, 1, 0, 0);
+
+			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			engine->GetCommandList()->DrawInstanced(6, 1, 0, 0);
 
 			// 8. 描画終了処理（バッファの入れ替えなど）

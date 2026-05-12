@@ -22,7 +22,7 @@ Matrix4x4 MakeTranslateMatrix(const Vector3& Vector);
 //拡縮
 Matrix4x4 MakeScaleMatrix(const Vector3& Vector);
 //座標変換
-Vector3 Transform(const Vector3& Vector, const Matrix4x4& matrix);
+Vector3 TransformMatrix(const Vector3& Vector, const Matrix4x4& matrix);
 
 Matrix4x4 MakeRotateXMatrix(float radian);
 Matrix4x4 MakeRotateYMatrix(float radian);
