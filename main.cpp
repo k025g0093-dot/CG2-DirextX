@@ -148,7 +148,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
-			// --- ここから追加 ---
 			ImGui::Begin("Sprite Settings"); // ウィンドウを作成
 
 			// スライドバーで座標を動かせるようにする
@@ -158,7 +157,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			ImGui::DragFloat3("Rotate", &transformDataSprite.rotate.z, 0.01f); // 2DなのでZ軸回転
 
 			ImGui::End();
-			// --- ここまで追加 ---
 
 			ImGui::ShowDemoWindow();
 			ImGui::Render();
