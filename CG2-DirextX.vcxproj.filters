@@ -25,6 +25,9 @@
     <Filter Include="ソース ファイル\TUFengine\ImGui">
       <UniqueIdentifier>{a58f401e-1fee-4f97-b737-6042e8cd6f8e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\Vector">
+      <UniqueIdentifier>{389704d1-d7ca-40d4-a241-9bfc1e74e7fd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -48,9 +51,6 @@
     <ClCompile Include="VertexResource.cpp">
       <Filter>ソース ファイル\TUFengine\.cpp</Filter>
     </ClCompile>
-    <ClCompile Include="Vector.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="externals\imgui\imgui.cpp">
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
     </ClCompile>
@@ -71,6 +71,9 @@
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector.cpp">
+      <Filter>ソース ファイル\TUFengine\Vector</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -121,7 +124,22 @@
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="Vector.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\Vector</Filter>
     </ClInclude>
+    <ClInclude Include="allVector.h">
+      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector2.h">
+      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector4.h">
+      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Object3d.hlsli" />
   </ItemGroup>
 </Project>
