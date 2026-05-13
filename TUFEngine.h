@@ -59,9 +59,20 @@ public:
     ID3D12RootSignature* GetRootSignature() { return rootSignature; }
     ID3D12PipelineState* GetPipelineState() { return pipelineState; }
     HWND GetHwnd() const { return hwnd; }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetTextureSrvHandleGPU() const { return textureSrvHandleGPU; }
     ID3D12DescriptorHeap* GetSrvDescriptorHeap() const { return srvDescriptorHeap; }
     ID3D12DescriptorHeap* GetDsvDescriptorHeap() const { return dsvDescriptorHeap; }
+
+    D3D12_GPU_DESCRIPTOR_HANDLE GetTextureSrvHandleGPU() const { return textureSrvHandleGPU; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetTextureSrvHandleGPU2() const { return textureSrvHandleGPU2; }
+
+
+    D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(
+        ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index
+    );
+
+    D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(
+        ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index
+    );
 
     void EnableDebugLayer();
     void SetupInfoQueue();
@@ -114,9 +125,17 @@ private:
     ID3D12Resource* resource = nullptr;                 // 汎用リソースポインタ
     ID3D12Resource* texture = nullptr;          // テクスチャ用リソースポインタ
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU{};    // テクスチャ用のGPUハンドルを保持する変数
+    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2{};
+    
     ID3D12Resource* intermediateResource{};
     ID3D12Resource* depthStencilResource = nullptr;//深度バッファ専用のリソース
     ID3D12DescriptorHeap* dsvDescriptorHeap = {}; // 深度ステンシルビュー用のデスクリプタヒープ
+
+    uint32_t descriptorSizeSRV{};
+
+    uint32_t descriptorSizeRTV{};
+
+    uint32_t descriptorSizeDSV{};
 
     // --- 内部初期化用メソッド ---
     void InitWindow();                                  // 窓を作る

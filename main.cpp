@@ -17,7 +17,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ShowWindow(engine->GetHwnd(), nCmdShow);
 
 	// リソース読み込み
-	ID3D12Resource* myTexture = engine->LoadTexture("resources/uvChecker.png");
+	ID3D12Resource* uvChecker = engine->LoadTexture("resources/uvChecker.png");
+	ID3D12Resource* monsterBall = engine->LoadTexture("resources/monsterBall.png");
 
 	HRESULT hr = S_OK;
 
@@ -158,7 +159,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			ImGui::End();
 
-			ImGui::ShowDemoWindow();
+			//ImGui::ShowDemoWindow();
 			ImGui::Render();
 #endif // USE_IMGUI
 
@@ -180,7 +181,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
-
+			//engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
 			// 三角形の描画（頂点3つ分）
 			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0);
 

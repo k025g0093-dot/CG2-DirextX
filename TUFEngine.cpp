@@ -86,6 +86,21 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 #endif
 
 	CreateDepthStencilTextureResource(width, height);
+
+	descriptorSizeSRV = device->
+		GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+		);
+
+	 descriptorSizeRTV = device->
+		GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_RTV
+		);
+
+	 descriptorSizeDSV = device->
+		GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_DSV
+		);
 }
 
 TUFEngine::~TUFEngine() {
@@ -508,7 +523,7 @@ void TUFEngine::SetupInfoQueue() {
 }
 #endif
 
-
+//SRVの作成関数
 void TUFEngine::CreateTextureSRV(
 	ID3D12Resource* textureResource,
 	const DirectX::TexMetadata& metadata)
@@ -521,8 +536,18 @@ void TUFEngine::CreateTextureSRV(
 	srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata.mipLevels);
 
 
-	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV,1);
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+
+	//metaDataをもとにSRVの設定を行う
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2{};
+	srvDesc2.Format = metadata.format;
+	srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc2.Texture2D.MipLevels = UINT(metadata.mipLevels);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
 
 	//先頭ではIMGUIが使ってるのでその次を使用
 	textureSrvHandleCPU.ptr += device->
@@ -535,8 +560,37 @@ void TUFEngine::CreateTextureSRV(
 			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
 		);
 
+	textureSrvHandleCPU2.ptr += device->
+		GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+		);
+
+	textureSrvHandleGPU2.ptr += device->
+		GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+		);
+
 	this->textureSrvHandleGPU = textureSrvHandleGPU;
-
+	this->textureSrvHandleGPU2 = textureSrvHandleGPU2;
 	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
+	device->CreateShaderResourceView(textureResource, &srvDesc2, textureSrvHandleCPU2);
+}
 
+#pragma region GPUとCPUのハンドルを取得
+
+D3D12_CPU_DESCRIPTOR_HANDLE TUFEngine::GetCPUDescriptorHandle(
+	ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index
+) {
+	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	handleCPU.ptr += (descriptorSize * index);
+	return handleCPU;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE TUFEngine::GetGPUDescriptorHandle(
+	ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index
+) {
+
+	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	handleGPU.ptr += (descriptorSize * index);
+	return handleGPU;
 }
