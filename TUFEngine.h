@@ -38,7 +38,10 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 #endif // USE_IMGUI
 
-
+struct VertexData {
+    Vector4 position;
+    Vector2 texcoord; // テクスチャのどこを使うかの指定
+};
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
