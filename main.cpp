@@ -11,14 +11,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 2. エンジンの起動（この中で窓も作られる）
 	const int32_t kClineWidth = 1280;
 	const int32_t kClineHeight = 720;
-	TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, L"TUFEngine");
 
+	TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, L"TUFEngine");
+	assert(engine->GetDevice() != nullptr);
+
+	TextureManager* textureManager = TextureManager::GetInstance();
+
+	textureManager->Initialize(
+		engine->GetDevice(),
+		engine->GetSrvDescriptorHeap(),
+		engine->GetCommandList()
+	);
 	// 3. 窓の表示
 	ShowWindow(engine->GetHwnd(), nCmdShow);
 
 	// リソース読み込み
-	ID3D12Resource* uvChecker = engine->LoadTexture("resources/uvChecker.png");
-	ID3D12Resource* monsterBall = engine->LoadTexture("resources/monsterBall.png");
+	int uvChecker = textureManager->LoadTexture("resources/uvChecker.png");
+	int monsterBall = textureManager->LoadTexture("resources/monsterBall.png");
 
 	HRESULT hr = S_OK;
 
@@ -180,9 +189,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// RootParameter[0] に色の情報、[1] に行列の情報をバインド
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
-			//engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
-			// 三角形の描画（頂点3つ分）
+			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureManager->GetTextureSrvHandleGPU());
+
+
 			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0);
 
 			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);

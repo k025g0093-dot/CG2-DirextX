@@ -119,6 +119,9 @@
 #else
 #include <d3d12.h>
 #endif
+#include <d3dcommon.h>
+typedef D3D_DRIVER_TYPE D3D10_DRIVER_TYPE;
+#include <d3d10_1.h>
 #include <d3d11_4.h>
 #else
 #include <d3d11_1.h>

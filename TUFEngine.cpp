@@ -72,7 +72,6 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 #endif
 
 	InitializeDXGI(hwnd); // ここで device, rootSignature などが作られる
-
 #ifdef _DEBUG
 	SetupInfoQueue();
 #endif
@@ -87,17 +86,20 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 	CreateDepthStencilTextureResource(width, height);
 
+	TextureManager::GetInstance()->Initialize(device, srvDescriptorHeap, commandList);
+
+
 	descriptorSizeSRV = device->
 		GetDescriptorHandleIncrementSize(
 			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
 		);
 
-	 descriptorSizeRTV = device->
+	descriptorSizeRTV = device->
 		GetDescriptorHandleIncrementSize(
 			D3D12_DESCRIPTOR_HEAP_TYPE_RTV
 		);
 
-	 descriptorSizeDSV = device->
+	descriptorSizeDSV = device->
 		GetDescriptorHandleIncrementSize(
 			D3D12_DESCRIPTOR_HEAP_TYPE_DSV
 		);
@@ -230,122 +232,25 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 }
 #pragma endregion
 
-
-//ファイルの読み込みトミニマップの作成、そして転送まで
-#pragma region テクスチャのロード
-ID3D12Resource* TUFEngine::LoadTexture(const std::string& filePath) {
-
-	// ① テクスチャファイル読み込み
-	DirectX::ScratchImage image{};
-	std::wstring filePathW = ConvertString(filePath);
-	hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-	assert(SUCCEEDED(hr));
-
-	// ② ミップマップの作成
-	DirectX::ScratchImage mipImages{};
-	hr = DirectX::GenerateMipMaps(
-		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
-		DirectX::TEX_FILTER_SRGB, 0, mipImages);
-	assert(SUCCEEDED(hr));
-
-	ID3D12Resource* texResource = CreateTextureResource(mipImages.GetMetadata());
-
-	UploadTexture(texResource, mipImages);
-
-	//SRVの作成
-	CreateTextureSRV(texResource, mipImages.GetMetadata());
-
-	return texResource;
-}
-
-
-ID3D12Resource* TUFEngine::CreateTextureResource(
-	const DirectX::TexMetadata& metadata) {
-	resourceDesc = {};
-	resourceDesc.Width = static_cast<UINT>(metadata.width);
-	resourceDesc.Height = static_cast<UINT>(metadata.height);
-	resourceDesc.MipLevels = static_cast<UINT16>(metadata.mipLevels);
-	resourceDesc.DepthOrArraySize = static_cast<UINT16>(metadata.arraySize);
-
-	resourceDesc.Format = metadata.format;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metadata.dimension);
-
-	D3D12_HEAP_PROPERTIES heapProperties{};
-	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	resource = {};
-	hr = device->CreateCommittedResource(
-		&heapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&resourceDesc,
-		D3D12_RESOURCE_STATE_COPY_DEST,//データ転送設定
-		nullptr,
-		IID_PPV_ARGS(&resource)//作成するリソースポインタへ
-	);
-	assert(SUCCEEDED(hr));
-	return resource;
-}
-
-
-[[nodiscard]]//属性定義：この関数の戻り値を無視しないでね、という意味
-ID3D12Resource* TUFEngine::UploadTexture(
-	ID3D12Resource* texture,
-	const DirectX::ScratchImage& mipImages)
-{
-	//中間バッファの作成と転送の準備
-	std::vector<D3D12_SUBRESOURCE_DATA>subresources;
-
-	DirectX::PrepareUpload(
-		device,
-		mipImages.GetImages(),
-		mipImages.GetImageCount(),
-		mipImages.GetMetadata(),
-		subresources);
-	uint64_t intermediateSize = GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
-	ID3D12Resource* intermediateResource = CreateBufferResource(device, intermediateSize);
-	
-	//データ転送コマンドの作成と積み込み
-	UpdateSubresources(
-		commandList, texture,
-		intermediateResource, 0, 0, 
-		UINT(subresources.size()), subresources.data()
-	);
-
-	//Tetrueへの転送が終わったら、テクスチャの使用目的をコピー先からシェーダーリソースへ変更する
-	D3D12_RESOURCE_BARRIER barrier{};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = texture;
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-	commandList->ResourceBarrier(1, &barrier);
-	return intermediateResource;
-
-}
-
-
 ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
-	int32_t width, int32_t height)
+	int32_t width,
+	int32_t height)
 {
 	depthResourceDesc = {};
-	depthResourceDesc.Width = width;//幅
-	depthResourceDesc.Height = height;//高さ
-	depthResourceDesc.MipLevels = 1;//mipmapの数
-	depthResourceDesc.DepthOrArraySize = 1;//深度バッファーは配列もミップマップも不要
-	depthResourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;//利用可能なフォーマット
-	depthResourceDesc.SampleDesc.Count = 1;//1固定のサンプリングカウント
-	depthResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;//2Dテクスチャ
-	depthResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;//深度バッファーとして使うためのフラグ
+	depthResourceDesc.Width = width;
+	depthResourceDesc.Height = height;
+	depthResourceDesc.MipLevels = 1;
+	depthResourceDesc.DepthOrArraySize = 1;
+	depthResourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthResourceDesc.SampleDesc.Count = 1;
+	depthResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	D3D12_HEAP_PROPERTIES heapProperties{};
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
 	D3D12_CLEAR_VALUE depthClearValue{};
-	depthClearValue.DepthStencil.Depth = 1.0f;//深度バッファーは1.0で初期化
+	depthClearValue.DepthStencil.Depth = 1.0f;
 	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	depthStencilResource = {};
@@ -354,32 +259,30 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 		D3D12_HEAP_FLAG_NONE,
 		&depthResourceDesc,
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		&depthClearValue, // ← 正しい
+		&depthClearValue,
 		IID_PPV_ARGS(&depthStencilResource)
 	);
 	assert(SUCCEEDED(hr));
-	
-	//DSV用のヒープ作成
+
 	dsvDescriptorHeap = CreateDescriptorHeap(
-		device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false
+		device,
+		D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+		1,
+		false
 	);
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;//Format。基本的にはリソースに合わせる
-	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;//2Dテクスチャ
-	//DSVHeapの先頭にDSVを作る
-	device->CreateDepthStencilView(
-		depthStencilResource, &dsvDesc,
-		dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
+	device->CreateDepthStencilView(
+		depthStencilResource,
+		&dsvDesc,
+		dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart()
+	);
 
 	return depthStencilResource;
-
 }
-
-
-
-#pragma endregion
 
 #pragma region 描画のコマンド
 
@@ -523,74 +426,5 @@ void TUFEngine::SetupInfoQueue() {
 }
 #endif
 
-//SRVの作成関数
-void TUFEngine::CreateTextureSRV(
-	ID3D12Resource* textureResource,
-	const DirectX::TexMetadata& metadata)
-{
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = metadata.format;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;//2Dテクスチャ
-	srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata.mipLevels);
 
 
-	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV,1);
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
-
-	//metaDataをもとにSRVの設定を行う
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2{};
-	srvDesc2.Format = metadata.format;
-	srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc2.Texture2D.MipLevels = UINT(metadata.mipLevels);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
-
-	//先頭ではIMGUIが使ってるのでその次を使用
-	textureSrvHandleCPU.ptr += device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-		);
-
-	textureSrvHandleGPU.ptr += device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-		);
-
-	textureSrvHandleCPU2.ptr += device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-		);
-
-	textureSrvHandleGPU2.ptr += device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-		);
-
-	this->textureSrvHandleGPU = textureSrvHandleGPU;
-	this->textureSrvHandleGPU2 = textureSrvHandleGPU2;
-	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
-	device->CreateShaderResourceView(textureResource, &srvDesc2, textureSrvHandleCPU2);
-}
-
-#pragma region GPUとCPUのハンドルを取得
-
-D3D12_CPU_DESCRIPTOR_HANDLE TUFEngine::GetCPUDescriptorHandle(
-	ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index
-) {
-	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	handleCPU.ptr += (descriptorSize * index);
-	return handleCPU;
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE TUFEngine::GetGPUDescriptorHandle(
-	ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index
-) {
-
-	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-	handleGPU.ptr += (descriptorSize * index);
-	return handleGPU;
-}

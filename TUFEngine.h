@@ -26,7 +26,7 @@
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
 #include <vector>
-
+#include "TextureManager.h"
 #include "allVector.h"
 
 #ifdef USE_IMGUI
@@ -50,6 +50,8 @@ class TUFEngine {
 public:
     TUFEngine(int32_t width, int32_t height, std::wstring name);
     ~TUFEngine();
+    static TUFEngine* GetInstance() { return s_instance; }
+
 
     void PreDraw();
     void PostDraw();
@@ -63,7 +65,6 @@ public:
     ID3D12DescriptorHeap* GetDsvDescriptorHeap() const { return dsvDescriptorHeap; }
 
     D3D12_GPU_DESCRIPTOR_HANDLE GetTextureSrvHandleGPU() const { return textureSrvHandleGPU; }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetTextureSrvHandleGPU2() const { return textureSrvHandleGPU2; }
 
 
     D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(
@@ -84,13 +85,13 @@ public:
         bool shaderVisible
     );
 
-    ID3D12Resource* LoadTexture(const std::string& filePath);
 
-    ID3D12Resource* UploadTexture(
-        ID3D12Resource* texture,
-        const DirectX::ScratchImage& mipImages);
 
 private:
+
+    static TUFEngine* s_instance;
+
+
     // --- 1. ウィンドウ・システム関連 ---
     HWND hwnd = nullptr;                 // ウィンドウハンドル
     int32_t width = 0;                  // 画面の横幅
@@ -125,12 +126,10 @@ private:
     ID3D12Resource* resource = nullptr;                 // 汎用リソースポインタ
     ID3D12Resource* texture = nullptr;          // テクスチャ用リソースポインタ
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU{};    // テクスチャ用のGPUハンドルを保持する変数
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2{};
     
     ID3D12Resource* intermediateResource{};
     ID3D12Resource* depthStencilResource = nullptr;//深度バッファ専用のリソース
     ID3D12DescriptorHeap* dsvDescriptorHeap = {}; // 深度ステンシルビュー用のデスクリプタヒープ
-
     uint32_t descriptorSizeSRV{};
 
     uint32_t descriptorSizeRTV{};
@@ -143,7 +142,5 @@ private:
     void InitializeImGui(HWND hwnd);                    // ImGuiの初期化
 
     // テクスチャリソースの作成（内部処理用）
-    ID3D12Resource* CreateTextureResource(const DirectX::TexMetadata& metadata);
     ID3D12Resource* CreateDepthStencilTextureResource(int32_t width, int32_t height);//深度バッファーのリソース作成
-    void CreateTextureSRV(ID3D12Resource* textureResource, const DirectX::TexMetadata& metadata); // SRVの設定情報を作る
 };

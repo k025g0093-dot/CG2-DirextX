@@ -114,6 +114,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TUFEngine.cpp" />
     <ClCompile Include="Vector.cpp" />
     <ClCompile Include="VertexResource.cpp" />
@@ -148,6 +149,7 @@
     <ClInclude Include="LogSistem.h" />
     <ClInclude Include="PSO.h" />
     <ClInclude Include="Sphere.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TUFEngine.h" />
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Vector2.h" />
