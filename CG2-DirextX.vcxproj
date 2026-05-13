@@ -113,6 +113,7 @@
     <ClCompile Include="LogSistem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PSO.cpp" />
+    <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="TUFEngine.cpp" />
     <ClCompile Include="Vector.cpp" />
     <ClCompile Include="VertexResource.cpp" />
@@ -132,6 +133,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="allShapesModel.h" />
     <ClInclude Include="allVector.h" />
     <ClInclude Include="ConvertString.h" />
     <ClInclude Include="DXC.h" />
@@ -145,6 +147,7 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="LogSistem.h" />
     <ClInclude Include="PSO.h" />
+    <ClInclude Include="Sphere.h" />
     <ClInclude Include="TUFEngine.h" />
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Vector2.h" />

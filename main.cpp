@@ -1,9 +1,7 @@
 #include "TUFEngine.h"
+#include "Sphere.h"
 
-struct VertexData {
-	Vector4 position;
-	Vector2 texcoord; // テクスチャのどこを使うかの指定
-};
+
 
 // --- メイン関数：ここからプログラムが始まる ---
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -23,15 +21,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	HRESULT hr = S_OK;
 
+	uint32_t sphereVertexCount = 16 * 16 * 6;
+
+
 	// --- 頂点リソースの作成：三角形の形を作る ---
 // サイズもstrideもVertexDataに合わせる
 	ID3D12Resource* vertexResource = CreateVertexResource(
-		engine->GetDevice(), sizeof(VertexData) * 6, hr);
+		engine->GetDevice(), sizeof(VertexData) * sphereVertexCount, hr);
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
-		vertexResource, sizeof(VertexData) * 6, sizeof(VertexData)); // ← VertexDataに変更
+		vertexResource, sizeof(VertexData) * sphereVertexCount, sizeof(VertexData)); // ← VertexDataに変更
 
 	ID3D12Resource*vertexResourceSprite=CreateBufferResource(
-		engine->GetDevice(), sizeof(VertexData) * 6
+		engine->GetDevice(), sizeof(VertexData) * sphereVertexCount
 	);
 
 
@@ -40,16 +41,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
 	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
-	// ③ データ書き込み（Map）
-	VertexData* vertexData = nullptr;
+	// ① まずMapしてアドレスを取得
+	VertexData* vertexData = {};
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	vertexData[0] = { {-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 1.0f} }; // 左下
-	vertexData[1] = { { 0.0f,  0.5f, 0.0f, 1.0f}, {0.5f, 0.0f} }; // 上
-	vertexData[2] = { { 0.5f, -0.5f, 0.0f, 1.0f}, {1.0f, 1.0f} }; // 右下
-	vertexData[3] = { {-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f} }; // 左下
-	vertexData[4] = { { 0.0f,  0.0f, 0.0f, 1.0f}, {0.5f, 0.0f} }; // 右上
-	vertexData[5] = { { 0.5f,  -0.5f,-0.5f, 1.0f}, {1.0f, 1.0f} }; // 上
-	vertexResource->Unmap(0, nullptr); // 書き終わったら Unmap するのが安全
+
+	// ② 取得したアドレスにデータを書き込む
+	UpdateSphere(vertexData);
+
+	// ③ 書き終わったらUnmap
+	vertexResource->Unmap(0, nullptr);
 
 
 	VertexData* vertexDataSprite = nullptr;
@@ -182,7 +182,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, engine->GetTextureSrvHandleGPU());
 
 			// 三角形の描画（頂点3つ分）
-			engine->GetCommandList()->DrawInstanced(6, 1, 0, 0);
+			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0);
 
 			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());

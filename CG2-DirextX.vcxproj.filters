@@ -28,6 +28,9 @@
     <Filter Include="ソース ファイル\TUFengine\Vector">
       <UniqueIdentifier>{389704d1-d7ca-40d4-a241-9bfc1e74e7fd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\model">
+      <UniqueIdentifier>{2c77130c-4081-4d52-8c77-f08cc33b8792}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -74,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="Vector.cpp">
       <Filter>ソース ファイル\TUFengine\Vector</Filter>
+    </ClCompile>
+    <ClCompile Include="Sphere.cpp">
+      <Filter>ソース ファイル\TUFengine\model</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -137,6 +143,12 @@
     </ClInclude>
     <ClInclude Include="Vector4.h">
       <Filter>ソース ファイル\TUFengine\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Sphere.h">
+      <Filter>ソース ファイル\TUFengine\model</Filter>
+    </ClInclude>
+    <ClInclude Include="allShapesModel.h">
+      <Filter>ソース ファイル\TUFengine\model</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
