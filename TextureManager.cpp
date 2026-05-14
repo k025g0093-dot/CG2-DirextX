@@ -19,34 +19,28 @@ void TextureManager::Initialize(
 
 
 int TextureManager::LoadTexture(const std::string& filePath) {
-
-	// ① テクスチャファイル読み込み
 	DirectX::ScratchImage image{};
 	std::wstring filePathW = ConvertString(filePath);
 	hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
 	assert(SUCCEEDED(hr));
-	const DirectX::TexMetadata& metadata{};
 
-	// ② ミップマップの作成
+	// ↓ const参照ではなく、mipImagesから取得する
 	DirectX::ScratchImage mipImages{};
 	hr = DirectX::GenerateMipMaps(
 		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
 		DirectX::TEX_FILTER_SRGB, 0, mipImages);
 	assert(SUCCEEDED(hr));
 
-	ID3D12Resource* texResource = CreateTextureResource(mipImages.GetMetadata());
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata(); // ← ここで取得
 
+	ID3D12Resource* texResource = CreateTextureResource(metadata);
 	UploadTexture(texResource, mipImages);
+	CreateTextureSRV(texResource, metadata, m_textureCount);
 
-	//SRVの作成
-	CreateTextureSRV(texResource, mipImages.GetMetadata(), m_textureCount);
-
-	// 4. GPUリソースの作成
+	// CreateTextureは不要なので削除（texResourceが実体）
 	int index = m_textureCount;
-	hr = DirectX::CreateTexture(m_device, metadata, &m_textures[index]);
-	if (FAILED(hr)) return -1;
+	m_textures[index] = texResource; // ComPtrに直接代入
 	m_textureCount++;
-
 
 	return index;
 }
@@ -134,7 +128,7 @@ ID3D12Resource* TextureManager::UploadTexture(
 void TextureManager::CreateTextureSRV(
 	ID3D12Resource* textureResource,
 	const DirectX::TexMetadata& metadata,
-	int m_textureCount)
+	int index)
 {
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -144,23 +138,10 @@ void TextureManager::CreateTextureSRV(
 	srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata.mipLevels);
 
 
-	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle( descriptorSizeSRV, m_textureCount);
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle( descriptorSizeSRV, m_textureCount);
-
-
-
-
-	//先頭ではIMGUIが使ってるのでその次を使用
-	textureSrvHandleCPU.ptr += m_device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-		);
-
-	textureSrvHandleGPU.ptr += m_device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-		);
-
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
+		GetCPUDescriptorHandle(m_descriptorSize, IMGUI_RESERVED + index);
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
+		GetGPUDescriptorHandle(m_descriptorSize, IMGUI_RESERVED + index);
 
 
 	this->textureSrvHandleGPU = textureSrvHandleGPU;

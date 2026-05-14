@@ -66,7 +66,6 @@ public:
 private:
 
 
-
     // テクスチャリソースの作成（内部処理用）
     ID3D12Resource* CreateTextureResource(const DirectX::TexMetadata& metadata);
     void CreateTextureSRV(ID3D12Resource* textureResource, const DirectX::TexMetadata& metadata,int m_textureCount); // SRVの設定情報を作る
