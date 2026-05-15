@@ -44,6 +44,11 @@ void UpdateSphere(VertexData* vertexData) {
 
 			vertexData[start + 5].position = { cosf(lat) * cosf(nextLon), sinf(lat), cosf(lat) * sinf(nextLon), 1.0f };
 			vertexData[start + 5].texcoord = { nextU, 1.0f - v };
+
+			vertexData[lonIndex].normal.x = vertexData[lonIndex].position.x;
+			vertexData[lonIndex].normal.y = vertexData[lonIndex].position.y;
+			vertexData[lonIndex].normal.z = vertexData[lonIndex].position.z;
+
 		}
 	}
 }

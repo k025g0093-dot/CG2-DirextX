@@ -4,24 +4,25 @@
 
 struct TransformationMatrix
 {
-    row_major float4x4 WVP;
+      row_major float4x4 WVP;
 };
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0); // b1に合わせる
 
 struct VertexShaderInput
 {
     float32_t4 position : POSITION;
-    float2 texcoord : TEXCOORD;
+      float2 texcoord : TEXCOORD;
+      float3 normal : NORMAL0;
 };
 
 
 VertexShaderOutput main(VertexShaderInput input)
 {
-    VertexShaderOutput output;
+      VertexShaderOutput output;
     // ここで mul を使って行列を掛ける！
-    output.position = mul(input.position, gTransformationMatrix.WVP);
+      output.position = mul(input.position, gTransformationMatrix.WVP);
   
-    output.texcoord = input.texcoord;
+      output.texcoord = input.texcoord;
 
-    return output;
+      return output;
 }

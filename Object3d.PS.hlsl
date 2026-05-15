@@ -4,6 +4,7 @@
 struct Material
 {
     float32_t4 color;
+    int enableLighting;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
@@ -25,11 +26,11 @@ SamplerState gSampler : register(s0); // s0に合わせる
 // ピクセルシェーダーのメイン
 PixelShaderOutput main(VertexShaderOutput input)
 {
-    PixelShaderOutput output;
+      PixelShaderOutput output;
     
      float32_t4 textureColor = gTexture.Sample(gSampler, input.texcoord);
     
-    output.color = gMaterial.color * textureColor;
+      output.color = gMaterial.color * textureColor;
     
-    return output;
+      return output;
 }

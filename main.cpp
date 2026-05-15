@@ -65,6 +65,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	VertexData* vertexDataSprite = nullptr;
 	vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSprite));
 	vertexDataSprite[0] = { {0.0f, 360.0f, 0.0f, 1.0f}, {0.0f, 1.0f} }; // 左下
+	vertexDataSprite[0].normal = { 0.0f,-1.0f,0.0f };
 	vertexDataSprite[1] = { {0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f} };//左上
 	vertexDataSprite[2] = { {640.0f,360.0f,0.0f,1.0f},{1.0f,1.0f} };//右下
 	
@@ -76,9 +77,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// --- マテリアル（色）リソースの作成 ---
 	ID3D12Resource* materialResource = CreateBufferResource(engine->GetDevice(), sizeof(Vector4));
-	Vector4* materialData = nullptr;
+	Material* materialData = nullptr;
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-	*materialData = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
+	materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
+
+
+
+	ID3D12Resource* materialResourceSprite = CreateBufferResource(engine->GetDevice(), sizeof(Vector4));
+	Material* materialDataSprite = nullptr;
+	materialResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSprite));
+	materialDataSprite->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
+	materialDataSprite->enableLifhting = false;
+
 
 	// --- 行列（トランスフォーム）の初期データ準備 ---
 	TransformData transformData{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // オブジェクト用
@@ -194,9 +204,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureManager->GetGPUHandle(useMonsterBall?monsterBall:uvChecker));
 
 
-			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0);
+			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0); 
 
 			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureManager->GetGPUHandle(uvChecker));
 

@@ -81,7 +81,7 @@ ID3D12RootSignature* CreateRootSignature(
 D3D12_INPUT_LAYOUT_DESC CreateLayout() {
 
 	// 頂点データの要素定義（今回はPOSITIONのみ）
-	static D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
+	static D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
 	inputElementDescs[0].SemanticName = "POSITION"; // シェーダー側のセマンティクス名
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // float4形式
@@ -91,6 +91,13 @@ D3D12_INPUT_LAYOUT_DESC CreateLayout() {
 	inputElementDescs[1].SemanticIndex = 0;
 	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT; // float2形式
 	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[2].SemanticName = "NORMAL";
+	inputElementDescs[2].SemanticIndex = 0;
+	inputElementDescs[2].Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputElementDescs[2].AlignedByteOffset =
+		D3D12_APPEND_ALIGNED_ELEMENT;
+
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;

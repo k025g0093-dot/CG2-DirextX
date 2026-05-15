@@ -41,6 +41,13 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 struct VertexData {
     Vector4 position;
     Vector2 texcoord; // テクスチャのどこを使うかの指定
+    Vector3 normal;
+};
+
+struct Material {
+    Vector4 color;
+    int32_t enableLifhting;
+
 };
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
