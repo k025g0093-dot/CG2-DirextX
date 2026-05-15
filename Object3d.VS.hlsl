@@ -5,6 +5,8 @@
 struct TransformationMatrix
 {
       row_major float4x4 WVP;
+      row_major float4x4 World;
+
 };
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0); // b1に合わせる
 
@@ -21,7 +23,7 @@ VertexShaderOutput main(VertexShaderInput input)
       VertexShaderOutput output;
     // ここで mul を使って行列を掛ける！
       output.position = mul(input.position, gTransformationMatrix.WVP);
-  
+      output.normal = normalize(mul(input.normal, (float3x3) gTransformationMatrix.World));
       output.texcoord = input.texcoord;
 
       return output;

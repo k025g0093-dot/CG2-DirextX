@@ -19,7 +19,7 @@ ID3D12RootSignature* CreateRootSignature(
 
 
 	// ルートパラメータの設定（シェーダーに渡すリソースの種類を定義）
-	D3D12_ROOT_PARAMETER rootParameter[3] = {};
+	D3D12_ROOT_PARAMETER rootParameter[4] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使用
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // 全シェーダーから参照可能
 	rootParameter[0].Descriptor.ShaderRegister = 0; // register(b0)に対応
@@ -32,6 +32,10 @@ ID3D12RootSignature* CreateRootSignature(
 	rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[2].DescriptorTable.pDescriptorRanges = descriptorRange;
 	rootParameter[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+
+	rootParameter[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameter[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[3].Descriptor.ShaderRegister = 1;
 
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);

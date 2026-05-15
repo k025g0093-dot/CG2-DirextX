@@ -41,7 +41,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
 		vertexResource, sizeof(VertexData) * sphereVertexCount, sizeof(VertexData)); // ← VertexDataに変更
 
-	ID3D12Resource*vertexResourceSprite=CreateBufferResource(
+	ID3D12Resource* vertexResourceSprite = CreateBufferResource(
 		engine->GetDevice(), sizeof(VertexData) * sphereVertexCount
 	);
 
@@ -68,7 +68,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexDataSprite[0].normal = { 0.0f,-1.0f,0.0f };
 	vertexDataSprite[1] = { {0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f} };//左上
 	vertexDataSprite[2] = { {640.0f,360.0f,0.0f,1.0f},{1.0f,1.0f} };//右下
-	
+
 	vertexDataSprite[3] = { {0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f} };//左上
 	vertexDataSprite[4] = { {640.0f,0.0f,0.0f,1.0f},{1.0f,0.0f} };//右上
 	vertexDataSprite[5] = { {640.0f,360.0f,0.0f,1.0f},{1.0f,1.0f} };//右下
@@ -76,14 +76,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 	// --- マテリアル（色）リソースの作成 ---
-	ID3D12Resource* materialResource = CreateBufferResource(engine->GetDevice(), sizeof(Vector4));
+	ID3D12Resource* materialResource = CreateBufferResource(engine->GetDevice(), sizeof(Material));
 	Material* materialData = nullptr;
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 	materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
 
 
 
-	ID3D12Resource* materialResourceSprite = CreateBufferResource(engine->GetDevice(), sizeof(Vector4));
+	ID3D12Resource* materialResourceSprite = CreateBufferResource(engine->GetDevice(), sizeof(Material));
 	Material* materialDataSprite = nullptr;
 	materialResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSprite));
 	materialDataSprite->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
@@ -96,15 +96,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Matrix4x4 worldMatrix = MakeAffineMatrix(transformData.scale, transformData.rotate, transformData.translate);
 
 	// --- WVP行列リソースの作成：シェーダーに行列を渡すためのバッファ ---
-	ID3D12Resource* wvpResource = CreateBufferResource(engine->GetDevice(), sizeof(Matrix4x4));
+	ID3D12Resource* wvpResource = CreateBufferResource(engine->GetDevice(), sizeof(TransformationMatrix));
 	Matrix4x4* wvpData = nullptr;
 	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
 	*wvpData = MakeIdentity4x4();
 
 
 	//transformSprite用のリソース作成
-	ID3D12Resource* transformationMatrixResourceSprite = 
-		CreateBufferResource(engine->GetDevice(), sizeof(Matrix4x4));
+	ID3D12Resource* transformationMatrixResourceSprite =
+		CreateBufferResource(engine->GetDevice(), sizeof(TransformationMatrix));
 	Matrix4x4* transformationMatrixDataSprite = nullptr;
 	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
 	*transformationMatrixDataSprite = MakeIdentity4x4();
@@ -115,6 +115,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Matrix4x4 cameraMatrix = MakeAffineMatrix(
 		{ 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -10.0f }
 	);
+
+	ID3D12Resource* directionalLightDataResource =
+		CreateBufferResource(engine->GetDevice(), sizeof(DirectionalLLight));
+
+	DirectionalLLight* directionalLightData = nullptr;
+
+
+	directionalLightDataResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
+
+	// 4. データの中身を書き込む
+	directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	directionalLightData->direction = { 0.0f, -1.0f, 0.0f };
+	directionalLightData->intensity = 1.0f;
+	directionalLightDataResource->Unmap(0, nullptr);
+
 
 	bool useMonsterBall = true;
 
@@ -150,7 +165,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
 			Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
-				0.0f, 0.0f, 
+				0.0f, 0.0f,
 				static_cast<float>(kClineWidth),
 				static_cast<float>(kClineHeight),
 				0.1f, 100.0f
@@ -201,10 +216,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// RootParameter[0] に色の情報、[1] に行列の情報をバインド
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureManager->GetGPUHandle(useMonsterBall?monsterBall:uvChecker));
+			engine->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightDataResource->GetGPUVirtualAddress());
 
+			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureManager->GetGPUHandle(useMonsterBall ? monsterBall : uvChecker));
 
-			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0); 
+			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0);
 
 			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());

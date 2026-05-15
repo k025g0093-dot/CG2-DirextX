@@ -47,7 +47,19 @@ struct VertexData {
 struct Material {
     Vector4 color;
     int32_t enableLifhting;
+};
 
+struct TransformationMatrix
+{
+    Matrix4x4 WVP;
+    Matrix4x4 World;
+};
+
+struct DirectionalLLight
+{
+    Vector4 color;
+    Vector3 direction;
+    float intensity;
 };
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

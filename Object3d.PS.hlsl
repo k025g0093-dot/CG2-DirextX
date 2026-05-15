@@ -11,7 +11,12 @@ ConstantBuffer<Material> gMaterial : register(b0);
 
 // --- ピクセルシェーダー関連 ---
 
-
+struct DirectionalLight
+{
+      float32_t4 color;
+      float3 direction;
+      float intensity;
+};
 
 struct PixelShaderOutput
 {
@@ -20,7 +25,7 @@ struct PixelShaderOutput
 
 Texture2D<float32_t4> gTexture : register(t0); // t0に合わせる
 SamplerState gSampler : register(s0); // s0に合わせる
-
+ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 
 
 // ピクセルシェーダーのメイン
@@ -29,8 +34,17 @@ PixelShaderOutput main(VertexShaderOutput input)
       PixelShaderOutput output;
     
      float32_t4 textureColor = gTexture.Sample(gSampler, input.texcoord);
-    
-      output.color = gMaterial.color * textureColor;
+
+      if (gMaterial.enableLighting != 0)
+      {
+            float cos = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
+            output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
+      }
+      else
+      {
+            output.color = gMaterial.color * textureColor;
+      }
+
     
       return output;
 }
