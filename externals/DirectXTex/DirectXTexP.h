@@ -116,6 +116,7 @@
 #ifdef USING_DIRECTX_HEADERS
 #include <directx/dxgiformat.h>
 #include <directx/d3d12.h>
+#include <d3d10_1.h>
 #else
 #include <d3d12.h>
 #endif
