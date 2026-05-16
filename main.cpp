@@ -280,7 +280,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// 8. 描画終了処理（バッファの入れ替えなど）
 			engine->PostDraw();
 		}
+
+		//ESCでゲームを強制終了
+#ifdef _DEBUG
+		//デバック時のみ有効
 		if (Input::GetKeyDown(VK_ESCAPE)) break;
+#endif // DEBUG
+
 
 	}
 
