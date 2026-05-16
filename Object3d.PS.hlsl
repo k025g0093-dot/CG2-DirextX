@@ -4,7 +4,7 @@
 struct Material
 {
     float32_t4 color;
-    int enableLighting;
+      int enableLighting;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
@@ -37,7 +37,8 @@ PixelShaderOutput main(VertexShaderOutput input)
 
       if (gMaterial.enableLighting != 0)
       {
-            float cos = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
+            float Ndotl = dot(normalize(input.normal), -gDirectionalLight.direction);
+            float cos = pow(Ndotl * 0.5f + 0.5f, 2.0f);
             output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
       }
       else
