@@ -148,7 +148,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 			// 1. オブジェクトを回転させる（更新）
-			transformData.rotate.y += 0.0f;
+			transformData.rotate.y += 0.01f;
 
 			cameraMatrix = MakeAffineMatrix(
 				cameraTransform.scale,
