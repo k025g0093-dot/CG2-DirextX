@@ -31,6 +31,9 @@
     <Filter Include="ソース ファイル\TUFengine\model">
       <UniqueIdentifier>{2c77130c-4081-4d52-8c77-f08cc33b8792}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\Input">
+      <UniqueIdentifier>{0fc2a419-30ba-42a5-9b8f-0ff6cd5fd699}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -155,6 +158,9 @@
     </ClInclude>
     <ClInclude Include="TextureManager.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>ソース ファイル\TUFengine\Input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

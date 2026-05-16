@@ -29,6 +29,8 @@
 #include "TextureManager.h"
 #include "allVector.h"
 
+#include "Input.h"
+
 #ifdef USE_IMGUI
 
 #include "externals/imgui/imgui.h"
@@ -70,6 +72,7 @@ public:
     TUFEngine(int32_t width, int32_t height, std::wstring name);
     ~TUFEngine();
     static TUFEngine* GetInstance() { return s_instance; }
+    void OnUpdate();
 
 
     void PreDraw();

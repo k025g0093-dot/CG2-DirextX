@@ -146,6 +146,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		else {
 
+			engine->OnUpdate();
 
 			// 1. オブジェクトを回転させる（更新）
 			transformData.rotate.y += 0.01f;
@@ -237,6 +238,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					directionalLightData->direction.y = lightDir[1] / length;
 					directionalLightData->direction.z = lightDir[2] / length;
 				}
+
+
 			}
 
 			ImGui::End();
@@ -277,6 +280,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// 8. 描画終了処理（バッファの入れ替えなど）
 			engine->PostDraw();
 		}
+		if (Input::GetKeyDown(VK_ESCAPE)) break;
+
 	}
 
 #ifdef USE_IMGUI

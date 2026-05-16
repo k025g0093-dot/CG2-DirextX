@@ -105,6 +105,10 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 		);
 }
 
+void TUFEngine::OnUpdate() {
+	Input::Update();
+}
+
 TUFEngine::~TUFEngine() {
 	pipelineState->Release();
 	rootSignature->Release();
