@@ -26,28 +26,31 @@ void UpdateSphere(VertexData* vertexData) {
 			float nextU = float(lonIndex + 1) / float(kSubdivision);
 
 			// 1枚目の三角形 (左下 -> 左上 -> 右下)
+// --- 1枚目の三角形 ---
 			vertexData[start + 0].position = { cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon), 1.0f };
 			vertexData[start + 0].texcoord = { u, 1.0f - v };
+			vertexData[start + 0].normal = { vertexData[start + 0].position.x, vertexData[start + 0].position.y, vertexData[start + 0].position.z }; // 追加
 
 			vertexData[start + 1].position = { cosf(nextLat) * cosf(lon), sinf(nextLat), cosf(nextLat) * sinf(lon), 1.0f };
 			vertexData[start + 1].texcoord = { u, 1.0f - nextV };
+			vertexData[start + 1].normal = { vertexData[start + 1].position.x, vertexData[start + 1].position.y, vertexData[start + 1].position.z }; // 追加
 
 			vertexData[start + 2].position = { cosf(lat) * cosf(nextLon), sinf(lat), cosf(lat) * sinf(nextLon), 1.0f };
 			vertexData[start + 2].texcoord = { nextU, 1.0f - v };
+			vertexData[start + 2].normal = { vertexData[start + 2].position.x, vertexData[start + 2].position.y, vertexData[start + 2].position.z }; // 追加
 
-			// 2枚目の三角形 (左上 -> 右上 -> 右下)
+			// --- 2枚目の三角形 ---
 			vertexData[start + 3].position = { cosf(nextLat) * cosf(lon), sinf(nextLat), cosf(nextLat) * sinf(lon), 1.0f };
 			vertexData[start + 3].texcoord = { u, 1.0f - nextV };
+			vertexData[start + 3].normal = { vertexData[start + 3].position.x, vertexData[start + 3].position.y, vertexData[start + 3].position.z }; // 追加
 
 			vertexData[start + 4].position = { cosf(nextLat) * cosf(nextLon), sinf(nextLat), cosf(nextLat) * sinf(nextLon), 1.0f };
 			vertexData[start + 4].texcoord = { nextU, 1.0f - nextV };
+			vertexData[start + 4].normal = { vertexData[start + 4].position.x, vertexData[start + 4].position.y, vertexData[start + 4].position.z }; // 追加
 
 			vertexData[start + 5].position = { cosf(lat) * cosf(nextLon), sinf(lat), cosf(lat) * sinf(nextLon), 1.0f };
 			vertexData[start + 5].texcoord = { nextU, 1.0f - v };
-
-			vertexData[lonIndex].normal.x = vertexData[lonIndex].position.x;
-			vertexData[lonIndex].normal.y = vertexData[lonIndex].position.y;
-			vertexData[lonIndex].normal.z = vertexData[lonIndex].position.z;
+			vertexData[start + 5].normal = { vertexData[start + 5].position.x, vertexData[start + 5].position.y, vertexData[start + 5].position.z }; // 追加
 
 		}
 	}
