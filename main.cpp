@@ -45,10 +45,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		engine->GetDevice(), sizeof(VertexData) * sphereVertexCount
 	);
 
+	ID3D12Resource* indexResourceSprite = CreateBufferResource(
+		engine->GetDevice(), sizeof(uint32_t) * 6
+	);
+
+	D3D12_INDEX_BUFFER_VIEW indexBufferViewSpraite{};
+	indexBufferViewSpraite.BufferLocation = indexResourceSprite->GetGPUVirtualAddress();
+	indexBufferViewSpraite.SizeInBytes = sizeof(uint32_t) * 6;
+	indexBufferViewSpraite.Format = DXGI_FORMAT_R32_UINT;
 
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
 	vertexBufferViewSprite.BufferLocation = vertexResourceSprite->GetGPUVirtualAddress();
-	vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+	vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4;
 	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
 	// ① まずMapしてアドレスを取得
@@ -69,10 +77,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexDataSprite[1] = { {0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f} };//左上
 	vertexDataSprite[2] = { {640.0f,360.0f,0.0f,1.0f},{1.0f,1.0f} };//右下
 
-	vertexDataSprite[3] = { {0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f} };//左上
-	vertexDataSprite[4] = { {640.0f,0.0f,0.0f,1.0f},{1.0f,0.0f} };//右上
-	vertexDataSprite[5] = { {640.0f,360.0f,0.0f,1.0f},{1.0f,1.0f} };//右下
+	vertexDataSprite[3] = { {640.0f,0.0f,0.0f,1.0f},{1.0f,0.0f} };//右上
 	vertexResourceSprite->Unmap(0, nullptr); // 書き終わったら Unmap するのが安全
+
+		uint32_t* indexDataSpraite = nullptr;
+	indexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSpraite));
+	indexDataSpraite[0] = 0; indexDataSpraite[1] = 1; indexDataSpraite[2] = 2;
+	indexDataSpraite[3] = 1; indexDataSpraite[4] = 3; indexDataSpraite[5] = 2;
 
 
 	// --- マテリアル（色）リソースの作成 ---
@@ -219,7 +230,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			}
 
-			
+
 
 			// --- ⭕ ライティング設定 ---
 			if (directionalLightData && ImGui::CollapsingHeader("Lighting Settings")) {
@@ -295,11 +306,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0);
 
 			engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+			engine->GetCommandList()->IASetIndexBuffer(&indexBufferViewSpraite);
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureManager->GetGPUHandle(uvChecker));
 
-			engine->GetCommandList()->DrawInstanced(6, 1, 0, 0);
+			engine->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 			// 8. 描画終了処理（バッファの入れ替えなど）
 			engine->PostDraw();
