@@ -137,6 +137,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	bool useMonsterBall = true;
 
+	float cameraMoveSpeed = 0.01f;                  // 移動速度
+	float cameraRotateSpeed = 0.01f;                // 回転速度
+
 	// --- メインループ：ここが毎フレーム実行される ---
 	MSG msg{};
 	while (msg.message != WM_QUIT) {
@@ -147,6 +150,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		else {
 
 			engine->OnUpdate();
+
+			cameraTransform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
+			cameraTransform.rotate.x -= Input::GetRightStickY() * cameraRotateSpeed;
+
+			cameraTransform.translate.x += Input::GetLeftStickX();
+			cameraTransform.translate.z += Input::GetLeftStickY();
 
 			// 1. オブジェクトを回転させる（更新）
 			transformData.rotate.y += 0.01f;
@@ -210,14 +219,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			}
 
-			// ---  カメラ設定 (ここを追加) ---
-			if (ImGui::CollapsingHeader("Camera Settings")) {
-				// ※ お使いのカメラの変数名（例: cameraTransform など）に適宜書き換えてください
-				ImGui::DragFloat3("Camera Position", &cameraTransform.translate.x, 0.1f);
-				ImGui::DragFloat3("Camera Rotation", &cameraTransform.rotate.x, 0.01f);
-
-				// 必要に応じて、画角(FOV)や注視点(LookAt)などもここに追加できます
-			}
+			
 
 			// --- ⭕ ライティング設定 ---
 			if (directionalLightData && ImGui::CollapsingHeader("Lighting Settings")) {
@@ -240,6 +242,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 
 
+			}
+
+			if (ImGui::CollapsingHeader("Camera Settings")) {
+				// カメラの位置を操作・確認 (X, Y, Z)
+				// ドラッグすると0.1刻みで値が変わり、現在の座標がリアルタイムに数値として映ります
+				ImGui::DragFloat3("Camera Position", &cameraTransform.translate.x, 0.1f);
+
+				// カメラの回転角を操作・確認 (X, Y, Z)
+				// 0.01刻みで回転角を調整できます（ラジアン単位）
+				ImGui::DragFloat3("Camera Rotation", &cameraTransform.rotate.x, 0.01f);
+
+				// 【便利機能】カメラの位置や向きが迷子になったときのリセットボタン
+				if (ImGui::Button("Reset Camera")) {
+					cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
+					cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
+				}
+
+				// 現在の数値をテキストとして小さく表示（デバッグ情報の確認用）
+				ImGui::Separator();
+				ImGui::Text("Debug Info:");
+				ImGui::Text("Pos: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.translate.x, cameraTransform.translate.y, cameraTransform.translate.z);
+				ImGui::Text("Rot: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.rotate.x, cameraTransform.rotate.y, cameraTransform.rotate.z);
 			}
 
 			ImGui::End();
