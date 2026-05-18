@@ -1,57 +1,149 @@
 #include "Sphere.h"
+#include "TUFEngine.h"
 
-constexpr auto pi = 3.14159265355f;//πの宣言
+constexpr float kPi = 3.14159265355f;
 
+extern ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
 
+Sphere::~Sphere() {
+	if (m_pVertexResource) m_pVertexResource->Release();
+	if (m_pIndexResource) m_pIndexResource->Release();
+	if (m_pMaterialResource) m_pMaterialResource->Release();
+	if (m_pWvpResource) m_pWvpResource->Release();
+	if (m_ownsLightResource && m_pLightResource) m_pLightResource->Release();
+}
 
-void UpdateSphere(VertexData* vertexData) {
-	uint32_t kSubdivision = 16; // 分割数
-	const float kLonEvery = (pi * 2.0f) / float(kSubdivision); // 経度(横)の角度
-	const float kLatEvery = pi / float(kSubdivision);          // 緯度(縦)の角度
+void Sphere::InitSphere(TUFEngine* engine) {
+	m_pEngine = engine;
+	ID3D12Device* device = engine->GetDevice();
+
+	const uint32_t kSubdivision = 16;
+	m_vertexCount = kSubdivision * kSubdivision * 4;
+	m_indexCount = kSubdivision * kSubdivision * 6;
+
+	m_pVertexResource = CreateBufferResource(device, sizeof(VertexData) * m_vertexCount);
+
+	VertexData* vertexData = nullptr;
+	m_pVertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+
+	const float kLonEvery = (kPi * 2.0f) / float(kSubdivision);
+	const float kLatEvery = kPi / float(kSubdivision);
 
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
-		// 現在の緯度と、次のマスの緯度
-		float lat = -pi / 2.0f + (kLatEvery * latIndex);
-		float nextLat = lat + kLatEvery;
-		float v = float(latIndex) / float(kSubdivision);
-		float nextV = float(latIndex + 1) / float(kSubdivision);
+		const float lat = -kPi / 2.0f + (kLatEvery * latIndex);
+		const float nextLat = lat + kLatEvery;
+		const float v = float(latIndex) / float(kSubdivision);
+		const float nextV = float(latIndex + 1) / float(kSubdivision);
 
 		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
-			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
+			const uint32_t start = (latIndex * kSubdivision + lonIndex) * 4;
+			const float lon = lonIndex * kLonEvery;
+			const float nextLon = lon + kLonEvery;
+			const float u = float(lonIndex) / float(kSubdivision);
+			const float nextU = float(lonIndex + 1) / float(kSubdivision);
 
-			// 現在の経度と、次のマスの経度
-			float lon = lonIndex * kLonEvery;
-			float nextLon = lon + kLonEvery;
-			float u = float(lonIndex) / float(kSubdivision);
-			float nextU = float(lonIndex + 1) / float(kSubdivision);
-
-			// 1枚目の三角形 (左下 -> 左上 -> 右下)
-// --- 1枚目の三角形 ---
 			vertexData[start + 0].position = { cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon), 1.0f };
 			vertexData[start + 0].texcoord = { u, 1.0f - v };
-			vertexData[start + 0].normal = { vertexData[start + 0].position.x, vertexData[start + 0].position.y, vertexData[start + 0].position.z }; // 追加
+			vertexData[start + 0].normal = { vertexData[start + 0].position.x, vertexData[start + 0].position.y, vertexData[start + 0].position.z };
 
 			vertexData[start + 1].position = { cosf(nextLat) * cosf(lon), sinf(nextLat), cosf(nextLat) * sinf(lon), 1.0f };
 			vertexData[start + 1].texcoord = { u, 1.0f - nextV };
-			vertexData[start + 1].normal = { vertexData[start + 1].position.x, vertexData[start + 1].position.y, vertexData[start + 1].position.z }; // 追加
+			vertexData[start + 1].normal = { vertexData[start + 1].position.x, vertexData[start + 1].position.y, vertexData[start + 1].position.z };
 
 			vertexData[start + 2].position = { cosf(lat) * cosf(nextLon), sinf(lat), cosf(lat) * sinf(nextLon), 1.0f };
 			vertexData[start + 2].texcoord = { nextU, 1.0f - v };
-			vertexData[start + 2].normal = { vertexData[start + 2].position.x, vertexData[start + 2].position.y, vertexData[start + 2].position.z }; // 追加
+			vertexData[start + 2].normal = { vertexData[start + 2].position.x, vertexData[start + 2].position.y, vertexData[start + 2].position.z };
 
-			// --- 2枚目の三角形 ---
-			vertexData[start + 3].position = { cosf(nextLat) * cosf(lon), sinf(nextLat), cosf(nextLat) * sinf(lon), 1.0f };
-			vertexData[start + 3].texcoord = { u, 1.0f - nextV };
-			vertexData[start + 3].normal = { vertexData[start + 3].position.x, vertexData[start + 3].position.y, vertexData[start + 3].position.z }; // 追加
-
-			vertexData[start + 4].position = { cosf(nextLat) * cosf(nextLon), sinf(nextLat), cosf(nextLat) * sinf(nextLon), 1.0f };
-			vertexData[start + 4].texcoord = { nextU, 1.0f - nextV };
-			vertexData[start + 4].normal = { vertexData[start + 4].position.x, vertexData[start + 4].position.y, vertexData[start + 4].position.z }; // 追加
-
-			vertexData[start + 5].position = { cosf(lat) * cosf(nextLon), sinf(lat), cosf(lat) * sinf(nextLon), 1.0f };
-			vertexData[start + 5].texcoord = { nextU, 1.0f - v };
-			vertexData[start + 5].normal = { vertexData[start + 5].position.x, vertexData[start + 5].position.y, vertexData[start + 5].position.z }; // 追加
-
+			vertexData[start + 3].position = { cosf(nextLat) * cosf(nextLon), sinf(nextLat), cosf(nextLat) * sinf(nextLon), 1.0f };
+			vertexData[start + 3].texcoord = { nextU, 1.0f - nextV };
+			vertexData[start + 3].normal = { vertexData[start + 3].position.x, vertexData[start + 3].position.y, vertexData[start + 3].position.z };
 		}
 	}
+	m_pVertexResource->Unmap(0, nullptr);
+
+	m_vertexBufferView.BufferLocation = m_pVertexResource->GetGPUVirtualAddress();
+	m_vertexBufferView.SizeInBytes = sizeof(VertexData) * m_vertexCount;
+	m_vertexBufferView.StrideInBytes = sizeof(VertexData);
+
+	m_pIndexResource = CreateBufferResource(device, sizeof(uint32_t) * m_indexCount);
+
+	uint32_t* indexData = nullptr;
+	m_pIndexResource->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
+	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+			const uint32_t vertexStart = (latIndex * kSubdivision + lonIndex) * 4;
+			const uint32_t indexStart = (latIndex * kSubdivision + lonIndex) * 6;
+
+			indexData[indexStart + 0] = vertexStart + 0;
+			indexData[indexStart + 1] = vertexStart + 1;
+			indexData[indexStart + 2] = vertexStart + 2;
+			indexData[indexStart + 3] = vertexStart + 1;
+			indexData[indexStart + 4] = vertexStart + 3;
+			indexData[indexStart + 5] = vertexStart + 2;
+		}
+	}
+	m_pIndexResource->Unmap(0, nullptr);
+
+	m_indexBufferView.BufferLocation = m_pIndexResource->GetGPUVirtualAddress();
+	m_indexBufferView.SizeInBytes = sizeof(uint32_t) * m_indexCount;
+	m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+	m_pMaterialResource = CreateBufferResource(device, Align256(sizeof(Material)));
+	Material* materialData = nullptr;
+	m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+	materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	materialData->enableLifhting = true;
+	m_pMaterialResource->Unmap(0, nullptr);
+
+	m_pWvpResource = CreateBufferResource(device, Align256(sizeof(TransformationMatrix)));
+
+	m_pLightResource = CreateBufferResource(device, Align256(sizeof(DirectionalLLight)));
+	m_ownsLightResource = true;
+	DirectionalLLight* lightData = nullptr;
+	m_pLightResource->Map(0, nullptr, reinterpret_cast<void**>(&lightData));
+	lightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	lightData->direction = { 0.0f, -1.0f, 0.0f };
+	lightData->intensity = 1.0f;
+	m_pLightResource->Unmap(0, nullptr);
+}
+
+void Sphere::Update() {
+	m_rotation.y += 0.01f;
+
+	Matrix4x4 viewProjectionMatrix = m_pEngine->GetViewProjectionMatrix();
+	Matrix4x4 worldMatrix = GetWorldMatrix();
+	Matrix4x4 wvpMatrix = Multiply(worldMatrix, viewProjectionMatrix);
+
+	SetWorldTransform(wvpMatrix, worldMatrix);
+}
+
+void Sphere::SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) {
+	TransformationMatrix* wvpData = nullptr;
+	m_pWvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
+	wvpData->WVP = wvp;
+	wvpData->World = world;
+	m_pWvpResource->Unmap(0, nullptr);
+}
+
+void Sphere::SetLightResource(ID3D12Resource* lightResource) {
+	if (m_ownsLightResource && m_pLightResource) {
+		m_pLightResource->Release();
+	}
+	m_pLightResource = lightResource;
+	m_ownsLightResource = false;
+}
+
+void Sphere::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
+	cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	cmdList->IASetIndexBuffer(&m_indexBufferView);
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
+	cmdList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetGPUHandle(textureIndex));
+
+	if (m_pLightResource) {
+		cmdList->SetGraphicsRootConstantBufferView(3, m_pLightResource->GetGPUVirtualAddress());
+	}
+
+	cmdList->DrawIndexedInstanced(m_indexCount, 1, 0, 0, 0);
 }

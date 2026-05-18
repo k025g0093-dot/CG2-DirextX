@@ -59,15 +59,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4;
 	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
-	// ① まずMapしてアドレスを取得
-	VertexData* vertexData = {};
-	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-
-	// ② 取得したアドレスにデータを書き込む
-	UpdateSphere(vertexData);
-
-	// ③ 書き終わったらUnmap
-	vertexResource->Unmap(0, nullptr);
 
 
 	VertexData* vertexDataSprite = nullptr;
@@ -144,12 +135,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	directionalLightData->direction = { 0.0f, -1.0f, 0.0f };
 	directionalLightData->intensity = 1;
+	engine->SetDirectionalLightResource(directionalLightDataResource);
 	//directionalLightDataResource->Unmap(0, nullptr);
 
 	bool useMonsterBall = true;
 
 	float cameraMoveSpeed = 0.01f;                  // 移動速度
 	float cameraRotateSpeed = 0.01f;                // 回転速度
+
+	float rotX = 0.01f;
 
 	// --- メインループ：ここが毎フレーム実行される ---
 	MSG msg{};
@@ -184,6 +178,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
 				0.45f, static_cast<float>(kClineWidth) / kClineHeight, 0.1f, 100.0f
 			);
+			engine->SetViewProjectionMatrix(Multiply(viwMatrix, projectionMatrix));
 			// 4. 全部掛け合わせて WVP 行列を完成させる (World -> View -> Projection)
 			Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viwMatrix, projectionMatrix));
 			// 5. GPU側のメモリに書き込む
@@ -282,13 +277,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif // USE_IMGUI
 
 
-
+			rotX+=0.001f;
 
 			// 6. 描画開始処理（コマンドリストのリセットなど）
 			engine->PreDraw();
 
-
-
+			for (int i = 0; i < 1000000; ++i) {
+				engine->DrawSphere({ 0.0f, 0.0f, 5.0f+i }, { 0.0f,  rotX, 0.0f }, { 1.0f, 1.0f, 1.0f }, useMonsterBall ? monsterBall : uvChecker);
+				engine->DrawSphere({ -2.0f, 1.0f, 6.0f }, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, useMonsterBall ? monsterBall : uvChecker);
+			}
+			
 			// 7. GPUへの命令発行
 			engine->GetCommandList()->SetGraphicsRootSignature(engine->GetRootSignature());
 			engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());
