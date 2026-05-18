@@ -82,7 +82,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Material* materialData = nullptr;
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 	materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
-
+	materialData->uvTransform = MakeIdentity4x4();
 
 
 	ID3D12Resource* materialResourceSprite = CreateBufferResource(engine->GetDevice(), sizeof(Material));
@@ -90,8 +90,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	materialResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSprite));
 	materialDataSprite->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 初期の色は赤
 	materialDataSprite->enableLifhting = false;
-
+	materialDataSprite->uvTransform = MakeIdentity4x4();
 	materialData->enableLifhting = 0;
+
+	TransformData uvTransformSprite{
+		{1.0f,1.0f,1.0f},
+		{0.0f,0.0f,0.0f},
+		{0.0f,0.0f,0.0f},
+	};
 
 
 	// --- 行列（トランスフォーム）の初期データ準備 ---
@@ -209,6 +215,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			*transformationMatrixDataSprite = worldViewProjectSprite;
 
+			Matrix4x4 uvTransformMatrix = MakeScaleMatrix(uvTransformSprite.scale);
+			uvTransformMatrix = Multiply(uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
+			uvTransformMatrix = Multiply(uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
+			materialDataSprite->uvTransform = uvTransformMatrix;
 
 #ifdef USE_IMGUI
 			ImGui_ImplDX12_NewFrame();
@@ -225,6 +235,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			}
 
+			if (ImGui::CollapsingHeader("c Sprite Settings")) {
+				ImGui::DragFloat2("uvTransform Position", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+				ImGui::DragFloat2("uvTransform Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+				ImGui::SliderAngle("uvTransform Rotate", &uvTransformSprite.rotate.z);
+			
+			}
 
 
 			// --- ⭕ ライティング設定 ---
