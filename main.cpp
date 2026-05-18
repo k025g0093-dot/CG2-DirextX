@@ -282,9 +282,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// 6. 描画開始処理（コマンドリストのリセットなど）
 			engine->PreDraw();
 
-			for (int i = 0; i < 1000000; ++i) {
-				engine->DrawSphere({ 0.0f, 0.0f, 5.0f+i }, { 0.0f,  rotX, 0.0f }, { 1.0f, 1.0f, 1.0f }, useMonsterBall ? monsterBall : uvChecker);
-				engine->DrawSphere({ -2.0f, 1.0f, 6.0f }, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, useMonsterBall ? monsterBall : uvChecker);
+			for (int i = 0; i < 2; ++i) {
+				engine->DrawSphere({ 0.0f+i*5.0f, 0.0f, 5.0f }, { 0.0f,  rotX, 0.0f }, { 1.0f, 1.0f, 1.0f }, useMonsterBall ? monsterBall : uvChecker);
 			}
 			
 			// 7. GPUへの命令発行
