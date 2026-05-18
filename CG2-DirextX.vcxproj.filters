@@ -34,6 +34,15 @@
     <Filter Include="ソース ファイル\TUFengine\Input">
       <UniqueIdentifier>{0fc2a419-30ba-42a5-9b8f-0ff6cd5fd699}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\model\3Dmodel">
+      <UniqueIdentifier>{3545f7fb-7e11-4ad9-8fd9-d9dd5e63b925}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\model\各種図形">
+      <UniqueIdentifier>{d1bdb031-4692-41a0-a0c9-af5b0dbeec11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\Texture">
+      <UniqueIdentifier>{516b4b7d-8391-45b9-8cca-b738370a1872}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -82,13 +91,13 @@
       <Filter>ソース ファイル\TUFengine\Vector</Filter>
     </ClCompile>
     <ClCompile Include="Sphere.cpp">
+      <Filter>ソース ファイル\TUFengine\model\各種図形</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
       <Filter>ソース ファイル\TUFengine\model</Filter>
     </ClCompile>
     <ClCompile Include="TextureManager.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\TUFengine\Texture</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -153,20 +162,20 @@
     <ClInclude Include="Vector4.h">
       <Filter>ソース ファイル\TUFengine\Vector</Filter>
     </ClInclude>
-    <ClInclude Include="Sphere.h">
-      <Filter>ソース ファイル\TUFengine\model</Filter>
-    </ClInclude>
-    <ClInclude Include="allShapesModel.h">
-      <Filter>ソース ファイル\TUFengine\model</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureManager.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Input.h">
       <Filter>ソース ファイル\TUFengine\Input</Filter>
     </ClInclude>
+    <ClInclude Include="allShapesModel.h">
+      <Filter>ソース ファイル\TUFengine\model\各種図形</Filter>
+    </ClInclude>
+    <ClInclude Include="Sphere.h">
+      <Filter>ソース ファイル\TUFengine\model\各種図形</Filter>
+    </ClInclude>
     <ClInclude Include="Model.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ソース ファイル\TUFengine\model</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>ソース ファイル\TUFengine\Texture</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
