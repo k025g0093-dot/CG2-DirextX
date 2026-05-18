@@ -53,11 +53,14 @@ ID3D12Resource* CreateBufferResource(
 	ID3D12Device* device,
 	size_t sizeInBytes
 ) {
+
+	size_t alignedSize = (sizeInBytes + 255) & ~255;
+
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 	D3D12_RESOURCE_DESC bufferResourceDesc{};
 	bufferResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bufferResourceDesc.Width = sizeInBytes;
+	bufferResourceDesc.Width = alignedSize;
 	bufferResourceDesc.Height = 1;
 	bufferResourceDesc.DepthOrArraySize = 1;
 	bufferResourceDesc.MipLevels = 1;

@@ -30,6 +30,8 @@
 #include "allVector.h"
 
 #include "Input.h"
+#include "Model.h"
+#include "allShapesModel.h"
 
 #ifdef USE_IMGUI
 
@@ -67,6 +69,18 @@ struct DirectionalLLight
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
+// TUFEngine.h などの適切な場所に配置
+struct DrawRequest {
+    Model* model = nullptr;      // 描画するモデルへのポインタ
+    Vector3 pos{ 0,0,0 };        // 位置
+    Vector3 rot{ 0,0,0 };        // 回転
+    Vector3 scale{ 1,1,1 };      // 拡大縮小
+    Vector4 color{ 1,1,1,1 };    // 色
+    int textureIndex = 0;        // 使用するテクスチャ番号
+    bool isMesh = true;          // メッシュ描画（インデックス等）かどうか
+};
+
+
 class TUFEngine {
 public:
     TUFEngine(int32_t width, int32_t height, std::wstring name);
@@ -74,6 +88,7 @@ public:
     static TUFEngine* GetInstance() { return s_instance; }
     void OnUpdate();
 
+    void DrawSphere( const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
 
     void PreDraw();
     void PostDraw();
@@ -107,11 +122,18 @@ public:
         bool shaderVisible
     );
 
+    const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
 
+    // ⭕ 2. カメラ行列のセッター（main.cpp などから最新のカメラ行列をセットするため）
+    void SetViewProjectionMatrix(const Matrix4x4& vp) { viewProjectionMatrix = vp; }
+    void SetDirectionalLightResource(ID3D12Resource* lightResource) { m_directionalLightResource = lightResource; }
 
 private:
 
     static TUFEngine* s_instance;
+    int m_cbvIndex = 0; // 今何個目の三角形を描いているかのカウント
+    static const int MAX_DRAW_COUNT = 1000000; // 1フレームに描ける最大数
+    UINT8* m_pCbvDataBegin = nullptr;        // 1バイト単位で計算できるように UINT8* にする
 
 
     // --- 1. ウィンドウ・システム関連 ---
@@ -148,7 +170,7 @@ private:
     ID3D12Resource* resource = nullptr;                 // 汎用リソースポインタ
     ID3D12Resource* texture = nullptr;          // テクスチャ用リソースポインタ
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU{};    // テクスチャ用のGPUハンドルを保持する変数
-    
+
     ID3D12Resource* intermediateResource{};
     ID3D12Resource* depthStencilResource = nullptr;//深度バッファ専用のリソース
     ID3D12DescriptorHeap* dsvDescriptorHeap = {}; // 深度ステンシルビュー用のデスクリプタヒープ
@@ -158,6 +180,10 @@ private:
 
     uint32_t descriptorSizeDSV{};
 
+    VertexData* vertexData{};
+
+    Matrix4x4 viewProjectionMatrix;
+
     // --- 内部初期化用メソッド ---
     void InitWindow();                                  // 窓を作る
     void InitializeDXGI(HWND hwnd);                     // DX12の基本初期化
@@ -165,4 +191,31 @@ private:
 
     // テクスチャリソースの作成（内部処理用）
     ID3D12Resource* CreateDepthStencilTextureResource(int32_t width, int32_t height);//深度バッファーのリソース作成
+    void RenderAllRequests();
+
+
+    Sphere sphere_;
+
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
+    Microsoft::WRL::ComPtr<ID3D12Resource>      m_vertexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW                   m_vertexBufferView;
+    Microsoft::WRL::ComPtr<ID3D12Resource>      m_constantBuffer;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvHeapImgui;
+    D3D12_VIEWPORT m_viewport; // ビューポートの定義  
+    D3D12_RECT m_scissorRect; // シザー矩形の定義
+    UINT m_constantBufferDescriptorSize = 0;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
+
+    ID3D12Resource* m_pConstantBuffer = nullptr; // ⭕ 一括管理用の巨大な定数バッファ
+    ID3D12Resource* m_directionalLightResource = nullptr;
+    std::vector<DrawRequest> m_drawRequests;
+
+    std::unique_ptr<Sphere>m_temporarySpheres;
+
+
+    Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
+    uint64_t m_fenceValue = 0;
+    HANDLE m_fenceEvent = nullptr;
+
 };

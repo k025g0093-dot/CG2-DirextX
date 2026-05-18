@@ -103,10 +103,16 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 		GetDescriptorHandleIncrementSize(
 			D3D12_DESCRIPTOR_HEAP_TYPE_DSV
 		);
+
+	auto sphere = std::make_unique<Sphere>();
+	sphere->InitSphere(this);
+	m_temporarySpheres = std::move(sphere);
+
 }
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
+	//sphere_.Update();
 }
 
 TUFEngine::~TUFEngine() {
@@ -232,6 +238,20 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	device->CreateRenderTargetView(swapChainResources[1], &rtvDesc, rtvHandles[1]);
 
+	// TUFEngine.cpp の初期化処理（例えば InitializeDXGI の最後など）に以下を追加
+	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
+	// 256個分のオブジェクトの行列が入る巨大なバッファを作る
+	m_pConstantBuffer = CreateBufferResource(device, cbSize * MAX_DRAW_COUNT);
+	// 最初に1回だけMapして、書き込み先ポインタ（m_pCbvDataBegin）を保存しておく
+	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
+
+	m_fenceValue = 0;
+	hr = device->CreateFence(m_fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
+	assert(SUCCEEDED(hr));
+
+	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	assert(m_fenceEvent != nullptr);
+
 	useAdapter->Release();
 }
 #pragma endregion
@@ -330,6 +350,7 @@ void TUFEngine::PreDraw() {
 	scissorRect.top = 0;
 	scissorRect.bottom = height;
 	commandList->RSSetScissorRects(1, &scissorRect);
+
 }
 
 
@@ -342,6 +363,7 @@ void TUFEngine::PostDraw() {
 	barrier.Transition.pResource = swapChainResources[backBufferIndex];
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
+	RenderAllRequests();
 
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
@@ -356,19 +378,14 @@ void TUFEngine::PostDraw() {
 	commandQueue->ExecuteCommandLists(1, commandLists);
 	swapChain->Present(1, 0);
 
-	ID3D12Fence* fence = nullptr;
-	uint64_t fenceValue = 0;
-	hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-	assert(SUCCEEDED(hr));
-	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	fenceValue++;
-	commandQueue->Signal(fence, fenceValue);
-	if (fence->GetCompletedValue() < fenceValue) {
-		fence->SetEventOnCompletion(fenceValue, fenceEvent);
-		WaitForSingleObject(fenceEvent, INFINITE);
+	// ⭕ 毎フレームの新規作成/破棄を全削除！既存のフェンスを使い回してGPUを待つ
+	m_fenceValue++;
+	commandQueue->Signal(m_fence.Get(), m_fenceValue);
+
+	if (m_fence->GetCompletedValue() < m_fenceValue) {
+		m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
+		WaitForSingleObject(m_fenceEvent, INFINITE);
 	}
-	CloseHandle(fenceEvent);
-	fence->Release();
 
 	hr = commandAllocator->Reset();
 	assert(SUCCEEDED(hr));
@@ -430,5 +447,83 @@ void TUFEngine::SetupInfoQueue() {
 }
 #endif
 
+void TUFEngine::RenderAllRequests() {
+	// ⭕ GPUに「このエンジンのシェーダーと設計図を使うよ」と教える
+	commandList->SetGraphicsRootSignature(rootSignature);
+	commandList->SetPipelineState(pipelineState);
 
+	// テクスチャ用などのデスクリプタヒープをセット
+	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap };
+	commandList->SetDescriptorHeaps(1, heaps);
+
+	// 2. カメラ行列
+	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
+
+	m_cbvIndex = 0;
+	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
+	for (auto& request : m_drawRequests) {
+		if (m_cbvIndex >= MAX_DRAW_COUNT) {
+			break;
+		}
+
+		if (!request.model) continue;
+
+		// --- 3. WVP行列を作成 ---
+		Matrix4x4 world = MakeAffineMatrix(request.scale, request.rot, request.pos);
+		Matrix4x4 wvp = Multiply(world, viewProjMatrix);
+
+		TransformationMatrix cbData{};
+		cbData.WVP = wvp;
+		cbData.World = world;
+
+		if (m_pCbvDataBegin && m_pConstantBuffer) {
+			UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
+			memcpy(pDest, &cbData, sizeof(TransformationMatrix));
+
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
+				m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
+			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
+		}
+
+		// --- 6. 描画実行 ---
+		if (!request.isMesh) {
+			// スプライトなど
+		}
+		else {
+			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			request.model->Draw(commandList, request.textureIndex);
+		}
+
+		m_cbvIndex++;
+	}
+
+	m_drawRequests.clear();
+}
+
+
+// --- TUFEngine.cpp ---
+
+void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex) {
+	if (!m_temporarySpheres) {
+		m_temporarySpheres = std::make_unique<Sphere>();
+		m_temporarySpheres->InitSphere(this);
+	}
+	if (m_directionalLightResource) {
+		m_temporarySpheres->SetLightResource(m_directionalLightResource);
+	}
+
+	// 3. 描画リクエストを作成する
+	DrawRequest req;
+	req.pos = pos;
+	req.rot = rot;
+	req.scale = scale;
+	req.textureIndex = textureIndex;
+	req.isMesh = true;
+
+	// 4. コンテナに保存された「絶対に消えない球体」のポインタを安全に取得して登録！
+	req.model = m_temporarySpheres.get();
+
+	// 5. リクエストを登録
+	m_drawRequests.push_back(req);
+}
 
