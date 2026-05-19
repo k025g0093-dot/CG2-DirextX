@@ -29,7 +29,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int uvChecker = textureManager->LoadTexture("resources/uvChecker.png");
 	int monsterBall = textureManager->LoadTexture("resources/monsterBall.png");
 
-	MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
+	MeshModel* modelData = engine->LoadModel("resources", "axis.obj");
 
 
 	HRESULT hr = S_OK;

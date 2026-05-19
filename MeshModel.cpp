@@ -77,6 +77,22 @@ bool MeshModel::LoadFromOBJ(
 			modelData.vertices.push_back(traiangle[1]);
 			modelData.vertices.push_back(traiangle[0]);
 		}
+		else if (identifier == "mtllib")
+		{
+			std::string materialFilename;
+			s >> materialFilename;
+
+			modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
+		
+			if (!modelData.material.textureFilPath.empty())
+			{
+				// TextureManagerにロードを依頼し、インデックスを受け取る
+				int textureIndex = TextureManager::GetInstance()->LoadTexture(modelData.material.textureFilPath);
+
+				// 読み込んだインデックスを自分自身に保存する
+				SetTextureIndex(textureIndex);
+			}
+		}
 	}
 
 	m_vertexCount = static_cast<uint32_t>(modelData.vertices.size());
@@ -106,6 +122,39 @@ bool MeshModel::LoadFromOBJ(
 	}
 
 	return true;
+}
+
+
+MaterialData MeshModel::LoadMaterialTemplateFile(
+	const std::string& directoryPath,
+	const std::string& filename
+) {
+
+	MaterialData materialData;
+	std::string line;
+	std::ifstream file(directoryPath + '/' + filename);//ファイルを開く
+	assert(file.is_open());//開けない場合はやめる
+
+	while (std::getline(file, line))
+	{
+		std::string identifire;
+		std::istringstream s(line);
+		s >> identifire;
+
+		if (identifire == "map_kd")
+		{
+			//identifireに応じた処理
+			std::string textureFilename;
+			s >> textureFilename;
+			//連結してファイルパスにする
+			materialData.textureFilPath = directoryPath + "/" + textureFilename;
+
+		}
+
+	}
+
+	return materialData;
+
 }
 
 void MeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {

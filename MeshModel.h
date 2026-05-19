@@ -10,10 +10,19 @@
 //前方宣言
 struct VertexData;
 class TUFEngine;
+
+struct MaterialData
+{
+	std::string textureFilPath;
+};
+
 struct ModelData
 {
 	std::vector<VertexData> vertices;
+	MaterialData material;
 };
+
+
 
 class MeshModel :public Model
 {
@@ -29,6 +38,10 @@ public:
 	);
 
 	void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
+	MaterialData LoadMaterialTemplateFile(
+		const std::string& directoryPath,
+		const std::string& filename
+	);
 
 	void InitMeshModel(TUFEngine* engine);
 	void SetTextureIndex(int index) { m_textureIndex = index; }
