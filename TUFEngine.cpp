@@ -5,6 +5,8 @@
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #ifdef USE_IMGUI
 
+
+
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam)) {
 		return true;
 	}
@@ -181,6 +183,7 @@ TUFEngine::~TUFEngine() {
 void TUFEngine::InitializeImGui(HWND hwnd) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX12_Init(device,
@@ -191,6 +194,7 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
 	);
 	ImGuiIO& io = ImGui::GetIO();
+
 	io.Fonts->Build();
 }
 #endif // USE_IMGUI

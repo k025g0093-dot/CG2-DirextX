@@ -29,7 +29,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int uvChecker = textureManager->LoadTexture("resources/uvChecker.png");
 	int monsterBall = textureManager->LoadTexture("resources/monsterBall.png");
 
-	MeshModel* modelData = engine->LoadModel("resources", "casa.obj");
+	MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
 
 
 	HRESULT hr = S_OK;
@@ -228,28 +228,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
-			ImGui::Begin("Settings");
+			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-			// --- スプライト設定 ---
-			if (ImGui::CollapsingHeader("Sprite Settings")) {
-				ImGui::DragFloat2("Sprite Position", &transformDataSprite.translate.x, 1.0f, 0.0f, 1280.0f);
-				ImGui::DragFloat3("Sprite Scale", &transformDataSprite.scale.x, 0.1f, 0.1f, 10.0f);
-				ImGui::DragFloat3("Sprite Rotate", &transformDataSprite.rotate.z, 0.01f);
-				ImGui::Checkbox("useMonsterBall", &useMonsterBall); 
-				ImGui::SliderAngle("rotX", &rotX);
+			// ====================================================
+			// 1. スプライト設定用のウィンドウ
+			// ====================================================
+			ImGui::Begin("Sprite Matrix"); // ★新しいウィンドウを開始
 
-			}
+			ImGui::DragFloat2("Sprite Position", &transformDataSprite.translate.x, 1.0f, 0.0f, 1280.0f);
+			ImGui::DragFloat3("Sprite Scale", &transformDataSprite.scale.x, 0.1f, 0.1f, 10.0f);
+			ImGui::DragFloat3("Sprite Rotate", &transformDataSprite.rotate.z, 0.01f);
+			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+			ImGui::SliderAngle("rotX", &rotX);
 
-			if (ImGui::CollapsingHeader("c Sprite Settings")) {
-				ImGui::DragFloat2("uvTransform Position", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-				ImGui::DragFloat2("uvTransform Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-				ImGui::SliderAngle("uvTransform Rotate", &uvTransformSprite.rotate.z);
+			ImGui::Separator(); // ちょっと区切り線
 
-			}
+			ImGui::DragFloat2("uvTransform Position", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+			ImGui::DragFloat2("uvTransform Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+			ImGui::SliderAngle("uvTransform Rotate", &uvTransformSprite.rotate.z);
+
+			ImGui::End(); // ★スプライトウィンドウの終わり
 
 
-			// --- ⭕ ライティング設定 ---
-			if (directionalLightData && ImGui::CollapsingHeader("Lighting Settings")) {
+			// ====================================================
+			// 2. ライティング設定用のウィンドウ
+			// ====================================================
+			if (directionalLightData) {
+				ImGui::Begin("Lighting Control"); // ★新しいウィンドウを開始
 
 				// 改善ポイント①：UI操作専用の「一時変数」を用意する
 				static float lightDir[3] = { 1.0f, -1.0f, 1.0f };
@@ -268,32 +273,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					directionalLightData->direction.z = lightDir[2] / length;
 				}
 
-
+				ImGui::End(); // ★ライティングウィンドウの終わり
 			}
 
-			if (ImGui::CollapsingHeader("Camera Settings")) {
-				// カメラの位置を操作・確認 (X, Y, Z)
-				// ドラッグすると0.1刻みで値が変わり、現在の座標がリアルタイムに数値として映ります
-				ImGui::DragFloat3("Camera Position", &cameraTransform.translate.x, 0.1f);
 
-				// カメラの回転角を操作・確認 (X, Y, Z)
-				// 0.01刻みで回転角を調整できます（ラジアン単位）
-				ImGui::DragFloat3("Camera Rotation", &cameraTransform.rotate.x, 0.01f);
+			// ====================================================
+			// 3. カメラ設定用のウィンドウ
+			// ====================================================
+			ImGui::Begin("Camera Monitor"); // ★新しいウィンドウを開始
 
-				// 【便利機能】カメラの位置や向きが迷子になったときのリセットボタン
-				if (ImGui::Button("Reset Camera")) {
-					cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
-					cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
-				}
+			// カメラの位置を操作・確認 (X, Y, Z)
+			ImGui::DragFloat3("Camera Position", &cameraTransform.translate.x, 0.1f);
 
-				// 現在の数値をテキストとして小さく表示（デバッグ情報の確認用）
-				ImGui::Separator();
-				ImGui::Text("Debug Info:");
-				ImGui::Text("Pos: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.translate.x, cameraTransform.translate.y, cameraTransform.translate.z);
-				ImGui::Text("Rot: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.rotate.x, cameraTransform.rotate.y, cameraTransform.rotate.z);
+			// カメラの回転角を操作・確認 (X, Y, Z)
+			ImGui::DragFloat3("Camera Rotation", &cameraTransform.rotate.x, 0.01f);
+
+			// 【便利機能】カメラの位置や向きが迷子になったときのリセットボタン
+			if (ImGui::Button("Reset Camera")) {
+				cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
+				cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
 			}
 
-			ImGui::End();
+			// 現在の数値をテキストとして小さく表示（デバッグ情報の確認用）
+			ImGui::Separator();
+			ImGui::Text("Debug Info:");
+			ImGui::Text("Pos: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.translate.x, cameraTransform.translate.y, cameraTransform.translate.z);
+			ImGui::Text("Rot: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.rotate.x, cameraTransform.rotate.y, cameraTransform.rotate.z);
+
+			ImGui::End(); // ★カメラウィンドウの終わり
+
+			
 			ImGui::Render();
 #endif // USE_IMGUI
 
