@@ -110,6 +110,27 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 }
 
+MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::string& filename) {
+	if (m_meshes.count(filename) > 0) {
+		return m_meshes[filename].get();
+	}
+
+	// MeshModelを作成
+	auto mesh = std::make_unique<MeshModel>();
+	mesh->InitMeshModel(this);
+
+	if (!mesh->LoadFromOBJ(directoryPath, filename)) {
+		OutputDebugStringA(("Error: Failed to load OBJ: " + directoryPath + "/" + filename + "\n").c_str());
+		return nullptr;
+	}
+
+	MeshModel* ptr = mesh.get();
+	m_meshes[filename] = std::move(mesh);
+
+	return ptr;
+}
+
+
 void TUFEngine::OnUpdate() {
 	Input::Update();
 	//sphere_.Update();
@@ -308,6 +329,8 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 	return depthStencilResource;
 }
 
+
+
 #pragma region 描画のコマンド
 
 void TUFEngine::PreDraw() {
@@ -488,6 +511,8 @@ void TUFEngine::RenderAllRequests() {
 		// --- 6. 描画実行 ---
 		if (!request.isMesh) {
 			// スプライトなど
+
+			request.model->Draw(commandList, m_cbvIndex);
 		}
 		else {
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -527,3 +552,15 @@ void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3
 	m_drawRequests.push_back(req);
 }
 
+void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale) {
+	if (!mesh) return;
+
+	DrawRequest req;
+	req.model = mesh;
+	req.pos = pos;
+	req.rot = rot;
+	req.scale = scale;
+	req.textureIndex = mesh->GetTextureIndex(); // ★メンバから自動取得
+	req.isMesh = true;
+	m_drawRequests.push_back(req);
+}

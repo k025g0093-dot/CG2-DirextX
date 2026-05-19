@@ -89,8 +89,10 @@ public:
     ~TUFEngine();
     static TUFEngine* GetInstance() { return s_instance; }
     void OnUpdate();
+    MeshModel* LoadModel(const std::string& directoryPath, const std::string& filename);
 
     void DrawSphere( const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
+    void DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale);
 
     void PreDraw();
     void PostDraw();
@@ -197,6 +199,8 @@ private:
 
 
     Sphere sphere_;
+    MeshModel* meshModel_;
+
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
@@ -214,6 +218,7 @@ private:
     std::vector<DrawRequest> m_drawRequests;
 
     std::unique_ptr<Sphere>m_temporarySpheres;
+    std::map<std::string, std::unique_ptr<MeshModel>> m_meshes;
 
 
     Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
