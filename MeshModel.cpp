@@ -18,6 +18,8 @@ bool MeshModel::LoadFromOBJ(
 	std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
 	assert(file.is_open()); // 開けない時はやめる
 
+	std::vector<VertexData> faceVertices;
+
 	while (std::getline(file, line))
 	{
 		std::string identifier;
@@ -46,36 +48,49 @@ bool MeshModel::LoadFromOBJ(
 		}
 		else if (identifier == "f")
 		{
-			VertexData traiangle[3];
+			// 頂点を格納する一時リスト
+			std::vector<VertexData> currentFaceVertices;
+			std::string vertexDefinition;
 
-			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex)
-			{
-				std::string vertexDefinition;
-				s >> vertexDefinition;
-				std::istringstream v(vertexDefinition);
-				uint32_t elementIndices[3];
-				for (int32_t element = 0; element < 3; ++element)
-				{
-					std::string index;
-					std::getline(v, index, '/'); // /区切りでインデックスを読んでいく
-					elementIndices[element] = std::stoi(index);
+			// 面の頂点（3つ以上）を読み込む
+			while (s >> vertexDefinition) {
+				std::istringstream vStream(vertexDefinition);
+				uint32_t indices[3] = { 0, 0, 0 }; // 0で初期化
+
+				for (int32_t i = 0; i < 3; ++i) {
+					std::string indexStr;
+					if (!std::getline(vStream, indexStr, '/')) break;
+					if (!indexStr.empty()) {
+						indices[i] = std::stoi(indexStr);
+					}
 				}
 
-				Vector4 position = positions[elementIndices[0] - 1];
-				Vector2 texcoord = texcoords[elementIndices[1] - 1];
-				Vector3 normal = normals[elementIndices[2] - 1];
+				// --- ここで防御的にインデックスチェック ---
+				// 1. 位置(indices[0])が0ならエラーなのでスキップ
+				if (indices[0] == 0) continue;
 
-				// ⭕ 左手系変換：位置と法線のX軸を反転
-				position.x *= -1.0f;
-				normal.x *= -1.0f;
+				// 2. 範囲外アクセスを防ぐ（安全装置）
+				uint32_t pIdx = indices[0] - 1;
+				uint32_t tIdx = (indices[1] > 0 && indices[1] <= texcoords.size()) ? indices[1] - 1 : 0;
+				uint32_t nIdx = (indices[2] > 0 && indices[2] <= normals.size()) ? indices[2] - 1 : 0;
 
-				traiangle[faceVertex] = { position, texcoord, normal };
+				Vector4 pos = positions[pIdx];
+				Vector2 uv = (texcoords.size() > 0) ? texcoords[tIdx] : Vector2{ 0,0 };
+				Vector3 norm = (normals.size() > 0) ? normals[nIdx] : Vector3{ 0,0,0 };
+
+				// 座標変換
+				pos.x *= -1.0f;
+				norm.x *= -1.0f;
+
+				currentFaceVertices.push_back({ pos, uv, norm });
 			}
 
-			// ⭕ X反転によって自動的に時計回りになるので、結び順はひっくり返さず【そのまま】入れる！
-			modelData.vertices.push_back(traiangle[2]);
-			modelData.vertices.push_back(traiangle[1]);
-			modelData.vertices.push_back(traiangle[0]);
+			// 三角形分割して追加
+			for (size_t i = 2; i < currentFaceVertices.size(); ++i) {
+				modelData.vertices.push_back(currentFaceVertices[0]);
+				modelData.vertices.push_back(currentFaceVertices[i - 1]);
+				modelData.vertices.push_back(currentFaceVertices[i]);
+			}
 		}
 		else if (identifier == "mtllib")
 		{
@@ -132,8 +147,17 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 
 	MaterialData materialData;
 	std::string line;
-	std::ifstream file(directoryPath + '/' + filename);//ファイルを開く
-	assert(file.is_open());//開けない場合はやめる
+	//std::ifstream file(directoryPath + "/" + filename);//ファイルを開く
+	//assert(file.is_open());//開けない場合はやめる
+
+	std::string path = directoryPath + '/' + filename;
+	std::ifstream file(path);
+	if (!file.is_open()) {
+
+		OutputDebugStringA(("!!! マテリアルファイルが見つかりません: " + path + "\n").c_str());
+		return materialData; // assertで止めるのではなく空で返す
+
+	}
 
 	while (std::getline(file, line))
 	{

@@ -124,6 +124,29 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 		return nullptr;
 	}
 
+	std::string baseName = filename;
+	size_t lastDot = filename.find_last_of(".");
+	if (lastDot != std::string::npos) {
+		baseName = filename.substr(0, lastDot);
+	}
+
+	std::string folderAndBase = directoryPath + "/" + baseName;
+	std::string jpgPath = folderAndBase + ".jpg";
+	std::string pngPath = folderAndBase + ".png";
+
+	std::string texPath = "";
+	if (GetFileAttributesA(jpgPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+		texPath = jpgPath;
+	}
+	else if (GetFileAttributesA(pngPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+		texPath = pngPath;
+	}
+
+	if (!texPath.empty()) {
+		int texIndex = TextureManager::GetInstance()->LoadTexture(texPath);
+		mesh->SetTextureIndex(texIndex);
+	}
+
 	MeshModel* ptr = mesh.get();
 	m_meshes[filename] = std::move(mesh);
 
