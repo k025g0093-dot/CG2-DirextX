@@ -1,0 +1,32 @@
+# Blender 5.1.1 MTL File: 'gameMap.blend'
+# www.blender.org
+
+newmtl マテリアル
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd -s 50 10 1 C:/Users/umato/Pictures/blok.png
+
+newmtl マテリアル.002
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd C:/Users/umato/Pictures/graund.png
+
+newmtl マテリアル.003
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd -s 50 10 1 C:/Users/umato/Pictures/blok.png
