@@ -112,6 +112,7 @@
     </ClCompile>
     <ClCompile Include="LogSistem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MeshModel.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="Sphere.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="LogSistem.h" />
+    <ClInclude Include="MeshModel.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="PSO.h" />
     <ClInclude Include="Sphere.h" />

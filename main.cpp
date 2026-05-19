@@ -29,6 +29,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int uvChecker = textureManager->LoadTexture("resources/uvChecker.png");
 	int monsterBall = textureManager->LoadTexture("resources/monsterBall.png");
 
+	MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
+
+
 	HRESULT hr = S_OK;
 
 	uint32_t sphereVertexCount = 16 * 16 * 6;
@@ -71,7 +74,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vertexDataSprite[3] = { {640.0f,0.0f,0.0f,1.0f},{1.0f,0.0f} };//右上
 	vertexResourceSprite->Unmap(0, nullptr); // 書き終わったら Unmap するのが安全
 
-		uint32_t* indexDataSpraite = nullptr;
+	uint32_t* indexDataSpraite = nullptr;
 	indexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSpraite));
 	indexDataSpraite[0] = 0; indexDataSpraite[1] = 1; indexDataSpraite[2] = 2;
 	indexDataSpraite[3] = 1; indexDataSpraite[4] = 3; indexDataSpraite[5] = 2;
@@ -232,14 +235,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ImGui::DragFloat2("Sprite Position", &transformDataSprite.translate.x, 1.0f, 0.0f, 1280.0f);
 				ImGui::DragFloat3("Sprite Scale", &transformDataSprite.scale.x, 0.1f, 0.1f, 10.0f);
 				ImGui::DragFloat3("Sprite Rotate", &transformDataSprite.rotate.z, 0.01f);
-				ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+				ImGui::Checkbox("useMonsterBall", &useMonsterBall); 
+				ImGui::SliderAngle("rotX", &rotX);
+
 			}
 
 			if (ImGui::CollapsingHeader("c Sprite Settings")) {
 				ImGui::DragFloat2("uvTransform Position", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
 				ImGui::DragFloat2("uvTransform Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
 				ImGui::SliderAngle("uvTransform Rotate", &uvTransformSprite.rotate.z);
-			
+
 			}
 
 
@@ -293,15 +298,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif // USE_IMGUI
 
 
-			rotX+=0.001f;
+			//rotX += 0.001f;
 
 			// 6. 描画開始処理（コマンドリストのリセットなど）
 			engine->PreDraw();
 
 			for (int i = 0; i < 2; ++i) {
-				engine->DrawSphere({ 0.0f+i*5.0f, 0.0f, 5.0f }, { 0.0f,  rotX, 0.0f }, { 1.0f, 1.0f, 1.0f }, useMonsterBall ? monsterBall : uvChecker);
+				engine->DrawSphere({ 0.0f + i * 5.0f, 0.0f, 5.0f }, { 0.0f,  rotX, 0.0f }, { 1.0f, 1.0f, 1.0f }, useMonsterBall ? monsterBall : uvChecker);
 			}
-			
+
+			engine->DrawMesh(
+				modelData,
+				{ 0.0f, 0.0f, 0.0f },    // 位置 (とりあえず原点)
+				{ 0.0f, rotX, 0.0f },    // 回転
+				{ 1.0f, 1.0f, 1.0f }
+			);
+
 			// 7. GPUへの命令発行
 			engine->GetCommandList()->SetGraphicsRootSignature(engine->GetRootSignature());
 			engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());

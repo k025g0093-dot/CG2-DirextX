@@ -99,6 +99,9 @@
     <ClCompile Include="TextureManager.cpp">
       <Filter>ソース ファイル\TUFengine\Texture</Filter>
     </ClCompile>
+    <ClCompile Include="MeshModel.cpp">
+      <Filter>ソース ファイル\TUFengine\model\3Dmodel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -176,6 +179,9 @@
     </ClInclude>
     <ClInclude Include="TextureManager.h">
       <Filter>ソース ファイル\TUFengine\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshModel.h">
+      <Filter>ソース ファイル\TUFengine\model\3Dmodel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
