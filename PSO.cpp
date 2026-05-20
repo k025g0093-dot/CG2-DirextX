@@ -122,7 +122,7 @@ D3D12_BLEND_DESC CreateBlendState() {
 // ポリゴンの描画方法を定義する
 D3D12_RASTERIZER_DESC CreateRasterizerState() {
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;  // 裏面を描画しない
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;  // 裏面を描画しない
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴンを塗りつぶして描画
 	return rasterizerDesc;
 }

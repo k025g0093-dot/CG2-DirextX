@@ -73,13 +73,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // TUFEngine.h などの適切な場所に配置
 struct DrawRequest {
-    Model* model = nullptr;      // 描画するモデルへのポインタ
-    Vector3 pos{ 0,0,0 };        // 位置
-    Vector3 rot{ 0,0,0 };        // 回転
-    Vector3 scale{ 1,1,1 };      // 拡大縮小
-    Vector4 color{ 1,1,1,1 };    // 色
-    int textureIndex = 0;        // 使用するテクスチャ番号
-    bool isMesh = true;          // メッシュ描画（インデックス等）かどうか
+    Model* model = nullptr;
+    std::vector<Vector3> vertices;
+    Vector4 color = { 1, 1, 1, 1 };
+    std::vector<Vector2> uvs;
+    Vector3 rot = { 0, 0, 0 };
+    Vector3 scale = { 1, 1, 1 };
+    Vector3 pos = { 0, 0, 0 };
+    int textureIndex = 0; // ★超重要：ゴミデータが入るのを防ぐ
+    bool isMesh = false;  // ★超重要：メッシュ判定が狂うのを防ぐ
 };
 
 
@@ -91,8 +93,16 @@ public:
     void OnUpdate();
     MeshModel* LoadModel(const std::string& directoryPath, const std::string& filename);
 
-    void DrawSphere( const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
+    void DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color);
+    void DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
     void DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale);
+    void DrawMeshTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector4 color, std::vector<Vector2> uvs, Vector3 rot, Vector3 scale,int index);
+
+
+    void DrawDynamicMesh(DynamicMesh& mesh, Vector4 color);
+    void DrawDynamicMeshWithNormal(DynamicMesh& mesh,
+        std::vector<Vector4>& colors);
+
 
     void PreDraw();
     void PostDraw();
@@ -199,6 +209,7 @@ private:
 
 
     Sphere sphere_;
+    TriangleModel triangle;
     MeshModel* meshModel_;
 
 
@@ -218,6 +229,8 @@ private:
     std::vector<DrawRequest> m_drawRequests;
 
     std::unique_ptr<Sphere>m_temporarySpheres;
+    std::unique_ptr<TriangleModel>m_temporaryTriangle;
+
     std::map<std::string, std::unique_ptr<MeshModel>> m_meshes;
 
 
