@@ -1,7 +1,7 @@
 #include "TUFEngine.h"
 #include "Sphere.h"
-
-
+#include "WaveGrid.h"
+#include <algorithm>
 
 // --- メイン関数：ここからプログラムが始まる ---
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -39,6 +39,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// --- 頂点リソースの作成：三角形の形を作る ---
 // サイズもstrideもVertexDataに合わせる
+	
+#pragma region	リソースたちこれもたくさんあるので割愛
+	
 	ID3D12Resource* vertexResource = CreateVertexResource(
 		engine->GetDevice(), sizeof(VertexData) * sphereVertexCount, hr);
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
@@ -146,6 +149,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	directionalLightData->intensity = 1;
 	engine->SetDirectionalLightResource(directionalLightDataResource);
 	//directionalLightDataResource->Unmap(0, nullptr);
+#pragma endregion
+	
+		// グリッド設定
+	const int cubeCountX = 10;
+	const int cubeCountZ = 10;
+	float cubeSize = 1.0f;
+	float spacing = 1.0f;
+
+	// WaveGrid初期化
+	WaveGrid waveGrid(cubeCountX, cubeCountZ);
+
+	// 壁の設定
+	int wallX = cubeCountX / 3;
+	int holeStart = cubeCountZ / 2 - 3;
+	int holeEnd = cubeCountZ / 2 + 3;
+	for (int gz = 0; gz < cubeCountZ; gz++) {
+		bool isWall = (gz < holeStart || gz >= holeEnd);
+		waveGrid.setWall(wallX, gz, isWall);
+	}
+
+	float waveStrength = 10.0f;
+	float baseDepth = 3.0f;
+	bool  showNormal = false;  // 法線表示のON/OFF
+
+	DynamicMesh mesh(cubeCountX, cubeCountZ);
+	// ループの外で宣言
+	std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
+	float t = 0.0f;
+
 
 	bool useMonsterBall = true;
 
@@ -164,6 +196,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		else {
 
 			engine->OnUpdate();
+
+#pragma region カメラと行列の計算長いのでまとめる
 
 			cameraTransform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
 			cameraTransform.rotate.x -= Input::GetRightStickY() * cameraRotateSpeed;
@@ -209,7 +243,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				static_cast<float>(kClineHeight),
 				0.1f, 100.0f
 			);
-
 			Matrix4x4 worldViewProjectSprite = Multiply(
 				worldMatrixSprite, Multiply(
 					viewMatrixSprite, projectionMatrixSprite
@@ -222,6 +255,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			uvTransformMatrix = Multiply(uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
 			uvTransformMatrix = Multiply(uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
 			materialDataSprite->uvTransform = uvTransformMatrix;
+#pragma endregion
 
 #ifdef USE_IMGUI
 			ImGui_ImplDX12_NewFrame();
@@ -302,12 +336,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			ImGui::End(); // ★カメラウィンドウの終わり
 
+			ImGui::Begin("Yamato Debug");
+			ImGui::SliderFloat("waveStrength", &waveStrength, 0.1f, 20.0f);
+			ImGui::SliderFloat("baseDepth", &baseDepth, 1.0f, 10.0f);
+			ImGui::Checkbox("showNormal", &showNormal);  // 法線表示切り替え
+			// ImGui::Begin の中に追加
+			ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+			ImGui::Text("Triangles: %d", (int)mesh.getIndices().size() / 3);
+			if (ImGui::Button("Reset")) {
+				waveGrid.reset();
+				t = 0.0f;
+			}
+			ImGui::End();
 			
 			ImGui::Render();
 #endif // USE_IMGUI
 
-
+			t += 0.016f;
+			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
+				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 3.0f) * waveStrength;
+			}
 			//rotX += 0.001f;
+			waveGrid.update();
 
 			// 6. 描画開始処理（コマンドリストのリセットなど）
 			engine->PreDraw();
@@ -323,6 +373,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				{ 1.0f, 1.0f, 1.0f }
 			);
 
+			for (int i = 0; i < 10; i++) {
+				
+				engine->DrawTriangle(
+					{ 0.0f+i*0.5f, 2.0f, 0.0f },    // 位置 (とりあえず原点)
+					{ 0.0f, rotX, 0.0f },    // 回転
+					{ 1.0f, 1.0f, 1.0f },
+					{ 1,1,1,1 }
+				);
+			}
 			// 7. GPUへの命令発行
 			engine->GetCommandList()->SetGraphicsRootSignature(engine->GetRootSignature());
 			engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());
@@ -346,6 +405,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureManager->GetGPUHandle(uvChecker));
 
 			engine->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
+
+			for (int iz = 0; iz < cubeCountZ; iz++) {
+				for (int ix = 0; ix < cubeCountX; ix++) {
+					float h = waveGrid.getHeight(ix, iz);
+					mesh.updateHeight(ix, iz, h);
+
+					auto n = waveGrid.getNormal(ix, iz);
+					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
+
+					// 法線をRGBに変換
+					int idx = iz * cubeCountX + ix;
+					normalColors[idx] = {
+						(n.x + 1.0f) / 2.0f,
+						(n.y + 1.0f) / 2.0f,
+						(n.z + 1.0f) / 2.0f,
+						1.0f
+					};
+				}
+			}
+
+			//// 描画
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors);
+
 
 			// 8. 描画終了処理（バッファの入れ替えなど）
 			engine->PostDraw();

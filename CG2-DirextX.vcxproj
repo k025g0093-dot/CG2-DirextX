@@ -89,6 +89,7 @@
   <ItemGroup>
     <ClCompile Include="ConvertString.cpp" />
     <ClCompile Include="DXC.cpp" />
+    <ClCompile Include="DynamicMesh.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />
     <ClCompile Include="externals\imgui\imgui_demo.cpp" />
     <ClCompile Include="externals\imgui\imgui_draw.cpp" />
@@ -103,9 +104,11 @@
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="TriangleModel.cpp" />
     <ClCompile Include="TUFEngine.cpp" />
     <ClCompile Include="Vector.cpp" />
     <ClCompile Include="VertexResource.cpp" />
+    <ClCompile Include="WaveGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl">
@@ -126,6 +129,7 @@
     <ClInclude Include="allVector.h" />
     <ClInclude Include="ConvertString.h" />
     <ClInclude Include="DXC.h" />
+    <ClInclude Include="DynamicMesh.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
@@ -141,12 +145,14 @@
     <ClInclude Include="PSO.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="TextureManager.h" />
+    <ClInclude Include="TriangleModel.h" />
     <ClInclude Include="TUFEngine.h" />
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Vector4.h" />
     <ClInclude Include="VertexResource.h" />
+    <ClInclude Include="WaveGrid.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

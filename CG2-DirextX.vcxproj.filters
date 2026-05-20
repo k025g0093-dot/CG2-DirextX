@@ -43,6 +43,12 @@
     <Filter Include="ソース ファイル\TUFengine\Texture">
       <UniqueIdentifier>{516b4b7d-8391-45b9-8cca-b738370a1872}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\model\Mesh">
+      <UniqueIdentifier>{90893312-83cc-4757-83f8-23278a455907}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="外部から持ってきた関数やファイル">
+      <UniqueIdentifier>{aec849b1-0b23-4f6a-8af4-acc16205e6c9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -101,6 +107,15 @@
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp">
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="TriangleModel.cpp">
+      <Filter>ソース ファイル\TUFengine\model\各種図形</Filter>
+    </ClCompile>
+    <ClCompile Include="DynamicMesh.cpp">
+      <Filter>ソース ファイル\TUFengine\model\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="WaveGrid.cpp">
+      <Filter>外部から持ってきた関数やファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -182,6 +197,15 @@
     </ClInclude>
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h">
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="TriangleModel.h">
+      <Filter>ソース ファイル\TUFengine\model\各種図形</Filter>
+    </ClInclude>
+    <ClInclude Include="DynamicMesh.h">
+      <Filter>ソース ファイル\TUFengine\model\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveGrid.h">
+      <Filter>外部から持ってきた関数やファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

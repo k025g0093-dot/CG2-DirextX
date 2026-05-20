@@ -54,6 +54,7 @@ void TUFEngine::InitWindow() {
 	assert(hwnd != nullptr); // 作成に失敗していないかチェック
 }
 
+#pragma region	基本的なエンジン内部の処理
 
 TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	: width(width), height(height) {
@@ -109,6 +110,10 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
 	m_temporarySpheres = std::move(sphere);
+
+	auto tri = std::make_unique<TriangleModel>();
+	tri->Initialize(this);
+	m_temporaryTriangle = std::move(tri);
 
 }
 
@@ -177,6 +182,8 @@ TUFEngine::~TUFEngine() {
 	logStream.close();
 	CoUninitialize();
 }
+
+#pragma endregion
 
 #ifdef USE_IMGUI
 
@@ -497,6 +504,8 @@ void TUFEngine::SetupInfoQueue() {
 }
 #endif
 
+#pragma region	レンダーリクエスト
+
 void TUFEngine::RenderAllRequests() {
 	// ⭕ GPUに「このエンジンのシェーダーと設計図を使うよ」と教える
 	commandList->SetGraphicsRootSignature(rootSignature);
@@ -537,7 +546,6 @@ void TUFEngine::RenderAllRequests() {
 
 		// --- 6. 描画実行 ---
 		if (!request.isMesh) {
-			// スプライトなど
 
 			request.model->Draw(commandList, m_cbvIndex);
 		}
@@ -551,9 +559,11 @@ void TUFEngine::RenderAllRequests() {
 
 	m_drawRequests.clear();
 }
-
+#pragma endregion
 
 // --- TUFEngine.cpp ---
+
+#pragma region	各モデルの描画呼び出し
 
 void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex) {
 	if (!m_temporarySpheres) {
@@ -579,6 +589,29 @@ void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3
 	m_drawRequests.push_back(req);
 }
 
+//三角形
+void TUFEngine::DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color) {
+	if (!m_temporaryTriangle) {
+		m_temporaryTriangle = std::make_unique<TriangleModel>();
+		m_temporaryTriangle->Initialize(this);
+	}
+
+	// ← 現在の描画インデックスに頂点を書き込む
+	int triIndex = (int)m_drawRequests.size();
+	m_temporaryTriangle->UpdateVertices({ -0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 0);
+	m_temporaryTriangle->UpdateVertices({ 0.0f,  0.5f, 0.0f }, { 0.5f, 0.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 1);
+	m_temporaryTriangle->UpdateVertices({ 0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 2);
+
+	DrawRequest req;
+	req.model = m_temporaryTriangle.get();
+	req.pos = pos;
+	req.rot = rot;
+	req.scale = scale;
+	req.color = color;
+	req.isMesh = false;
+	m_drawRequests.push_back(req);
+}
+
 void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale) {
 	if (!mesh) return;
 
@@ -591,3 +624,134 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	req.isMesh = true;
 	m_drawRequests.push_back(req);
 }
+
+void TUFEngine::DrawMeshTriangle(
+	Vector3 v0, Vector3 v1, Vector3 v2,
+	Vector4 color,
+	std::vector<Vector2> uvs,
+	Vector3 rot, Vector3 scale,
+	int index)
+{
+	if (!m_temporaryTriangle) {
+		m_temporaryTriangle = std::make_unique<TriangleModel>();
+		m_temporaryTriangle->Initialize(this);
+	}
+
+
+	int meshTriangleCount = 0;
+	for (const auto& request : m_drawRequests) {
+		if (request.model == m_temporaryTriangle.get()) {
+			meshTriangleCount++;
+		}
+	}
+
+	int vertexStartIndex = meshTriangleCount * 3;
+
+
+	m_temporaryTriangle->UpdateVertices(v0, (uvs.size() > 0 ? uvs[0] : Vector2{ 0.0f, 1.0f }), { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 0);
+	m_temporaryTriangle->UpdateVertices(v1, (uvs.size() > 1 ? uvs[1] : Vector2{ 0.5f, 0.0f }), { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 1);
+	m_temporaryTriangle->UpdateVertices(v2, (uvs.size() > 2 ? uvs[2] : Vector2{ 1.0f, 1.0f }), { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 2);
+
+	// 4. 描画リクエストを作成してエンジンに注文を登録
+	DrawRequest req;
+	req.model = m_temporaryTriangle.get();
+	req.color = color;
+
+
+	req.pos = { 0.0f, 0.0f, 0.0f };
+	req.rot = { 0.0f, 0.0f, 0.0f };
+	req.scale = { 1.0f, 1.0f, 1.0f };
+	req.textureIndex = 0; // 必要に応じてテクスチャIDを指定してください
+	req.isMesh = true;
+
+	m_drawRequests.push_back(req);
+}
+
+void TUFEngine::DrawDynamicMesh(DynamicMesh& mesh, Vector4 color) {
+	auto& indices = mesh.getIndices();
+	auto& vertices = mesh.getVertices();
+
+	for (int i = 0; i < (int)indices.size(); i += 3) {
+		int i0 = indices[i] * 3;
+		int i1 = indices[i + 1] * 3;
+		int i2 = indices[i + 2] * 3;
+
+		Vector3 v0 = { vertices[i0],     vertices[i0 + 1], vertices[i0 + 2] };
+		Vector3 v1 = { vertices[i1],     vertices[i1 + 1], vertices[i1 + 2] };
+		Vector3 v2 = { vertices[i2],     vertices[i2 + 1], vertices[i2 + 2] };
+
+		DrawTriangle({}, { 0,0,0 }, { 1,1,1 }, color);
+	}
+}
+
+void TUFEngine::DrawDynamicMeshWithNormal(
+	DynamicMesh& mesh,
+	std::vector<Vector4>& colors)
+{
+	auto& indices = mesh.getIndices();
+	auto& vertices = mesh.getVertices();
+
+	if (!m_temporaryTriangle) {
+		m_temporaryTriangle = std::make_unique<TriangleModel>();
+		m_temporaryTriangle->Initialize(this);
+	}
+
+	int triangleCount = 0;
+
+	// グリッドから三角形を1枚ずつ取り出して処理するループ
+	for (int i = 0; i < (int)indices.size(); i += 3) {
+		int idx0 = indices[i];
+		int idx1 = indices[i + 1];
+		int idx2 = indices[i + 2];
+
+		// DynamicMeshの頂点バッファ(float配列)からXYZ座標を抽出
+		int i0 = idx0 * 3;
+		int i1 = idx1 * 3;
+		int i2 = idx2 * 3;
+
+		Vector3 v0 = { vertices[i0], vertices[i0 + 1], vertices[i0 + 2] };
+		Vector3 v1 = { vertices[i1], vertices[i1 + 1], vertices[i1 + 2] };
+		Vector3 v2 = { vertices[i2], vertices[i2 + 1], vertices[i2 + 2] };
+
+		// ⭕【安全対策】colors 配列が頂点数より少ない場合でもクラッシュしないようにガード
+		Vector4 c0 = (idx0 < (int)colors.size()) ? colors[idx0] : Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
+		Vector4 c1 = (idx1 < (int)colors.size()) ? colors[idx1] : Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
+		Vector4 c2 = (idx2 < (int)colors.size()) ? colors[idx2] : Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
+
+		// 3頂点の平均色を計算
+		Vector4 averageColor = {
+			(c0.x + c1.x + c2.x) / 3.0f,
+			(c0.y + c1.y + c2.y) / 3.0f,
+			(c0.z + c1.z + c2.z) / 3.0f,
+			1.0f
+		};
+
+		// 頂点バッファ上の書き込み開始位置（3頂点ずつ進む）
+		int vertexStartIndex = triangleCount * 3;
+
+		// ⭕【クラッシュ防止】TriangleModelの最大頂点数（30000）を超えそうならループを抜ける
+		if (vertexStartIndex + 2 >= 30000) {
+			break;
+		}
+
+		// ⭕【重要】裏返り防止のため、頂点の流し込み順（v1 と v2）を入れ替えてカリングを回避
+		m_temporaryTriangle->UpdateVertices(v0, { 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 0);
+		m_temporaryTriangle->UpdateVertices(v2, { 1.0f, 1.0f }, { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 1); // ここを入れ替え
+		m_temporaryTriangle->UpdateVertices(v1, { 0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 2); // ここを入れ替え
+
+		// 描画リクエストを作成して登録
+		DrawRequest req;
+		req.model = m_temporaryTriangle.get();
+		req.color = averageColor;
+		req.pos = { 0.0f, 0.0f, 0.0f }; // 頂点座標自体がすでに波の形なので原点固定
+		req.rot = { 0.0f, 0.0f, 0.0f };
+		req.scale = { 1.0f, 1.0f, 1.0f };
+		req.textureIndex = 0;
+		req.isMesh = true;
+
+		m_drawRequests.push_back(req);
+
+		triangleCount++;
+	}
+}
+#pragma endregion
