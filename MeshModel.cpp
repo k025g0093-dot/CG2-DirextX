@@ -87,9 +87,9 @@ bool MeshModel::LoadFromOBJ(
 
 			// 三角形分割して追加
 			for (size_t i = 2; i < currentFaceVertices.size(); ++i) {
-				modelData.vertices.push_back(currentFaceVertices[0]);
-				modelData.vertices.push_back(currentFaceVertices[i - 1]);
 				modelData.vertices.push_back(currentFaceVertices[i]);
+				modelData.vertices.push_back(currentFaceVertices[i - 1]);
+				modelData.vertices.push_back(currentFaceVertices[0]);
 			}
 		}
 		else if (identifier == "mtllib")
@@ -147,17 +147,8 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 
 	MaterialData materialData;
 	std::string line;
-	//std::ifstream file(directoryPath + "/" + filename);//ファイルを開く
-	//assert(file.is_open());//開けない場合はやめる
-
-	std::string path = directoryPath + '/' + filename;
-	std::ifstream file(path);
-	if (!file.is_open()) {
-
-		OutputDebugStringA(("!!! マテリアルファイルが見つかりません: " + path + "\n").c_str());
-		return materialData; // assertで止めるのではなく空で返す
-
-	}
+	std::ifstream file(directoryPath + "/" + filename);//ファイルを開く
+	assert(file.is_open());//開けない場合はやめる
 
 	while (std::getline(file, line))
 	{
