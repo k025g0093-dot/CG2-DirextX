@@ -1,6 +1,6 @@
 #pragma once
 #include "AllIncludeHeder.h"
-
+#include "DynamicMeshModel.h"
 struct VertexData {
     Vector4 position;
     Vector2 texcoord; // テクスチャのどこを使うかの指定
@@ -102,6 +102,8 @@ public:
     void SetDirectionalLightResource(ID3D12Resource* lightResource) { m_directionalLightResource = lightResource; }
 
 
+    //仮としておかせてください
+    TransformData cameraTransform{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -10.0f} }; // カメラ用
 
 private:
 
@@ -111,6 +113,7 @@ private:
     UINT8* m_pCbvDataBegin = nullptr;        // 1バイト単位で計算できるように UINT8* にする
     std::unique_ptr<ImGuiUIManager> m_imguiManager;
      
+    
 
     // --- 1. ウィンドウ・システム関連 ---
     HWND hwnd = nullptr;                 // ウィンドウハンドル
@@ -173,6 +176,7 @@ private:
     Sphere sphere_;
     TriangleModel triangle;
     MeshModel* meshModel_;
+    std::unique_ptr<DynamicMeshModel> m_dynamicMeshModel;
 
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;

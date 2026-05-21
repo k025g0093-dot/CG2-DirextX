@@ -52,6 +52,9 @@
     <Filter Include="ソース ファイル\TUFengine\ImGui\外部ファイルのImGui">
       <UniqueIdentifier>{4b71b213-f9c5-4e64-b6b7-018a86e2142c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\Camera">
+      <UniqueIdentifier>{5e4f739c-26a8-4327-9dc5-b5fc68d8e825}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -125,6 +128,15 @@
     </ClCompile>
     <ClCompile Include="ImGuiUIManager.cpp">
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="DynamicMeshModel.cpp">
+      <Filter>ソース ファイル\TUFengine\model\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>ソース ファイル\TUFengine\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiCamera.cpp">
+      <Filter>ソース ファイル\TUFengine\Camera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -224,6 +236,15 @@
     </ClInclude>
     <ClInclude Include="ImGuiUIManager.h">
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="DynamicMeshModel.h">
+      <Filter>ソース ファイル\TUFengine\model\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>ソース ファイル\TUFengine\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiCamera.h">
+      <Filter>ソース ファイル\TUFengine\Camera</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

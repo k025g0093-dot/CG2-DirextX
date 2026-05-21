@@ -87,9 +87,11 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ConvertString.cpp" />
     <ClCompile Include="DXC.cpp" />
     <ClCompile Include="DynamicMesh.cpp" />
+    <ClCompile Include="DynamicMeshModel.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />
     <ClCompile Include="externals\imgui\imgui_demo.cpp" />
     <ClCompile Include="externals\imgui\imgui_draw.cpp" />
@@ -97,6 +99,7 @@
     <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="ImGuiCamera.cpp" />
     <ClCompile Include="ImGuiUIManager.cpp" />
     <ClCompile Include="ImGuiWindow.cpp" />
     <ClCompile Include="LogSistem.cpp" />
@@ -130,9 +133,11 @@
     <ClInclude Include="AllIncludeHeder.h" />
     <ClInclude Include="allShapesModel.h" />
     <ClInclude Include="allVector.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="ConvertString.h" />
     <ClInclude Include="DXC.h" />
     <ClInclude Include="DynamicMesh.h" />
+    <ClInclude Include="DynamicMeshModel.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
@@ -141,6 +146,7 @@
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="ImGuiCamera.h" />
     <ClInclude Include="ImGuiUIManager.h" />
     <ClInclude Include="ImGuiWindow.h" />
     <ClInclude Include="Input.h" />

@@ -108,7 +108,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// --- 行列（トランスフォーム）の初期データ準備 ---
 	TransformData transformData{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // オブジェクト用
-	TransformData cameraTransform{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -10.0f} }; // カメラ用
+	
+	engine->cameraTransform; // カメラ用
+	
 	Matrix4x4 worldMatrix = MakeAffineMatrix(transformData.scale, transformData.rotate, transformData.translate);
 
 	// --- WVP行列リソースの作成：シェーダーに行列を渡すためのバッファ ---
@@ -153,31 +155,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
 #pragma region	これもTRで使う者たち
 		// グリッド設定
-	//const int cubeCountX = 10;
-	//const int cubeCountZ = 10;
-	//float cubeSize = 1.0f;
-	//float spacing = 1.0f;
+	const int cubeCountX = 10;
+	const int cubeCountZ = 10;
+	float cubeSize = 1.0f;
+	float spacing = 1.0f;
 
-	//// WaveGrid初期化
-	//WaveGrid waveGrid(cubeCountX, cubeCountZ);
+	// WaveGrid初期化
+	WaveGrid waveGrid(cubeCountX, cubeCountZ);
 
-	//// 壁の設定
-	//int wallX = cubeCountX / 3;
-	//int holeStart = cubeCountZ / 2 - 3;
-	//int holeEnd = cubeCountZ / 2 + 3;
-	//for (int gz = 0; gz < cubeCountZ; gz++) {
-	//	bool isWall = (gz < holeStart || gz >= holeEnd);
-	//	waveGrid.setWall(wallX, gz, isWall);
-	//}
+	// 壁の設定
+	int wallX = cubeCountX / 3;
+	int holeStart = cubeCountZ / 2 - 3;
+	int holeEnd = cubeCountZ / 2 + 3;
+	for (int gz = 0; gz < cubeCountZ; gz++) {
+		bool isWall = (gz < holeStart || gz >= holeEnd);
+		waveGrid.setWall(wallX, gz, isWall);
+	}
 
-	//float waveStrength = 10.0f;
-	//float baseDepth = 3.0f;
-	//bool  showNormal = false;  // 法線表示のON/OFF
+	float waveStrength = 10.0f;
+	float baseDepth = 3.0f;
+	bool  showNormal = false;  // 法線表示のON/OFF
 
-	//DynamicMesh mesh(cubeCountX, cubeCountZ);
-	//// ループの外で宣言
-	//std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
-	//float t = 0.0f;
+	DynamicMesh mesh(cubeCountX, cubeCountZ);
+	// ループの外で宣言
+	std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
+	float t = 0.0f;
 
 #pragma endregion
 
@@ -201,19 +203,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region カメラと行列の計算長いのでまとめる
 
-			cameraTransform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
-			cameraTransform.rotate.x -= Input::GetRightStickY() * cameraRotateSpeed;
+			engine->cameraTransform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
+			engine->cameraTransform.rotate.x -= Input::GetRightStickY() * cameraRotateSpeed;
 
-			cameraTransform.translate.x += Input::GetLeftStickX();
-			cameraTransform.translate.z += Input::GetLeftStickY();
+			engine->cameraTransform.translate.x += Input::GetLeftStickX();
+			engine->cameraTransform.translate.z += Input::GetLeftStickY();
 
 			// 1. オブジェクトを回転させる（更新）
 			transformData.rotate.y += 0.01f;
 
 			cameraMatrix = MakeAffineMatrix(
-				cameraTransform.scale,
-				cameraTransform.rotate,
-				cameraTransform.translate
+				engine->cameraTransform.scale,
+				engine->cameraTransform.rotate,
+				engine->cameraTransform.translate
 			);
 
 			worldMatrix = MakeAffineMatrix(transformData.scale, transformData.rotate, transformData.translate);
@@ -259,7 +261,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			materialDataSprite->uvTransform = uvTransformMatrix;
 #pragma endregion
 
-//#ifdef USE_IMGUI
+#ifdef USE_IMGUI
 //			ImGui_ImplDX12_NewFrame();
 //			ImGui_ImplWin32_NewFrame();
 //			ImGui::NewFrame();
@@ -352,15 +354,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 //			//ImGui::End();
 //			
 //			ImGui::Render();
-//#endif // USE_IMGUI
+#endif // USE_IMGUI
 
 #pragma region	これもそう
-			//t += 0.016f;
-			//for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-			//	waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 3.0f) * waveStrength;
-			//}
-			////rotX += 0.001f;
-			//waveGrid.update();
+			t += 0.016f;
+			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
+				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 3.0f) * waveStrength;
+			}
+			//rotX += 0.001f;
+			waveGrid.update();
 #pragma endregion
 
 			// 6. 描画開始処理（コマンドリストのリセットなど）
@@ -412,27 +414,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 #pragma region TRで使用する者ども
-			//for (int iz = 0; iz < cubeCountZ; iz++) {
-			//	for (int ix = 0; ix < cubeCountX; ix++) {
-			//		float h = waveGrid.getHeight(ix, iz);
-			//		mesh.updateHeight(ix, iz, h);
+			for (int iz = 0; iz < cubeCountZ; iz++) {
+				for (int ix = 0; ix < cubeCountX; ix++) {
+					float h = waveGrid.getHeight(ix, iz);
+					mesh.updateHeight(ix, iz, h);
 
-			//		auto n = waveGrid.getNormal(ix, iz);
-			//		mesh.updateNormal(ix, iz, n.x, n.y, n.z);
+					auto n = waveGrid.getNormal(ix, iz);
+					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
 
-			//		// 法線をRGBに変換
-			//		int idx = iz * cubeCountX + ix;
-			//		normalColors[idx] = {
-			//			(n.x + 1.0f) / 2.0f,
-			//			(n.y + 1.0f) / 2.0f,
-			//			(n.z + 1.0f) / 2.0f,
-			//			1.0f
-			//		};
-			//	}
-			//}
+					// 法線をRGBに変換
+					int idx = iz * cubeCountX + ix;
+					normalColors[idx] = {
+						(n.x + 1.0f) / 2.0f,
+						(n.y + 1.0f) / 2.0f,
+						(n.z + 1.0f) / 2.0f,
+						1.0f
+					};
+				}
+			}
 
-			////// 描画
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors);
+			//// 描画
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors);
 
 #pragma endregion
 			// 8. 描画終了処理（バッファの入れ替えなど）

@@ -116,6 +116,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	tri->Initialize(this);
 	m_temporaryTriangle = std::move(tri);
 
+
 }
 
 MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::string& filename) {
@@ -221,10 +222,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto startupWin = std::make_shared<IGStartupWindow>();
 	m_imguiManager->addWindow(startupWin);
 
-	// 今後、SpriteWindow や CameraWindow を作った時もここに：
-	// auto spriteWin = std::make_shared<SpriteWindow>();
-	// m_imguiManager->addWindow(spriteWin);
-	// と追加していくだけになります！
+	auto cameraWin = std::make_shared<ImGuiCamera>();
+	cameraWin->SetTransform(&cameraTransform);
+	m_imguiManager->addWindow(cameraWin);
 }
 #endif // USE_IMGUI
 
@@ -710,70 +710,37 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	DynamicMesh& mesh,
 	std::vector<Vector4>& colors)
 {
-	auto& indices = mesh.getIndices();
-	auto& vertices = mesh.getVertices();
+	uint32_t vertexCount = (uint32_t)mesh.getIndices().size();
+	if (vertexCount == 0) return;
 
-	if (!m_temporaryTriangle) {
-		m_temporaryTriangle = std::make_unique<TriangleModel>();
-		m_temporaryTriangle->Initialize(this);
+	if (!m_dynamicMeshModel) {
+		m_dynamicMeshModel = std::make_unique<DynamicMeshModel>();
+		m_dynamicMeshModel->Init(this, mesh.getGridW(), mesh.getGridH());
 	}
 
-	int triangleCount = 0;
+	m_dynamicMeshModel->SyncFrom(mesh);
 
-	// グリッドから三角形を1枚ずつ取り出して処理するループ
-	for (int i = 0; i < (int)indices.size(); i += 3) {
-		int idx0 = indices[i];
-		int idx1 = indices[i + 1];
-		int idx2 = indices[i + 2];
+	// RenderAllRequestsで処理するためにDrawRequestには登録せず直接Drawする
+	commandList->SetGraphicsRootSignature(rootSignature);
+	commandList->SetPipelineState(pipelineState);
 
-		// DynamicMeshの頂点バッファ(float配列)からXYZ座標を抽出
-		int i0 = idx0 * 3;
-		int i1 = idx1 * 3;
-		int i2 = idx2 * 3;
+	// WVP行列（板は原点固定）
+	Matrix4x4 world = MakeAffineMatrix({ 1,1,1 }, { 0,0,0 }, { 0,0,0 });
+	Matrix4x4 wvp = Multiply(world, viewProjectionMatrix);
 
-		Vector3 v0 = { vertices[i0], vertices[i0 + 1], vertices[i0 + 2] };
-		Vector3 v1 = { vertices[i1], vertices[i1 + 1], vertices[i1 + 2] };
-		Vector3 v2 = { vertices[i2], vertices[i2 + 1], vertices[i2 + 2] };
+	TransformationMatrix cbData{};
+	cbData.WVP = wvp;
+	cbData.World = world;
 
-		// ⭕【安全対策】colors 配列が頂点数より少ない場合でもクラッシュしないようにガード
-		Vector4 c0 = (idx0 < (int)colors.size()) ? colors[idx0] : Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
-		Vector4 c1 = (idx1 < (int)colors.size()) ? colors[idx1] : Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
-		Vector4 c2 = (idx2 < (int)colors.size()) ? colors[idx2] : Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
+	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
+	UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
+	memcpy(pDest, &cbData, sizeof(TransformationMatrix));
 
-		// 3頂点の平均色を計算
-		Vector4 averageColor = {
-			(c0.x + c1.x + c2.x) / 3.0f,
-			(c0.y + c1.y + c2.y) / 3.0f,
-			(c0.z + c1.z + c2.z) / 3.0f,
-			1.0f
-		};
+	D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
+		m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
+	commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
+	m_cbvIndex++;
 
-		// 頂点バッファ上の書き込み開始位置（3頂点ずつ進む）
-		int vertexStartIndex = triangleCount * 3;
-
-		// ⭕【クラッシュ防止】TriangleModelの最大頂点数（30000）を超えそうならループを抜ける
-		if (vertexStartIndex + 2 >= 30000) {
-			break;
-		}
-
-		// ⭕【重要】裏返り防止のため、頂点の流し込み順（v1 と v2）を入れ替えてカリングを回避
-		m_temporaryTriangle->UpdateVertices(v0, { 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 0);
-		m_temporaryTriangle->UpdateVertices(v2, { 1.0f, 1.0f }, { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 1); // ここを入れ替え
-		m_temporaryTriangle->UpdateVertices(v1, { 0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 2); // ここを入れ替え
-
-		// 描画リクエストを作成して登録
-		DrawRequest req;
-		req.model = m_temporaryTriangle.get();
-		req.color = averageColor;
-		req.pos = { 0.0f, 0.0f, 0.0f }; // 頂点座標自体がすでに波の形なので原点固定
-		req.rot = { 0.0f, 0.0f, 0.0f };
-		req.scale = { 1.0f, 1.0f, 1.0f };
-		req.textureIndex = 0;
-		req.isMesh = true;
-
-		m_drawRequests.push_back(req);
-
-		triangleCount++;
-	}
+	m_dynamicMeshModel->Draw(commandList, 0);
 }
 #pragma endregion
