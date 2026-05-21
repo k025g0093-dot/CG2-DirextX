@@ -55,6 +55,9 @@
     <Filter Include="ソース ファイル\TUFengine\Camera">
       <UniqueIdentifier>{5e4f739c-26a8-4327-9dc5-b5fc68d8e825}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\デバック情報をまとめるGUI">
+      <UniqueIdentifier>{050d8f04-21f2-4415-81d9-4b40050f2d66}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -137,6 +140,9 @@
     </ClCompile>
     <ClCompile Include="ImGuiCamera.cpp">
       <Filter>ソース ファイル\TUFengine\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiDebug.cpp">
+      <Filter>ソース ファイル\TUFengine\デバック情報をまとめるGUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -245,6 +251,9 @@
     </ClInclude>
     <ClInclude Include="ImGuiCamera.h">
       <Filter>ソース ファイル\TUFengine\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiDebug.h">
+      <Filter>ソース ファイル\TUFengine\デバック情報をまとめるGUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

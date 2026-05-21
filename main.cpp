@@ -110,8 +110,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region WaveGrid
 
-    const int cubeCountX = 10;
-    const int cubeCountZ = 10;
+    const int cubeCountX = 150;
+    const int cubeCountZ = 150;
 
     WaveGrid waveGrid(cubeCountX, cubeCountZ);
 
@@ -129,8 +129,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma endregion
 
-    // ★ Cameraクラスを使う
-
+    engine->m_camera.transform.translate.y = 20.0f;
+    //engine->m_camera.transform.rotate.z = 0.7f;
     bool  useMonsterBall = true;
     float cameraRotateSpeed = 0.01f;
     float rotX = 0.01f;

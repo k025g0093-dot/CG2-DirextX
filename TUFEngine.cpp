@@ -229,6 +229,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	cameraWin->SetTransform(&m_camera.transform);
 	m_imguiManager->addWindow(cameraWin);
 
+
+	auto debugWin = std::make_shared<ImGuiDebug>();
+	m_imguiManager->addWindow(debugWin);
 }
 #endif // USE_IMGUI
 
