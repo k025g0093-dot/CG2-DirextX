@@ -33,6 +33,7 @@
 #include "Model.h"
 #include "allShapesModel.h"
 
+
 #ifdef USE_IMGUI
 
 #include "externals/imgui/imgui.h"
@@ -43,3 +44,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #endif // USE_IMGUI
 
 #include"ImGuiUIManager.h"
+#include "Camera.h"
+//GUIのヘッダー関連
+#include "ImGuiCamera.h"
+#include "ImGuiDebug.h"
