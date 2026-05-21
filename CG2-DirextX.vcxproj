@@ -97,6 +97,8 @@
     <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="ImGuiUIManager.cpp" />
+    <ClCompile Include="ImGuiWindow.cpp" />
     <ClCompile Include="LogSistem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MeshModel.cpp" />
@@ -125,6 +127,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AllIncludeHeder.h" />
     <ClInclude Include="allShapesModel.h" />
     <ClInclude Include="allVector.h" />
     <ClInclude Include="ConvertString.h" />
@@ -138,6 +141,8 @@
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="ImGuiUIManager.h" />
+    <ClInclude Include="ImGuiWindow.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="LogSistem.h" />
     <ClInclude Include="MeshModel.h" />
