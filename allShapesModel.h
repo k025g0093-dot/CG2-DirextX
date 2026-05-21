@@ -4,3 +4,4 @@
 #include "MeshModel.h"
 #include "DynamicMesh.h"
 #include "DynamicMeshModel.h"
+#include "Sprite.h"

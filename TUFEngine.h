@@ -39,8 +39,14 @@ struct DrawRequest {
     Vector3 rot = { 0, 0, 0 };
     Vector3 scale = { 1, 1, 1 };
     Vector3 pos = { 0, 0, 0 };
+    Vector2 posV2 = { 0,0 };
+
+    float width = 0;
+    float height = 0;
+
     int textureIndex = 0; // ★超重要：ゴミデータが入るのを防ぐ
     bool isMesh = false;  // ★超重要：メッシュ判定が狂うのを防ぐ
+    bool isSprite = false;
 };
 
 
@@ -50,13 +56,17 @@ public:
     ~TUFEngine();
     static TUFEngine* GetInstance() { return s_instance; }
     void OnUpdate();
+
+    int LoadTexture(const std::string& filePath);
+
     MeshModel* LoadModel(const std::string& directoryPath, const std::string& filename);
 
     void DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color);
     void DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
     void DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale);
     void DrawMeshTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector4 color, std::vector<Vector2> uvs, Vector3 rot, Vector3 scale, int index);
-
+    void DrawSprite(const Vector2& pos, const float width,
+        const float height, const Vector3& rot, const Vector3& scale, const Vector4 color, int textureIndex);
 
     void DrawDynamicMesh(DynamicMesh& mesh, Vector4 color);
     void DrawDynamicMeshWithNormal(DynamicMesh& mesh,
@@ -105,13 +115,13 @@ public:
 
 private:
 
-   
+
     static TUFEngine* s_instance;
     int m_cbvIndex = 0; // 今何個目の三角形を描いているかのカウント
     static const int MAX_DRAW_COUNT = 1000000; // 1フレームに描ける最大数
     UINT8* m_pCbvDataBegin = nullptr;        // 1バイト単位で計算できるように UINT8* にする
     std::unique_ptr<ImGuiUIManager> m_imguiManager;
-
+    TextureManager* textureManager;
 
 
     // --- 1. ウィンドウ・システム関連 ---
@@ -176,6 +186,9 @@ private:
     TriangleModel triangle;
     MeshModel* meshModel_;
     std::unique_ptr<DynamicMeshModel> m_dynamicMeshModel;
+    std::unique_ptr<Sprite> sprite;
+
+
 
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;

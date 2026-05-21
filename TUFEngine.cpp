@@ -118,8 +118,25 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	tri->Initialize(this);
 	m_temporaryTriangle = std::move(tri);
 
+	
+	// TUFEngine.cpp のコンストラクタで
+	textureManager = TextureManager::GetInstance(); // ← これを追加
+	textureManager->Initialize(device, srvDescriptorHeap, commandList);
 
+	auto sprite_ = std::make_unique<Sprite>();
+	float sWidth = (float)width;
+	float sheight = (float)height;
+
+
+	sprite_->InitSprite(this,0, sWidth, sheight);
+	sprite = std::move(sprite_);
 }
+
+// TUFEngine.cpp
+int TUFEngine::LoadTexture(const std::string& filePath) {
+	return TextureManager::GetInstance()->LoadTexture(filePath);
+}
+
 
 MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::string& filename) {
 	if (m_meshes.count(filename) > 0) {
@@ -557,8 +574,19 @@ void TUFEngine::RenderAllRequests() {
 		if (!request.model) continue;
 
 		// --- 3. WVP行列を作成 ---
-		Matrix4x4 world = MakeAffineMatrix(request.scale, request.rot, request.pos);
-		Matrix4x4 wvp = Multiply(world, viewProjMatrix);
+		Matrix4x4 world;
+		Matrix4x4 wvp;
+
+
+		if (request.isSprite) {
+			world = MakeAffineMatrix(request.scale, request.rot, { request.posV2.x, request.posV2.y, 0.0f });
+			Matrix4x4 ortho = MakeOrthographicMatrix(0.0f, 0.0f, (float)width, (float)height, 0.1f, 100.0f);
+			wvp = Multiply(world, ortho); // ← 正射影行列を使う
+		}
+		else {
+			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
+			wvp = Multiply(world, viewProjMatrix);
+		}
 
 		TransformationMatrix cbData{};
 		cbData.WVP = wvp;
@@ -641,9 +669,33 @@ void TUFEngine::DrawTriangle(const Vector3& pos, const Vector3& rot, const Vecto
 	m_drawRequests.push_back(req);
 }
 
+void TUFEngine::DrawSprite(
+	const Vector2& pos, 
+	const float width,
+	const float height,
+	const Vector3& rot,
+	const Vector3& scale,
+	const Vector4 color,
+	int textureIndex) 
+{
+	sprite->Resize(width, height);
+	DrawRequest req;
+	req.isSprite = true;
+	req.posV2 = pos;
+	req.rot = rot;
+	req.scale = scale;
+	req.width = width;
+	req.height = height;
+	req.textureIndex = textureIndex; // ★メンバから自動取得
+	req.isMesh = true;
+	req.model = sprite.get();
+	m_drawRequests.push_back(req);
+
+}
+
+
 void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale) {
 	if (!mesh) return;
-
 	DrawRequest req;
 	req.model = mesh;
 	req.pos = pos;

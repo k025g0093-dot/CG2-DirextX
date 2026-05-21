@@ -109,6 +109,7 @@
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TriangleModel.cpp" />
     <ClCompile Include="TUFEngine.cpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="PSO.h" />
     <ClInclude Include="Sphere.h" />
+    <ClInclude Include="Sprite.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TriangleModel.h" />
     <ClInclude Include="TUFEngine.h" />
