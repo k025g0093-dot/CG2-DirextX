@@ -49,6 +49,9 @@
     <Filter Include="外部から持ってきた関数やファイル">
       <UniqueIdentifier>{aec849b1-0b23-4f6a-8af4-acc16205e6c9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\ImGui\外部ファイルのImGui">
+      <UniqueIdentifier>{4b71b213-f9c5-4e64-b6b7-018a86e2142c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -87,27 +90,6 @@
     <ClCompile Include="MeshModel.cpp">
       <Filter>ソース ファイル\TUFengine\model\3Dmodel</Filter>
     </ClCompile>
-    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\imgui\imgui_tables.cpp">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\imgui\imgui_widgets.cpp">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\imgui\imgui.cpp">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\imgui\imgui_demo.cpp">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\imgui\imgui_draw.cpp">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClCompile>
     <ClCompile Include="TriangleModel.cpp">
       <Filter>ソース ファイル\TUFengine\model\各種図形</Filter>
     </ClCompile>
@@ -116,6 +98,33 @@
     </ClCompile>
     <ClCompile Include="WaveGrid.cpp">
       <Filter>外部から持ってきた関数やファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_demo.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_draw.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_widgets.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_tables.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiWindow.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiUIManager.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -174,30 +183,6 @@
     <ClInclude Include="MeshModel.h">
       <Filter>ソース ファイル\TUFengine\model\3Dmodel</Filter>
     </ClInclude>
-    <ClInclude Include="externals\imgui\imgui_impl_win32.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imgui_internal.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imstb_rectpack.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imstb_textedit.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imstb_truetype.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imconfig.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imgui.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\imgui\imgui_impl_dx12.h">
-      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
-    </ClInclude>
     <ClInclude Include="TriangleModel.h">
       <Filter>ソース ファイル\TUFengine\model\各種図形</Filter>
     </ClInclude>
@@ -206,6 +191,39 @@
     </ClInclude>
     <ClInclude Include="WaveGrid.h">
       <Filter>外部から持ってきた関数やファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imconfig.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui_impl_dx12.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui_impl_win32.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui_internal.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imstb_rectpack.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imstb_textedit.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imstb_truetype.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\外部ファイルのImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="AllIncludeHeder.h">
+      <Filter>ソース ファイル\TUFengine</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiWindow.h">
+      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiUIManager.h">
+      <Filter>ソース ファイル\TUFengine\ImGui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

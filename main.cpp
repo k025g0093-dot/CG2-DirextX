@@ -151,39 +151,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	//directionalLightDataResource->Unmap(0, nullptr);
 #pragma endregion
 	
+#pragma region	これもTRで使う者たち
 		// グリッド設定
-	const int cubeCountX = 10;
-	const int cubeCountZ = 10;
-	float cubeSize = 1.0f;
-	float spacing = 1.0f;
+	//const int cubeCountX = 10;
+	//const int cubeCountZ = 10;
+	//float cubeSize = 1.0f;
+	//float spacing = 1.0f;
 
-	// WaveGrid初期化
-	WaveGrid waveGrid(cubeCountX, cubeCountZ);
+	//// WaveGrid初期化
+	//WaveGrid waveGrid(cubeCountX, cubeCountZ);
 
-	// 壁の設定
-	int wallX = cubeCountX / 3;
-	int holeStart = cubeCountZ / 2 - 3;
-	int holeEnd = cubeCountZ / 2 + 3;
-	for (int gz = 0; gz < cubeCountZ; gz++) {
-		bool isWall = (gz < holeStart || gz >= holeEnd);
-		waveGrid.setWall(wallX, gz, isWall);
-	}
+	//// 壁の設定
+	//int wallX = cubeCountX / 3;
+	//int holeStart = cubeCountZ / 2 - 3;
+	//int holeEnd = cubeCountZ / 2 + 3;
+	//for (int gz = 0; gz < cubeCountZ; gz++) {
+	//	bool isWall = (gz < holeStart || gz >= holeEnd);
+	//	waveGrid.setWall(wallX, gz, isWall);
+	//}
 
-	float waveStrength = 10.0f;
-	float baseDepth = 3.0f;
-	bool  showNormal = false;  // 法線表示のON/OFF
+	//float waveStrength = 10.0f;
+	//float baseDepth = 3.0f;
+	//bool  showNormal = false;  // 法線表示のON/OFF
 
-	DynamicMesh mesh(cubeCountX, cubeCountZ);
-	// ループの外で宣言
-	std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
-	float t = 0.0f;
+	//DynamicMesh mesh(cubeCountX, cubeCountZ);
+	//// ループの外で宣言
+	//std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
+	//float t = 0.0f;
+
+#pragma endregion
 
 
 	bool useMonsterBall = true;
 
 	float cameraMoveSpeed = 0.01f;                  // 移動速度
 	float cameraRotateSpeed = 0.01f;                // 回転速度
-
 	float rotX = 0.01f;
 
 	// --- メインループ：ここが毎フレーム実行される ---
@@ -257,107 +259,109 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			materialDataSprite->uvTransform = uvTransformMatrix;
 #pragma endregion
 
-#ifdef USE_IMGUI
-			ImGui_ImplDX12_NewFrame();
-			ImGui_ImplWin32_NewFrame();
-			ImGui::NewFrame();
+//#ifdef USE_IMGUI
+//			ImGui_ImplDX12_NewFrame();
+//			ImGui_ImplWin32_NewFrame();
+//			ImGui::NewFrame();
+//
+//			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+//
+//			// ====================================================
+//			// 1. スプライト設定用のウィンドウ
+//			// ====================================================
+//			ImGui::Begin("Sprite Matrix"); // ★新しいウィンドウを開始
+//
+//			ImGui::DragFloat2("Sprite Position", &transformDataSprite.translate.x, 1.0f, 0.0f, 1280.0f);
+//			ImGui::DragFloat3("Sprite Scale", &transformDataSprite.scale.x, 0.1f, 0.1f, 10.0f);
+//			ImGui::DragFloat3("Sprite Rotate", &transformDataSprite.rotate.z, 0.01f);
+//			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+//			ImGui::SliderAngle("rotX", &rotX);
+//
+//			ImGui::Separator(); // ちょっと区切り線
+//
+//			ImGui::DragFloat2("uvTransform Position", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+//			ImGui::DragFloat2("uvTransform Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+//			ImGui::SliderAngle("uvTransform Rotate", &uvTransformSprite.rotate.z);
+//
+//			ImGui::End(); // ★スプライトウィンドウの終わり
+//
+//
+//			// ====================================================
+//			// 2. ライティング設定用のウィンドウ
+//			// ====================================================
+//			if (directionalLightData) {
+//				ImGui::Begin("Lighting Control"); // ★新しいウィンドウを開始
+//
+//				// 改善ポイント①：UI操作専用の「一時変数」を用意する
+//				static float lightDir[3] = { 1.0f, -1.0f, 1.0f };
+//
+//				// 一時変数をスライダーで操作する
+//				ImGui::ColorEdit4("Light Color", &directionalLightData->color.x);
+//				ImGui::DragFloat3("Light Direction", lightDir, 0.01f, -1.0f, 1.0f);
+//				ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f, 0.0f, 10.0f);
+//				ImGui::DragInt("materialData->enableLifhting ", &materialData->enableLifhting, 1, 0);
+//
+//				// 改善ポイント②：スライダーの値を計算（正規化）してから、GPU用のデータに流し込む
+//				float length = sqrtf(lightDir[0] * lightDir[0] + lightDir[1] * lightDir[1] + lightDir[2] * lightDir[2]);
+//				if (length > 0.0f) {
+//					directionalLightData->direction.x = lightDir[0] / length;
+//					directionalLightData->direction.y = lightDir[1] / length;
+//					directionalLightData->direction.z = lightDir[2] / length;
+//				}
+//
+//				ImGui::End(); // ★ライティングウィンドウの終わり
+//			}
+//
+//
+//			// ====================================================
+//			// 3. カメラ設定用のウィンドウ
+//			// ====================================================
+//			ImGui::Begin("Camera Monitor"); // ★新しいウィンドウを開始
+//
+//			// カメラの位置を操作・確認 (X, Y, Z)
+//			ImGui::DragFloat3("Camera Position", &cameraTransform.translate.x, 0.1f);
+//
+//			// カメラの回転角を操作・確認 (X, Y, Z)
+//			ImGui::DragFloat3("Camera Rotation", &cameraTransform.rotate.x, 0.01f);
+//
+//			// 【便利機能】カメラの位置や向きが迷子になったときのリセットボタン
+//			if (ImGui::Button("Reset Camera")) {
+//				cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
+//				cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
+//			}
+//
+//			// 現在の数値をテキストとして小さく表示（デバッグ情報の確認用）
+//			ImGui::Separator();
+//			ImGui::Text("Debug Info:");
+//			ImGui::Text("Pos: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.translate.x, cameraTransform.translate.y, cameraTransform.translate.z);
+//			ImGui::Text("Rot: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.rotate.x, cameraTransform.rotate.y, cameraTransform.rotate.z);
+//
+//			ImGui::End(); // ★カメラウィンドウの終わり
+//
+//			//ImGui::Begin("Yamato Debug");
+//			//ImGui::SliderFloat("waveStrength", &waveStrength, 0.1f, 20.0f);
+//			//ImGui::SliderFloat("baseDepth", &baseDepth, 1.0f, 10.0f);
+//			//ImGui::Checkbox("showNormal", &showNormal);  // 法線表示切り替え
+//			//// ImGui::Begin の中に追加
+//			//ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+//			//ImGui::Text("Triangles: %d", (int)mesh.getIndices().size() / 3);
+//			//if (ImGui::Button("Reset")) {
+//			//	waveGrid.reset();
+//			//	t = 0.0f;
+//			//}
+//			//ImGui::End();
+//			
+//			ImGui::Render();
+//#endif // USE_IMGUI
 
-			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-
-			// ====================================================
-			// 1. スプライト設定用のウィンドウ
-			// ====================================================
-			ImGui::Begin("Sprite Matrix"); // ★新しいウィンドウを開始
-
-			ImGui::DragFloat2("Sprite Position", &transformDataSprite.translate.x, 1.0f, 0.0f, 1280.0f);
-			ImGui::DragFloat3("Sprite Scale", &transformDataSprite.scale.x, 0.1f, 0.1f, 10.0f);
-			ImGui::DragFloat3("Sprite Rotate", &transformDataSprite.rotate.z, 0.01f);
-			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
-			ImGui::SliderAngle("rotX", &rotX);
-
-			ImGui::Separator(); // ちょっと区切り線
-
-			ImGui::DragFloat2("uvTransform Position", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-			ImGui::DragFloat2("uvTransform Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-			ImGui::SliderAngle("uvTransform Rotate", &uvTransformSprite.rotate.z);
-
-			ImGui::End(); // ★スプライトウィンドウの終わり
-
-
-			// ====================================================
-			// 2. ライティング設定用のウィンドウ
-			// ====================================================
-			if (directionalLightData) {
-				ImGui::Begin("Lighting Control"); // ★新しいウィンドウを開始
-
-				// 改善ポイント①：UI操作専用の「一時変数」を用意する
-				static float lightDir[3] = { 1.0f, -1.0f, 1.0f };
-
-				// 一時変数をスライダーで操作する
-				ImGui::ColorEdit4("Light Color", &directionalLightData->color.x);
-				ImGui::DragFloat3("Light Direction", lightDir, 0.01f, -1.0f, 1.0f);
-				ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f, 0.0f, 10.0f);
-				ImGui::DragInt("materialData->enableLifhting ", &materialData->enableLifhting, 1, 0);
-
-				// 改善ポイント②：スライダーの値を計算（正規化）してから、GPU用のデータに流し込む
-				float length = sqrtf(lightDir[0] * lightDir[0] + lightDir[1] * lightDir[1] + lightDir[2] * lightDir[2]);
-				if (length > 0.0f) {
-					directionalLightData->direction.x = lightDir[0] / length;
-					directionalLightData->direction.y = lightDir[1] / length;
-					directionalLightData->direction.z = lightDir[2] / length;
-				}
-
-				ImGui::End(); // ★ライティングウィンドウの終わり
-			}
-
-
-			// ====================================================
-			// 3. カメラ設定用のウィンドウ
-			// ====================================================
-			ImGui::Begin("Camera Monitor"); // ★新しいウィンドウを開始
-
-			// カメラの位置を操作・確認 (X, Y, Z)
-			ImGui::DragFloat3("Camera Position", &cameraTransform.translate.x, 0.1f);
-
-			// カメラの回転角を操作・確認 (X, Y, Z)
-			ImGui::DragFloat3("Camera Rotation", &cameraTransform.rotate.x, 0.01f);
-
-			// 【便利機能】カメラの位置や向きが迷子になったときのリセットボタン
-			if (ImGui::Button("Reset Camera")) {
-				cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
-				cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
-			}
-
-			// 現在の数値をテキストとして小さく表示（デバッグ情報の確認用）
-			ImGui::Separator();
-			ImGui::Text("Debug Info:");
-			ImGui::Text("Pos: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.translate.x, cameraTransform.translate.y, cameraTransform.translate.z);
-			ImGui::Text("Rot: X:%.2f, Y:%.2f, Z:%.2f", cameraTransform.rotate.x, cameraTransform.rotate.y, cameraTransform.rotate.z);
-
-			ImGui::End(); // ★カメラウィンドウの終わり
-
-			ImGui::Begin("Yamato Debug");
-			ImGui::SliderFloat("waveStrength", &waveStrength, 0.1f, 20.0f);
-			ImGui::SliderFloat("baseDepth", &baseDepth, 1.0f, 10.0f);
-			ImGui::Checkbox("showNormal", &showNormal);  // 法線表示切り替え
-			// ImGui::Begin の中に追加
-			ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-			ImGui::Text("Triangles: %d", (int)mesh.getIndices().size() / 3);
-			if (ImGui::Button("Reset")) {
-				waveGrid.reset();
-				t = 0.0f;
-			}
-			ImGui::End();
-			
-			ImGui::Render();
-#endif // USE_IMGUI
-
-			t += 0.016f;
-			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 3.0f) * waveStrength;
-			}
-			//rotX += 0.001f;
-			waveGrid.update();
+#pragma region	これもそう
+			//t += 0.016f;
+			//for (int gz = 1; gz < cubeCountZ - 1; gz++) {
+			//	waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 3.0f) * waveStrength;
+			//}
+			////rotX += 0.001f;
+			//waveGrid.update();
+#pragma endregion
 
 			// 6. 描画開始処理（コマンドリストのリセットなど）
 			engine->PreDraw();
@@ -407,29 +411,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 
-			for (int iz = 0; iz < cubeCountZ; iz++) {
-				for (int ix = 0; ix < cubeCountX; ix++) {
-					float h = waveGrid.getHeight(ix, iz);
-					mesh.updateHeight(ix, iz, h);
+#pragma region TRで使用する者ども
+			//for (int iz = 0; iz < cubeCountZ; iz++) {
+			//	for (int ix = 0; ix < cubeCountX; ix++) {
+			//		float h = waveGrid.getHeight(ix, iz);
+			//		mesh.updateHeight(ix, iz, h);
 
-					auto n = waveGrid.getNormal(ix, iz);
-					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
+			//		auto n = waveGrid.getNormal(ix, iz);
+			//		mesh.updateNormal(ix, iz, n.x, n.y, n.z);
 
-					// 法線をRGBに変換
-					int idx = iz * cubeCountX + ix;
-					normalColors[idx] = {
-						(n.x + 1.0f) / 2.0f,
-						(n.y + 1.0f) / 2.0f,
-						(n.z + 1.0f) / 2.0f,
-						1.0f
-					};
-				}
-			}
+			//		// 法線をRGBに変換
+			//		int idx = iz * cubeCountX + ix;
+			//		normalColors[idx] = {
+			//			(n.x + 1.0f) / 2.0f,
+			//			(n.y + 1.0f) / 2.0f,
+			//			(n.z + 1.0f) / 2.0f,
+			//			1.0f
+			//		};
+			//	}
+			//}
 
-			//// 描画
-			engine->DrawDynamicMeshWithNormal(mesh, normalColors);
+			////// 描画
+			//engine->DrawDynamicMeshWithNormal(mesh, normalColors);
 
-
+#pragma endregion
 			// 8. 描画終了処理（バッファの入れ替えなど）
 			engine->PostDraw();
 		}

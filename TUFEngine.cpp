@@ -1,5 +1,6 @@
 #include "TUFEngine.h"
-
+#include "ImGuiUIManager.h" 
+#include "ImGuiWindow.h" 
 
 // --- ウィンドウプロシージャ：Windowsからのメッセージ（閉じるボタンなど）を処理 ---
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -164,6 +165,13 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 void TUFEngine::OnUpdate() {
 	Input::Update();
 	//sphere_.Update();
+
+#ifdef USE_IMGUI
+	if (m_imguiManager) {
+		m_imguiManager->update(this);
+	}
+#endif
+
 }
 
 TUFEngine::~TUFEngine() {
@@ -186,7 +194,6 @@ TUFEngine::~TUFEngine() {
 #pragma endregion
 
 #ifdef USE_IMGUI
-
 void TUFEngine::InitializeImGui(HWND hwnd) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -201,8 +208,23 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
 	);
 	ImGuiIO& io = ImGui::GetIO();
-
 	io.Fonts->Build();
+
+	// ====================================================
+	// 🌟 ここから新しく追加する処理！
+	// ====================================================
+
+	// 1. 基本初期化が終わったので、マネージャーを生成する
+	m_imguiManager = std::make_unique<ImGuiUIManager>(hwnd);
+
+	// 2. テスト用のスタートアップウィンドウを作って登録する
+	auto startupWin = std::make_shared<IGStartupWindow>();
+	m_imguiManager->addWindow(startupWin);
+
+	// 今後、SpriteWindow や CameraWindow を作った時もここに：
+	// auto spriteWin = std::make_shared<SpriteWindow>();
+	// m_imguiManager->addWindow(spriteWin);
+	// と追加していくだけになります！
 }
 #endif // USE_IMGUI
 

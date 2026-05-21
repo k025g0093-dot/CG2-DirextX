@@ -1,0 +1,45 @@
+#pragma once
+#include <Windows.h>
+#include <cstdint>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <dxgidebug.h>
+#include <cassert>
+#include <filesystem>
+#include <dbghelp.h>
+#include <strsafe.h>
+#include <string>
+#include <format>
+
+#pragma comment(lib,"d3d12.lib")
+#pragma comment(lib,"dxgi.lib")
+#pragma comment(lib,"dxguid.lib")
+#pragma comment(lib,"DbgHelp.lib")
+// TUFEngine.h などのライブラリリンク部分に追加
+#pragma comment(lib, "DirectXTex.lib")
+
+#include "ConvertString.h"
+#include "LogSistem.h"
+#include "DXC.h"
+#include "PSO.h"
+#include "VertexResource.h"
+#include "externals/DirectXTex/DirectXTex.h"
+#include "externals/DirectXTex/d3dx12.h"
+#include <vector>
+#include "TextureManager.h"
+#include "allVector.h"
+
+#include "Input.h"
+#include "Model.h"
+#include "allShapesModel.h"
+
+#ifdef USE_IMGUI
+
+#include "externals/imgui/imgui.h"
+#include "externals/imgui/imgui_impl_win32.h"
+#include "externals/imgui/imgui_impl_dx12.h"
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+#endif // USE_IMGUI
+
+#include"ImGuiUIManager.h"
