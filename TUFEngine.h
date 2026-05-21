@@ -55,7 +55,7 @@ public:
     void DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color);
     void DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
     void DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale);
-    void DrawMeshTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector4 color, std::vector<Vector2> uvs, Vector3 rot, Vector3 scale,int index);
+    void DrawMeshTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector4 color, std::vector<Vector2> uvs, Vector3 rot, Vector3 scale, int index);
 
 
     void DrawDynamicMesh(DynamicMesh& mesh, Vector4 color);
@@ -101,19 +101,18 @@ public:
     void SetViewProjectionMatrix(const Matrix4x4& vp) { viewProjectionMatrix = vp; }
     void SetDirectionalLightResource(ID3D12Resource* lightResource) { m_directionalLightResource = lightResource; }
 
-
-    //仮としておかせてください
-    TransformData cameraTransform{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -10.0f} }; // カメラ用
+    Camera m_camera;
 
 private:
 
+   
     static TUFEngine* s_instance;
     int m_cbvIndex = 0; // 今何個目の三角形を描いているかのカウント
     static const int MAX_DRAW_COUNT = 1000000; // 1フレームに描ける最大数
     UINT8* m_pCbvDataBegin = nullptr;        // 1バイト単位で計算できるように UINT8* にする
     std::unique_ptr<ImGuiUIManager> m_imguiManager;
-     
-    
+
+
 
     // --- 1. ウィンドウ・システム関連 ---
     HWND hwnd = nullptr;                 // ウィンドウハンドル

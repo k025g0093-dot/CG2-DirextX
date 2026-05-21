@@ -108,6 +108,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 			D3D12_DESCRIPTOR_HEAP_TYPE_DSV
 		);
 
+
+
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
 	m_temporarySpheres = std::move(sphere);
@@ -173,6 +175,7 @@ void TUFEngine::OnUpdate() {
 	}
 #endif
 
+
 }
 
 TUFEngine::~TUFEngine() {
@@ -223,8 +226,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	m_imguiManager->addWindow(startupWin);
 
 	auto cameraWin = std::make_shared<ImGuiCamera>();
-	cameraWin->SetTransform(&cameraTransform);
+	cameraWin->SetTransform(&m_camera.transform);
 	m_imguiManager->addWindow(cameraWin);
+
 }
 #endif // USE_IMGUI
 
