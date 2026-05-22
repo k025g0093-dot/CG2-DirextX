@@ -220,24 +220,25 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 #pragma region テクスチャのロード
 ID3D12Resource* TUFEngine::LoadTexture(const std::string& filePath) {
 
-	// ① テクスチャファイル読み込み
-	DirectX::ScratchImage image{};
-	std::wstring filePathW = ConvertString(filePath);
-	hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-	assert(SUCCEEDED(hr));
-
-	// ② ミップマップの作成
-	DirectX::ScratchImage mipImages{};
-	hr = DirectX::GenerateMipMaps(
-		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
-		DirectX::TEX_FILTER_SRGB, 0, mipImages);
-	assert(SUCCEEDED(hr));
-
 	ID3D12Resource* texResource = CreateTextureResource(mipImages.GetMetadata());
+	ID3D12Resource* intermediateResource = UploadTexture(texResource, mipImages);
 
-	UploadTexture(texResource, mipImages);
+	hr = commandList->Close();
+	assert(SUCCEEDED(hr));
 
-	//SRVの作成
+	ID3D12CommandList* commandLists[] = { commandList };
+	commandQueue->ExecuteCommandLists(1, commandLists);
+
+	// FenceでGPU完了待ち
+
+	intermediateResource->Release();
+
+	hr = commandAllocator->Reset();
+	assert(SUCCEEDED(hr));
+
+	hr = commandList->Reset(commandAllocator, nullptr);
+	assert(SUCCEEDED(hr));
+
 	CreateTextureSRV(texResource, mipImages.GetMetadata());
 
 	return texResource;
@@ -308,6 +309,7 @@ ID3D12Resource* TUFEngine::UploadTexture(
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
 	commandList->ResourceBarrier(1, &barrier);
+
 	return intermediateResource;
 
 }
