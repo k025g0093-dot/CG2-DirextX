@@ -70,7 +70,7 @@ public:
 
     void DrawDynamicMesh(DynamicMesh& mesh, Vector4 color);
     void DrawDynamicMeshWithNormal(DynamicMesh& mesh,
-        std::vector<Vector4>& colors);
+        std::vector<Vector4>& colors, int index);
 
 
     void PreDraw();

@@ -16,8 +16,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     ShowWindow(engine->GetHwnd(), nCmdShow);
 
+
     int uvChecker = engine->LoadTexture("resources/uvChecker.png");
     int monsterBall = engine->LoadTexture("resources/monsterBall.png");
+    int umi = engine->LoadTexture("resources/casa.jpg");
 
     MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
 
@@ -59,8 +61,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region WaveGrid
 
-    const int cubeCountX = 150;
-    const int cubeCountZ = 150;
+    const int cubeCountX = 200;
+    const int cubeCountZ = 200;
 
     WaveGrid waveGrid(cubeCountX, cubeCountZ);
 
@@ -71,14 +73,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         waveGrid.setWall(wallX, gz, (gz < holeStart || gz >= holeEnd));
     }
 
-    float waveStrength = 10.0f;
+    float waveStrength = 100.0f;
     DynamicMesh mesh(cubeCountX, cubeCountZ);
     std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
     float t = 0.0f;
 
 #pragma endregion
 
-    engine->m_camera.transform.translate.y = 20.0f;
+    engine->m_camera.transform.translate.y = 200.0f;
+    engine->m_camera.transform.translate.z = -200.0f;
+    engine->m_camera.transform.rotate.x = 0.6f;
     bool  useMonsterBall = true;
     float cameraRotateSpeed = 0.01f;
     float rotX = 0.01f;
@@ -136,13 +140,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     { 1,1,1,1 });
             }
 
-            engine->DrawSprite(
-                { 0.0f, 0.0f },
-                360,360,
-                { 0,0,0 },
-                { 1,1,1 },
-                { 1,1,1,1 },
-                uvChecker);
+            //engine->DrawSprite(
+            //    { 0.0f, 0.0f },
+            //    360,360,
+            //    { 0,0,0 },
+            //    { 1,1,1 },
+            //    { 1,1,1,1 },
+            //    uvChecker);
 
             engine->GetCommandList()->SetGraphicsRootSignature(engine->GetRootSignature());
             engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());
@@ -169,7 +173,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     };
                 }
             }
-            engine->DrawDynamicMeshWithNormal(mesh, normalColors);
+            engine->DrawDynamicMeshWithNormal(mesh, normalColors,umi);
 
             engine->PostDraw();
         }

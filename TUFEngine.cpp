@@ -767,7 +767,8 @@ void TUFEngine::DrawDynamicMesh(DynamicMesh& mesh, Vector4 color) {
 
 void TUFEngine::DrawDynamicMeshWithNormal(
 	DynamicMesh& mesh,
-	std::vector<Vector4>& colors)
+	std::vector<Vector4>& colors,
+	int index)
 {
 	uint32_t vertexCount = (uint32_t)mesh.getIndices().size();
 	if (vertexCount == 0) return;
@@ -779,11 +780,10 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 
 	m_dynamicMeshModel->SyncFrom(mesh);
 
-	// RenderAllRequestsで処理するためにDrawRequestには登録せず直接Drawする
+
 	commandList->SetGraphicsRootSignature(rootSignature);
 	commandList->SetPipelineState(pipelineState);
 
-	// WVP行列（板は原点固定）
 	Matrix4x4 world = MakeAffineMatrix({ 1,1,1 }, { 0,0,0 }, { 0,0,0 });
 	Matrix4x4 wvp = Multiply(world, viewProjectionMatrix);
 
@@ -800,6 +800,6 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
 	m_cbvIndex++;
 
-	m_dynamicMeshModel->Draw(commandList, 0);
+	m_dynamicMeshModel->Draw(commandList, index);
 }
 #pragma endregion
