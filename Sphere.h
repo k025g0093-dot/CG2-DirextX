@@ -1,7 +1,9 @@
 #pragma once
 #include "Model.h"
+#include <wrl.h>                // ★追加
 
-// 前方宣言
+using Microsoft::WRL::ComPtr;   // ★追加
+
 struct VertexData;
 class TUFEngine;
 
@@ -10,9 +12,7 @@ public:
     Sphere() = default;
     ~Sphere() override;
 
-    // ⭕ 引数をエンジンだけに修正して、自己完結させます
     void InitSphere(TUFEngine* engine);
-
     void Update();
     void SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) override;
     void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
@@ -20,25 +20,24 @@ public:
     void UpdateVertices(const Vector3& points, const Vector2& texcoord, const Vector3& normal, int index) override {}
 
 private:
-    ID3D12Resource* m_pVertexResource = nullptr;
+    ComPtr<ID3D12Resource>   m_pVertexResource;   // ★
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
 
-    ID3D12Resource* m_pIndexResource = nullptr;
-    D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};
+    ComPtr<ID3D12Resource>   m_pIndexResource;    // ★
+    D3D12_INDEX_BUFFER_VIEW  m_indexBufferView{};
 
-    ID3D12Resource* m_pMaterialResource = nullptr;
-    ID3D12Resource* m_pWvpResource = nullptr;
-    ID3D12Resource* m_pLightResource = nullptr;
-    bool m_ownsLightResource = false;
+    ComPtr<ID3D12Resource>   m_pMaterialResource; // ★
+    ComPtr<ID3D12Resource>   m_pWvpResource;      // ★
+
+    // ライトリソースは外部から差し込むケースがあるため生ポインタを維持
+    ComPtr<ID3D12Resource> m_pLightResource;
 
     uint32_t m_vertexCount = 0;
     uint32_t m_indexCount = 0;
-
     TUFEngine* m_pEngine = nullptr;
 
     uint32_t Align256(uint32_t size)
     {
         return (size + 0xff) & ~0xff;
     }
-
 };

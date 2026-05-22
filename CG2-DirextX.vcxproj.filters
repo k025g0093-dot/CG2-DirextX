@@ -58,6 +58,9 @@
     <Filter Include="ソース ファイル\TUFengine\各種モデル群\Mesh">
       <UniqueIdentifier>{90893312-83cc-4757-83f8-23278a455907}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\オブジェクトのリリース関数">
+      <UniqueIdentifier>{55dcfd81-49c3-400e-8986-2aab9a04e915}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -146,6 +149,9 @@
     </ClCompile>
     <ClCompile Include="Sprite.cpp">
       <Filter>ソース ファイル\TUFengine\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceObject.cpp">
+      <Filter>ソース ファイル\TUFengine\オブジェクトのリリース関数</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -260,6 +266,9 @@
     </ClInclude>
     <ClInclude Include="Sprite.h">
       <Filter>ソース ファイル\TUFengine\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceObject.h">
+      <Filter>ソース ファイル\TUFengine\オブジェクトのリリース関数</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

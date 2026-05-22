@@ -84,8 +84,6 @@ IDxcBlob* CompileShader(
 
     Log(logStream, ConvertString(std::format(L"Compile Succeeded, path:{}, profile:{}\n", filePath, profile)));
 
-    // 不要になったリソースを解放
-    shaderSource->Release();
-    shaderResult->Release();
+    
     return shaderBlob;
 }

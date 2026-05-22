@@ -4,8 +4,6 @@
 #include "TUFEngine.h"
 
 // 外部のバッファ作成関数
-extern ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
-
 void TriangleModel::Initialize(TUFEngine* engine) {
 	m_pEngine = engine;
 	ID3D12Device* device = engine->GetDevice();

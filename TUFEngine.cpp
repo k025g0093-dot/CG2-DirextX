@@ -82,7 +82,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 	// --- 3. 描画ルールの構築 ---
 	// InitializeDXGI で device と rootSignature が作られた後に実行する
-	pipelineState = CreatePipelineStateDesc(device, rootSignature, hr);
+	pipelineState = CreatePipelineStateDesc(device.Get(), rootSignature, hr);
 
 #ifdef USE_IMGUI
 	InitializeImGui(hwnd);
@@ -90,7 +90,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 	CreateDepthStencilTextureResource(width, height);
 
-	TextureManager::GetInstance()->Initialize(device, srvDescriptorHeap, commandList);
+	TextureManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
 
 
 	descriptorSizeSRV = device->
@@ -121,7 +121,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	
 	// TUFEngine.cpp のコンストラクタで
 	textureManager = TextureManager::GetInstance(); // ← これを追加
-	textureManager->Initialize(device, srvDescriptorHeap, commandList);
+	textureManager->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
 
 	auto sprite_ = std::make_unique<Sprite>();
 	float sWidth = (float)width;
@@ -196,18 +196,11 @@ void TUFEngine::OnUpdate() {
 }
 
 TUFEngine::~TUFEngine() {
-	pipelineState->Release();
-	rootSignature->Release();
-	rtvDescriptorHeap->Release();
-	srvDescriptorHeap->Release();
-	swapChainResources[0]->Release();
-	swapChainResources[1]->Release();
-	swapChain->Release();
-	commandList->Release();
-	commandAllocator->Release();
-	commandQueue->Release();
-	dxgiFactory->Release();
-	device->Release();
+	if (m_fenceEvent) {
+		CloseHandle(m_fenceEvent);
+		m_fenceEvent = nullptr;
+	}
+
 	logStream.close();
 	CoUninitialize();
 }
@@ -221,10 +214,10 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(hwnd);
-	ImGui_ImplDX12_Init(device,
+	ImGui_ImplDX12_Init(device.Get(),
 		swapChainDesc.BufferCount,
 		rtvDesc.Format,
-		srvDescriptorHeap,
+		srvDescriptorHeap.Get(),
 		srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
 	);
@@ -255,7 +248,7 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 #pragma region DirectX 12 初期化関連
 
 void TUFEngine::InitializeDXGI(HWND hwnd) {
-	hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
+	hr = CreateDXGIFactory(IID_PPV_ARGS(dxgiFactory.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	IDXGIAdapter4* useAdapter = nullptr;
@@ -283,7 +276,7 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	const char* featureLevelStrings[] = { "12.2","12.1","12.0" };
 
 	for (size_t i = 0; i < _countof(featureLevels); ++i) {
-		hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
+		hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(device.GetAddressOf()));
 		if (SUCCEEDED(hr)) {
 			Log(logStream, std::format("Feature Level {} is supported.\n", featureLevelStrings[i]));
 			break;
@@ -293,15 +286,15 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	Log(logStream, "Complete DirectX 12 Device Creation.\n");
 
 	D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
-	hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue));
+	hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(commandQueue.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-		IID_PPV_ARGS(&commandAllocator));
+		IID_PPV_ARGS(commandAllocator.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
-		commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
+		commandAllocator.Get(), nullptr, IID_PPV_ARGS(commandList.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	swapChainDesc;
@@ -312,19 +305,19 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 2;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue, hwnd,
+	hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), hwnd,
 		&swapChainDesc, nullptr, nullptr,
-		reinterpret_cast<IDXGISwapChain1**>(&swapChain));
+		reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
-	rtvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+	rtvDescriptorHeap = CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
 
-	srvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+	srvDescriptorHeap = CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
 
-	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
+	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(swapChainResources[0].GetAddressOf()));
 	assert(SUCCEEDED(hr));
-	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
+	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(swapChainResources[1].GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	rtvDesc;
@@ -334,26 +327,25 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle =
 		rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	rtvHandles[0] = rtvStartHandle;
-	device->CreateRenderTargetView(swapChainResources[0], &rtvDesc, rtvHandles[0]);
+	device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
 	rtvHandles[1].ptr = rtvHandles[0].ptr +
 		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	device->CreateRenderTargetView(swapChainResources[1], &rtvDesc, rtvHandles[1]);
+	device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
 
 	// TUFEngine.cpp の初期化処理（例えば InitializeDXGI の最後など）に以下を追加
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
 	// 256個分のオブジェクトの行列が入る巨大なバッファを作る
-	m_pConstantBuffer = CreateBufferResource(device, cbSize * MAX_DRAW_COUNT);
+	m_pConstantBuffer = CreateBufferResource(device.Get(), cbSize * MAX_DRAW_COUNT);
 	// 最初に1回だけMapして、書き込み先ポインタ（m_pCbvDataBegin）を保存しておく
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 
 	m_fenceValue = 0;
-	hr = device->CreateFence(m_fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
+	hr = device->CreateFence(m_fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_fence.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	assert(m_fenceEvent != nullptr);
 
-	useAdapter->Release();
 }
 #pragma endregion
 
@@ -378,19 +370,19 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 	depthClearValue.DepthStencil.Depth = 1.0f;
 	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-	depthStencilResource = {};
+	depthStencilResource.Reset();
 	hr = device->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&depthResourceDesc,
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&depthClearValue,
-		IID_PPV_ARGS(&depthStencilResource)
+		IID_PPV_ARGS(depthStencilResource.GetAddressOf())
 	);
 	assert(SUCCEEDED(hr));
 
 	dsvDescriptorHeap = CreateDescriptorHeap(
-		device,
+		device.Get(),
 		D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
 		1,
 		false
@@ -401,12 +393,12 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
 	device->CreateDepthStencilView(
-		depthStencilResource,
+		depthStencilResource.Get(),
 		&dsvDesc,
 		dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart()
 	);
 
-	return depthStencilResource;
+	return depthStencilResource.Get();
 }
 
 
@@ -419,7 +411,7 @@ void TUFEngine::PreDraw() {
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = swapChainResources[backBufferIndex];
+	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	commandList->ResourceBarrier(1, &barrier);
@@ -428,7 +420,7 @@ void TUFEngine::PreDraw() {
 	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap };
+	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
@@ -463,13 +455,13 @@ void TUFEngine::PostDraw() {
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = swapChainResources[backBufferIndex];
+	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
 	RenderAllRequests();
 
 #ifdef USE_IMGUI
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 #endif // USE_IMGUI
 
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
@@ -477,7 +469,7 @@ void TUFEngine::PostDraw() {
 
 	hr = commandList->Close();
 	assert(SUCCEEDED(hr));
-	ID3D12CommandList* commandLists[] = { commandList };
+	ID3D12CommandList* commandLists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(1, commandLists);
 	swapChain->Present(1, 0);
 
@@ -492,25 +484,25 @@ void TUFEngine::PostDraw() {
 
 	hr = commandAllocator->Reset();
 	assert(SUCCEEDED(hr));
-	hr = commandList->Reset(commandAllocator, nullptr);
+	hr = commandList->Reset(commandAllocator.Get(), nullptr);
 	assert(SUCCEEDED(hr));
 }
 
 #pragma endregion
 
-ID3D12DescriptorHeap* TUFEngine::CreateDescriptorHeap(
+ComPtr<ID3D12DescriptorHeap> TUFEngine::CreateDescriptorHeap(
 	ID3D12Device* device,
 	D3D12_DESCRIPTOR_HEAP_TYPE heapType,
 	uint32_t numDescriptors,
 	bool shaderVisible)
 {
-	ID3D12DescriptorHeap* descriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
 	descriptorHeapDesc.Type = heapType;
 	descriptorHeapDesc.NumDescriptors = numDescriptors;
 	descriptorHeapDesc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-	HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
+	HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(descriptorHeap.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	return descriptorHeap;
@@ -524,7 +516,6 @@ void TUFEngine::EnableDebugLayer() {
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
 		debugController->EnableDebugLayer();
 		debugController->SetEnableGPUBasedValidation(TRUE);
-		debugController->Release();
 	}
 }
 
@@ -545,7 +536,6 @@ void TUFEngine::SetupInfoQueue() {
 		filter.DenyList.NumSeverities = _countof(severities);
 		filter.DenyList.pSeverityList = severities;
 		infoQueue->PushStorageFilter(&filter);
-		infoQueue->Release();
 	}
 }
 #endif
@@ -554,11 +544,11 @@ void TUFEngine::SetupInfoQueue() {
 
 void TUFEngine::RenderAllRequests() {
 	// ⭕ GPUに「このエンジンのシェーダーと設計図を使うよ」と教える
-	commandList->SetGraphicsRootSignature(rootSignature);
-	commandList->SetPipelineState(pipelineState);
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	commandList->SetPipelineState(pipelineState.Get());
 
 	// テクスチャ用などのデスクリプタヒープをセット
-	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap };
+	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, heaps);
 
 	// 2. カメラ行列
@@ -604,11 +594,11 @@ void TUFEngine::RenderAllRequests() {
 		// --- 6. 描画実行 ---
 		if (!request.isMesh) {
 
-			request.model->Draw(commandList, m_cbvIndex);
+			request.model->Draw(commandList.Get(), m_cbvIndex);
 		}
 		else {
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			request.model->Draw(commandList, request.textureIndex);
+			request.model->Draw(commandList.Get(), request.textureIndex);
 		}
 
 		m_cbvIndex++;
@@ -781,8 +771,8 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	m_dynamicMeshModel->SyncFrom(mesh);
 
 
-	commandList->SetGraphicsRootSignature(rootSignature);
-	commandList->SetPipelineState(pipelineState);
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	commandList->SetPipelineState(pipelineState.Get());
 
 	Matrix4x4 world = MakeAffineMatrix({ 1,1,1 }, { 0,0,0 }, { 0,0,0 });
 	Matrix4x4 wvp = Multiply(world, viewProjectionMatrix);
@@ -792,6 +782,10 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	cbData.World = world;
 
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
+	if (m_cbvIndex >= MAX_DRAW_COUNT || !m_pCbvDataBegin || !m_pConstantBuffer) {
+		return;
+	}
+
 	UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
 	memcpy(pDest, &cbData, sizeof(TransformationMatrix));
 
@@ -800,6 +794,6 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
 	m_cbvIndex++;
 
-	m_dynamicMeshModel->Draw(commandList, index);
+	m_dynamicMeshModel->Draw(commandList.Get(), index);
 }
 #pragma endregion

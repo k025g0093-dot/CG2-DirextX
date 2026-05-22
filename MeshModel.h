@@ -3,65 +3,61 @@
 #include <wrl.h>
 #include <vector>
 #include <string>
-
 #include <fstream>
 #include <sstream>
 
-//前方宣言
+using Microsoft::WRL::ComPtr;   // ★追加
+
 struct VertexData;
 class TUFEngine;
 
 struct MaterialData
 {
-	std::string textureFilPath;
+    std::string textureFilPath;
 };
 
 struct ModelData
 {
-	std::vector<VertexData> vertices;
-	MaterialData material;
+    std::vector<VertexData> vertices;
+    MaterialData material;
 };
 
-
-
-class MeshModel :public Model
+class MeshModel : public Model
 {
 public:
+    MeshModel();
+    ~MeshModel();
 
+    bool LoadFromOBJ(
+        const std::string& directoryPath,
+        const std::string& filename);
 
-	MeshModel();
-	~MeshModel();
+    void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
 
-	bool LoadFromOBJ(
-		const std::string& directoryPath,
-		const std::string& filename
-	);
+    MaterialData LoadMaterialTemplateFile(
+        const std::string& directoryPath,
+        const std::string& filename);
 
-	void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
-	MaterialData LoadMaterialTemplateFile(
-		const std::string& directoryPath,
-		const std::string& filename
-	);
+    void InitMeshModel(TUFEngine* engine);
+    void SetTextureIndex(int index) { m_textureIndex = index; }
+    int  GetTextureIndex() const { return m_textureIndex; }
 
-	void InitMeshModel(TUFEngine* engine);
-	void SetTextureIndex(int index) { m_textureIndex = index; }
-	int GetTextureIndex() const { return m_textureIndex; }
+    void UpdateVertices(
+        const Vector3& points,
+        const Vector2& texcoord,
+        const Vector3& normal,
+        int index) override;
 
-	void UpdateVertices(
-		const Vector3& points,
-		const Vector2& texcoord,
-		const Vector3& normal,
-		int index) override;
 private:
-	ModelData modelData;
-	std::vector<Vector4>positions;//位置
-	std::vector<Vector3>normals;//法線
-	std::vector<Vector2>texcoords;//テクスチャ座標
-	std::string line;//ファイルから読んだ一行を記録
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
-	size_t m_vertexCount = 0;
-	TUFEngine* m_pEngine = nullptr;
-	int m_textureIndex = 0;
-};
+    ModelData            modelData;
+    std::vector<Vector4> positions;
+    std::vector<Vector3> normals;
+    std::vector<Vector2> texcoords;
+    std::string          line;
 
+    ComPtr<ID3D12Resource>   m_vertexBuffer;      // 元々 ComPtr のため実質変更なし
+    D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
+    size_t                   m_vertexCount = 0;
+    TUFEngine* m_pEngine = nullptr;
+    int                      m_textureIndex = 0;
+};

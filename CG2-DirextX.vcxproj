@@ -108,6 +108,7 @@
     <ClCompile Include="MeshModel.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="PSO.cpp" />
+    <ClCompile Include="ResourceObject.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="TextureManager.cpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="MeshModel.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="PSO.h" />
+    <ClInclude Include="ResourceObject.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="TextureManager.h" />

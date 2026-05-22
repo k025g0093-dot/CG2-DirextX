@@ -1,15 +1,9 @@
 #include "Sprite.h"
 #include "TUFEngine.h"
 
-extern ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
-
 Sprite::Sprite() : m_textureIndex(0), m_width(0.0f), m_height(0.0f) {}
 
-Sprite::~Sprite() {
-    if (m_pVertexResource)   m_pVertexResource->Release();
-    if (m_pMaterialResource) m_pMaterialResource->Release();
-    if (m_pWvpResource)      m_pWvpResource->Release();
-}
+Sprite::~Sprite() = default;
 
 void Sprite::InitSprite(TUFEngine* engine, int textureIndex, float w, float h) {
     m_pEngine = engine;

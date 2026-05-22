@@ -1,6 +1,6 @@
 #include "VertexResource.h"
 
-ID3D12Resource* CreateVertexResource(
+ComPtr<ID3D12Resource> CreateVertexResource(
 	ID3D12Device* device,
 	size_t sizeInBytes,
 	HRESULT& hr)
@@ -20,7 +20,7 @@ ID3D12Resource* CreateVertexResource(
 
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-	ID3D12Resource* vertexResource = nullptr;
+	ComPtr<ID3D12Resource> vertexResource;
 
 	hr = device->CreateCommittedResource(
 		&uploadHeapProperties,
@@ -28,7 +28,7 @@ ID3D12Resource* CreateVertexResource(
 		&vertexResourceDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
-		IID_PPV_ARGS(&vertexResource));
+		IID_PPV_ARGS(vertexResource.GetAddressOf()));
 
 	assert(SUCCEEDED(hr));
 	return vertexResource;
@@ -49,7 +49,7 @@ D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(
 
 }
 
-ID3D12Resource* CreateBufferResource(
+ComPtr<ID3D12Resource> CreateBufferResource(
 	ID3D12Device* device,
 	size_t sizeInBytes
 ) {
@@ -66,14 +66,14 @@ ID3D12Resource* CreateBufferResource(
 	bufferResourceDesc.MipLevels = 1;
 	bufferResourceDesc.SampleDesc.Count = 1;
 	bufferResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	ID3D12Resource* bufferResource = nullptr;
+	ComPtr<ID3D12Resource> bufferResource;
 	HRESULT hr = device->CreateCommittedResource(
 		&uploadHeapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&bufferResourceDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
-		IID_PPV_ARGS(&bufferResource));
+		IID_PPV_ARGS(bufferResource.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 	return bufferResource;
 
