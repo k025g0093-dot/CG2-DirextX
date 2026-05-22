@@ -3,15 +3,7 @@
 
 constexpr float kPi = 3.14159265355f;
 
-extern ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
-
-Sphere::~Sphere() {
-	if (m_pVertexResource) m_pVertexResource->Release();
-	if (m_pIndexResource) m_pIndexResource->Release();
-	if (m_pMaterialResource) m_pMaterialResource->Release();
-	if (m_pWvpResource) m_pWvpResource->Release();
-	if (m_ownsLightResource && m_pLightResource) m_pLightResource->Release();
-}
+Sphere::~Sphere() = default;
 
 void Sphere::InitSphere(TUFEngine* engine) {
 	m_pEngine = engine;
@@ -99,7 +91,6 @@ void Sphere::InitSphere(TUFEngine* engine) {
 	m_pWvpResource = CreateBufferResource(device, Align256(sizeof(TransformationMatrix)));
 
 	m_pLightResource = CreateBufferResource(device, Align256(sizeof(DirectionalLLight)));
-	m_ownsLightResource = true;
 	DirectionalLLight* lightData = nullptr;
 	m_pLightResource->Map(0, nullptr, reinterpret_cast<void**>(&lightData));
 	lightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -127,11 +118,7 @@ void Sphere::SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) {
 }
 
 void Sphere::SetLightResource(ID3D12Resource* lightResource) {
-	if (m_ownsLightResource && m_pLightResource) {
-		m_pLightResource->Release();
-	}
 	m_pLightResource = lightResource;
-	m_ownsLightResource = false;
 }
 
 void Sphere::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {

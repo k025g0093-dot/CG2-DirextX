@@ -33,9 +33,9 @@ int TextureManager::LoadTexture(const std::string& filePath) {
 
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata(); // ← ここで取得
 
-	ID3D12Resource* texResource = CreateTextureResource(metadata);
-	UploadTexture(texResource, mipImages);
-	CreateTextureSRV(texResource, metadata, m_textureCount);
+	ComPtr<ID3D12Resource> texResource = CreateTextureResource(metadata);
+	m_uploadResources.push_back(UploadTexture(texResource.Get(), mipImages));
+	CreateTextureSRV(texResource.Get(), metadata, m_textureCount);
 
 	// CreateTextureは不要なので削除（texResourceが実体）
 	int index = m_textureCount;
@@ -56,7 +56,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetGPUHandle(int index) {
 }
 
 
-ID3D12Resource* TextureManager::CreateTextureResource(
+ComPtr<ID3D12Resource> TextureManager::CreateTextureResource(
 	const DirectX::TexMetadata& metadata) {
 	resourceDesc = {};
 	resourceDesc.Width = static_cast<UINT>(metadata.width);
@@ -73,14 +73,14 @@ ID3D12Resource* TextureManager::CreateTextureResource(
 	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 
-	resource = {};
+	resource.Reset();
 	hr = m_device->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST,//データ転送設定
 		nullptr,
-		IID_PPV_ARGS(&resource)//作成するリソースポインタへ
+		IID_PPV_ARGS(resource.GetAddressOf())//作成するリソースポインタへ
 	);
 	assert(SUCCEEDED(hr));
 	return resource;
@@ -88,7 +88,7 @@ ID3D12Resource* TextureManager::CreateTextureResource(
 
 
 [[nodiscard]]//属性定義：この関数の戻り値を無視しないでね、という意味
-ID3D12Resource* TextureManager::UploadTexture(
+ComPtr<ID3D12Resource> TextureManager::UploadTexture(
 	ID3D12Resource* texture,
 	const DirectX::ScratchImage& mipImages)
 {
@@ -102,12 +102,12 @@ ID3D12Resource* TextureManager::UploadTexture(
 		mipImages.GetMetadata(),
 		subresources);
 	uint64_t intermediateSize = GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
-	ID3D12Resource* intermediateResource = CreateBufferResource(m_device, intermediateSize);
+	ComPtr<ID3D12Resource> intermediateResource = CreateBufferResource(m_device, intermediateSize);
 
 	//データ転送コマンドの作成と積み込み
 	UpdateSubresources(
 		m_commandList, texture,
-		intermediateResource, 0, 0,
+		intermediateResource.Get(), 0, 0,
 		UINT(subresources.size()), subresources.data()
 	);
 

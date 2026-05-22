@@ -2,7 +2,7 @@
 
 // ルートシグネチャの生成
 // シェーダーにどんなリソースを渡すかを定義する
-ID3D12RootSignature* CreateRootSignature(
+ComPtr<ID3D12RootSignature> CreateRootSignature(
 	ID3D12Device* device,
 	HRESULT& hr) {
 
@@ -70,11 +70,11 @@ ID3D12RootSignature* CreateRootSignature(
 	}
 
 	// ルートシグネチャの生成
-	ID3D12RootSignature* rootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> rootSignature;
 	hr = device->CreateRootSignature(0,
 		signatureBlob->GetBufferPointer(),
 		signatureBlob->GetBufferSize(),
-		IID_PPV_ARGS(&rootSignature));
+		IID_PPV_ARGS(rootSignature.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	return rootSignature;
@@ -129,9 +129,9 @@ D3D12_RASTERIZER_DESC CreateRasterizerState() {
 
 // パイプラインステートオブジェクト（PSO）の生成
 // 描画に必要な全設定をまとめたオブジェクトを作る
-ID3D12PipelineState* CreatePipelineStateDesc(
+ComPtr<ID3D12PipelineState> CreatePipelineStateDesc(
 	ID3D12Device* device,
-	ID3D12RootSignature*& rootSignature,
+	ComPtr<ID3D12RootSignature>& rootSignature,
 	HRESULT& hr)
 {
 	// DXCコンパイラの初期化
@@ -160,7 +160,7 @@ ID3D12PipelineState* CreatePipelineStateDesc(
 
 	// ルートシグネチャの設定
 	rootSignature = CreateRootSignature(device, hr);
-	graphicsPipelineStateDesc.pRootSignature = rootSignature;
+	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();
 
 	// インプットレイアウトの設定
 	graphicsPipelineStateDesc.InputLayout = inputLayout;
@@ -205,10 +205,10 @@ ID3D12PipelineState* CreatePipelineStateDesc(
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
 	// PSOの生成
-	static ID3D12PipelineState* graphicsPipelineState = nullptr;
+	ComPtr<ID3D12PipelineState> graphicsPipelineState;
 	hr = device->CreateGraphicsPipelineState(
 		&graphicsPipelineStateDesc,
-		IID_PPV_ARGS(&graphicsPipelineState));
+		IID_PPV_ARGS(graphicsPipelineState.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	return graphicsPipelineState;

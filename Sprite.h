@@ -2,6 +2,8 @@
 #include "Model.h"
 #include <wrl.h>
 
+using Microsoft::WRL::ComPtr;   // ★追加
+
 class TUFEngine;
 struct Material;
 
@@ -17,9 +19,9 @@ public:
         const Vector2& texcoord,
         const Vector3& normal,
         int index) override;
+
     void Resize(float w, float h);
     void SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) override;
-
     void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
 
     int GetTextureIndex() const { return m_textureIndex; }
@@ -31,9 +33,9 @@ private:
     float m_width = 0.0f;
     float m_height = 0.0f;
 
-    ID3D12Resource* m_pVertexResource = nullptr;
-    ID3D12Resource* m_pMaterialResource = nullptr;
-    ID3D12Resource* m_pWvpResource = nullptr;
+    ComPtr<ID3D12Resource>   m_pVertexResource;   // ★
+    ComPtr<ID3D12Resource>   m_pMaterialResource; // ★
+    ComPtr<ID3D12Resource>   m_pWvpResource;      // ★
 
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
 

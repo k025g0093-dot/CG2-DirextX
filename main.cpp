@@ -26,38 +26,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HRESULT hr = S_OK;
     uint32_t sphereVertexCount = 16 * 16 * 6;
 
-#pragma region リソースたち
 
-    ID3D12Resource* vertexResource = CreateVertexResource(
-        engine->GetDevice(), sizeof(VertexData) * sphereVertexCount, hr);
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView = CreateVertexBufferView(
-        vertexResource, sizeof(VertexData) * sphereVertexCount, sizeof(VertexData));
-
-    ID3D12Resource* materialResource = CreateBufferResource(engine->GetDevice(), sizeof(Material));
-    Material* materialData = nullptr;
-    materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-    materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    materialData->uvTransform = MakeIdentity4x4();
-    materialData->enableLifhting = 0;
-
-    TransformData transformData{ {1.0f,1.0f,1.0f}, {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} };
-
-    ID3D12Resource* wvpResource = CreateBufferResource(engine->GetDevice(), sizeof(TransformationMatrix));
-    TransformationMatrix* wvpData = nullptr;
-    wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
-    wvpData->WVP = MakeIdentity4x4();
-    wvpData->World = MakeIdentity4x4();
-
-    ID3D12Resource* directionalLightDataResource =
-        CreateBufferResource(engine->GetDevice(), sizeof(DirectionalLLight));
-    DirectionalLLight* directionalLightData = nullptr;
-    directionalLightDataResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
-    directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    directionalLightData->direction = { 0.0f, -1.0f, 0.0f };
-    directionalLightData->intensity = 1;
-    engine->SetDirectionalLightResource(directionalLightDataResource);
-
-#pragma endregion
 
 #pragma region WaveGrid
 
@@ -106,12 +75,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             engine->SetViewProjectionMatrix(
                 engine->m_camera.GetViewProjectionMatrix(kClineWidth, kClineHeight));
 
-            // オブジェクトのワールド行列
-            transformData.rotate.y += 0.01f;
-            Matrix4x4 worldMatrix = MakeAffineMatrix(
-                transformData.scale, transformData.rotate, transformData.translate);
-            wvpData->WVP = Multiply(worldMatrix, engine->m_camera.GetViewProjectionMatrix(kClineWidth, kClineHeight));
-            wvpData->World = worldMatrix;
+
 
             // WaveGrid更新
             t += 0.016f;
@@ -148,15 +112,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //    { 1,1,1,1 },
             //    uvChecker);
 
-            engine->GetCommandList()->SetGraphicsRootSignature(engine->GetRootSignature());
-            engine->GetCommandList()->SetPipelineState(engine->GetPipelineState());
-            engine->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
-            engine->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            engine->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-            engine->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            engine->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightDataResource->GetGPUVirtualAddress());
-            engine->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetGPUHandle(useMonsterBall ? monsterBall : uvChecker));
-            engine->GetCommandList()->DrawInstanced(sphereVertexCount, 1, 0, 0);
 
             for (int iz = 0; iz < cubeCountZ; iz++) {
                 for (int ix = 0; ix < cubeCountX; ix++) {
@@ -189,8 +144,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ImGui::DestroyContext();
 #endif
 
-    vertexResource->Release();
-    materialResource->Release();
     delete engine;
 
     return 0;

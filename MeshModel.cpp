@@ -1,8 +1,6 @@
 #include "MeshModel.h"
 #include "TUFEngine.h"
 
-extern ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
-
 MeshModel::MeshModel() = default;
 MeshModel::~MeshModel() = default;
 
