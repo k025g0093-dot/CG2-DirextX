@@ -5,16 +5,17 @@
 #include <fstream>
 #include <wrl.h>
 #include <cassert>
+#include <vector>
 
-//#include <mfapi.h>          // MFの基本機能
-//#include <mfidl.h>          // MFのインターフェース定義
-//#include <mfreadwrite.h>    // ソースリーダー（ファイル読み込み用）
-//#include <mferror.h>        // エラーコード定義
-//
-//#pragma comment(lib, "mf.lib")
-//#pragma comment(lib, "mfplat.lib")
-//#pragma comment(lib, "mfuuid.lib")
-//#pragma comment(lib, "mfreadwrite.lib")
+#include <mfapi.h>          // MFの基本機能
+#include <mfidl.h>          // MFのインターフェース定義
+#include <mfreadwrite.h>    // ソースリーダー（ファイル読み込み用）
+#include <mferror.h>        // エラーコード定義
+
+#pragma comment(lib, "mf.lib")
+#pragma comment(lib, "mfplat.lib")
+#pragma comment(lib, "mfuuid.lib")
+#pragma comment(lib, "mfreadwrite.lib")
 
 using Microsoft::WRL::ComPtr;
 
@@ -53,14 +54,18 @@ public:
 	Sound();
 	~Sound();
 
-	SoundData SoundLoadWave(const char* filename);
+	SoundData SoundLoad(const char* filename);
+
 	void SoundUnLoad(SoundData* soundData);
-	void SoundPlayWave(
-		
+	void SoundPlayer(
 		const SoundData& soundData);
 	ComPtr<IXAudio2>xAudio2;
 
 private:
+
+	SoundData SoundLoadWave(const char* filename);
+	SoundData SoundLoadMP3(const char* filename);
+
 	IXAudio2MasteringVoice* masterVoice = nullptr;;
 
 	bool isInitialized = false;  // 初期化完了フラグ
