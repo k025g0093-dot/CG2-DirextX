@@ -52,7 +52,7 @@ void WaveGrid::update() {
                 float uT = mCurrent[index - mWidth];
                 float uB = mCurrent[index + mWidth];
                 // 減衰係数（1.0に近いほどゆっくり消える）
-                float damping = 0.997f;
+                float damping = 0.993f;
 
                 mNext[index] = damping * (u + u - uPre + mul * (-4.0f * u + uL + uR + uT + uB));
             }
