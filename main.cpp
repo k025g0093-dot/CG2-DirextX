@@ -8,6 +8,10 @@
 #include <fstream>
 #include <iomanip>
 
+
+
+#include "Sound.h"
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
     SetUnhandledExceptionFilter(ExportDump);
@@ -26,6 +30,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     int umi = engine->LoadTexture("resources/ao.jpg");
 
     MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
+
+    Sound* sound=new Sound;
+
+    SoundData soundData1 = sound->SoundLoadWave("resources/fanfare.wav");
 
     HRESULT hr = S_OK;
     uint32_t sphereVertexCount = 16 * 16 * 6;
@@ -158,6 +166,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
             engine->PostDraw();
+
+
+            if (Input::GetKeyDown(VK_SPACE)) {
+                sound->SoundPlayWave(soundData1);
+            }
         }
 
 #ifdef _DEBUG
@@ -170,7 +183,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 #endif
-
+    delete sound;
+    sound->SoundUnLoad(&soundData1);
     delete engine;
 
     return 0;
