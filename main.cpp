@@ -4,6 +4,14 @@
 #include "Camera.h"
 #include <algorithm>
 
+//保存用のファイル
+#include <fstream>
+#include <iomanip>
+
+
+
+#include "Sound.h"
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
     SetUnhandledExceptionFilter(ExportDump);
@@ -19,9 +27,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     int uvChecker = engine->LoadTexture("resources/uvChecker.png");
     int monsterBall = engine->LoadTexture("resources/monsterBall.png");
-    int umi = engine->LoadTexture("resources/casa.jpg");
+    int umi = engine->LoadTexture("resources/ao.jpg");
 
     MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
+
+    Sound* sound=new Sound;
+
+    SoundData soundData1 = sound->SoundLoadWave("resources/fanfare.wav");
 
     HRESULT hr = S_OK;
     uint32_t sphereVertexCount = 16 * 16 * 6;
@@ -30,8 +42,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region WaveGrid
 
-    const int cubeCountX = 200;
-    const int cubeCountZ = 200;
+    const int cubeCountX = 100;
+    const int cubeCountZ = 100;
 
     WaveGrid waveGrid(cubeCountX, cubeCountZ);
 
@@ -42,19 +54,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         waveGrid.setWall(wallX, gz, (gz < holeStart || gz >= holeEnd));
     }
 
-    float waveStrength = 100.0f;
+    float waveStrength = 10.0f;
     DynamicMesh mesh(cubeCountX, cubeCountZ);
     std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
     float t = 0.0f;
 
 #pragma endregion
+    engine->m_camera.transform.translate.x = -20.0f;
 
     engine->m_camera.transform.translate.y = 200.0f;
-    engine->m_camera.transform.translate.z = -200.0f;
+    engine->m_camera.transform.translate.z = -300.0f;
     engine->m_camera.transform.rotate.x = 0.6f;
     bool  useMonsterBall = true;
     float cameraRotateSpeed = 0.01f;
     float rotX = 0.01f;
+
+
+    std::ofstream waveLog("wave_analysis.csv");
+    waveLog << "frame,z,height,intensity\n";
+
+    int frameIndex = 0;
+    int observeX = wallX + 40;
 
     MSG msg{};
     while (msg.message != WM_QUIT) {
@@ -80,9 +100,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // WaveGrid更新
             t += 0.016f;
             for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-                waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 3.0f) * waveStrength;
+                waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 20.0f) * waveStrength;
             }
             waveGrid.update();
+
+            if (frameIndex % 10 == 0) {
+                for (int z = 0; z < cubeCountZ; z++) {
+                    float h = waveGrid.getHeight(observeX, z);
+                    float intensity = h * h;
+
+                    waveLog << frameIndex << "," << z << "," << h << "," << intensity << "\n";
+                }
+            }
+            frameIndex++;
+
+
+            //---------------
+            //描画更新処理
+            //---------------
 
             engine->PreDraw();
 
@@ -128,9 +163,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     };
                 }
             }
-            engine->DrawDynamicMeshWithNormal(mesh, normalColors,umi);
+            engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
             engine->PostDraw();
+
+
+            if (Input::GetKeyDown(VK_SPACE)) {
+                sound->SoundPlayWave(soundData1);
+            }
         }
 
 #ifdef _DEBUG
@@ -143,7 +183,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 #endif
-
+    delete sound;
+    sound->SoundUnLoad(&soundData1);
     delete engine;
 
     return 0;
