@@ -32,8 +32,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
 
     Sound* sound=new Sound;
-
-    SoundData soundData1 = sound->SoundLoadWave("resources/fanfare.wav");
+    //title
+    SoundData soundData1 = sound->SoundLoad("resources/fanfare.wav");
+    SoundData title = sound->SoundLoad("resources/title.mp3");
 
     HRESULT hr = S_OK;
     uint32_t sphereVertexCount = 16 * 16 * 6;
@@ -75,6 +76,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     int frameIndex = 0;
     int observeX = wallX + 40;
+
+    sound->SoundPlayer(title);
 
     MSG msg{};
     while (msg.message != WM_QUIT) {
@@ -169,7 +172,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
             if (Input::GetKeyDown(VK_SPACE)) {
-                sound->SoundPlayWave(soundData1);
+                sound->SoundPlayer(soundData1);
             }
         }
 
