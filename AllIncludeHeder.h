@@ -32,7 +32,7 @@
 #include "Input.h"
 #include "Model.h"
 #include "allShapesModel.h"
-
+#include "DebugCamer.h"
 
 #ifdef USE_IMGUI
 
