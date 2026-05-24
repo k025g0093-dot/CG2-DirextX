@@ -19,7 +19,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     const int32_t kClineWidth = 1280;
     const int32_t kClineHeight = 720;
 
-    TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, L"TUFEngine");
+    TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, L"CG2_TUFEngine_LE2B_29_ヤマト_ユウヤ");
     assert(engine->GetDevice() != nullptr);
 
     ShowWindow(engine->GetHwnd(), nCmdShow);
@@ -43,8 +43,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region WaveGrid
 
-    const int cubeCountX = 100;
-    const int cubeCountZ = 100;
+    const int cubeCountX = 200;
+    const int cubeCountZ = 200;
 
     WaveGrid waveGrid(cubeCountX, cubeCountZ);
 

@@ -22,7 +22,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 
-void TUFEngine::InitWindow() {
+void TUFEngine::InitWindow(std::wstring name) {
 	// 1. ウィンドウクラスの登録
 	WNDCLASS wc{};
 	wc.lpfnWndProc = WindowProc;
@@ -40,7 +40,7 @@ void TUFEngine::InitWindow() {
 	// 作成したハンドルはメンバ変数の hwnd に格納します
 	hwnd = CreateWindow(
 		wc.lpszClassName,
-		L"CG2",
+		name.c_str(),
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -69,7 +69,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	InitializeLog();
 
 	// --- 2. ウィンドウとレンダラーの準備 ---
-	InitWindow();
+	InitWindow(name);
 
 #ifdef _DEBUG
 	EnableDebugLayer(); // デバッグレイヤーはデバイス作成前に呼ぶ必要があるためここがベスト
