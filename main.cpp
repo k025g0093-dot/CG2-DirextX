@@ -183,8 +183,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 #endif
-    delete sound;
+
     sound->SoundUnLoad(&soundData1);
+    delete sound;
     delete engine;
 
     return 0;
