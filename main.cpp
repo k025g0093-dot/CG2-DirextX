@@ -8,7 +8,7 @@
 #include <fstream>
 #include <iomanip>
 
-
+#include"DebugCamer.h"
 
 #include "Sound.h"
 
@@ -115,13 +115,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 			waveGrid.update();
 
-			if (frameIndex % 10 == 0) {
-				for (int z = 0; z < cubeCountZ; z++) {
-					float h = waveGrid.getHeight(observeX, z);
-					float intensity = h * h;
-
-					waveLog << frameIndex << "," << z << "," << h << "," << intensity << "\n";
+			// 変更後
+			if (frameIndex % 15 == 0) {
+				waveLog << frameIndex;
+				for (int iz = 0; iz < cubeCountZ; iz++) {
+					for (int ix = 0; ix < cubeCountX; ix++) {
+						waveLog << "," << waveGrid.getHeight(ix, iz);
+					}
 				}
+				waveLog << "\n";
 			}
 			frameIndex++;
 
@@ -150,13 +152,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					{ 1,1,1,1 });
 			}
 
-			//engine->DrawSprite(
-			//    { 0.0f, 0.0f },
-			//    360,360,
-			//    { 0,0,0 },
-			//    { 1,1,1 },
-			//    { 1,1,1,1 },
-			//    uvChecker);
+			engine->DrawSprite(
+			    { 0.0f, 0.0f },
+			    360,360,
+			    { 0,0,0 },
+			    { 1,1,1 },
+			    { 1,1,1,1 },
+			    uvChecker);
 
 
 			for (int iz = 0; iz < cubeCountZ; iz++) {
