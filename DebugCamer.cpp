@@ -32,7 +32,7 @@ void DebugCamer::Update() {
 			matRot_ = Multiply(matRotDelta, matRot_);
 		}
 
-		if (Input::GetMouseButton(2)) {
+		if (Input::GetMouseButton(1)) {
 			translate.x -= Input::GetMouseDeltaX() * 0.05f;
 			translate.y += Input::GetMouseDeltaY() * 0.05f;
 		}
