@@ -229,7 +229,23 @@ ID3D12Resource* TUFEngine::LoadTexture(const std::string& filePath) {
 	ID3D12CommandList* commandLists[] = { commandList };
 	commandQueue->ExecuteCommandLists(1, commandLists);
 
-	// FenceでGPU完了待ち
+	ID3D12Fence* fence = nullptr;
+	uint64_t fenceValue = 0;
+	hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	assert(SUCCEEDED(hr));
+
+	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+	fenceValue++;
+	commandQueue->Signal(fence, fenceValue);
+
+	if (fence->GetCompletedValue() < fenceValue) {
+		fence->SetEventOnCompletion(fenceValue, fenceEvent);
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
+
+	CloseHandle(fenceEvent);
+	fence->Release();
 
 	intermediateResource->Release();
 
