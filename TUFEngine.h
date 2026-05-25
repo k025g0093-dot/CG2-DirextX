@@ -77,12 +77,6 @@ public:
     HWND                       GetHwnd()       const { return hwnd; }
     ID3D12DescriptorHeap* GetSrvDescriptorHeap() const { return srvDescriptorHeap.Get(); }
     ID3D12DescriptorHeap* GetDsvDescriptorHeap() const { return dsvDescriptorHeap.Get(); }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetTextureSrvHandleGPU() const { return textureSrvHandleGPU; }
-
-    D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(
-        ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
-    D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(
-        ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
     void EnableDebugLayer();
     void SetupInfoQueue();
@@ -107,7 +101,6 @@ private:
     UINT8* m_pCbvDataBegin = nullptr;
 
     std::unique_ptr<ImGuiUIManager> m_imguiManager;
-    TextureManager* textureManager;
 
     // ウィンドウ
     HWND    hwnd = nullptr;
@@ -139,21 +132,10 @@ private:
     ComPtr<ID3D12PipelineState>  pipelineState;
 
     // リソース類
-    D3D12_RESOURCE_DESC resourceDesc{};
-    D3D12_RESOURCE_DESC depthResourceDesc{};
-    ComPtr<ID3D12Resource> resource;
-    ComPtr<ID3D12Resource> texture;
-    ComPtr<ID3D12Resource> intermediateResource;
     ComPtr<ID3D12Resource> depthStencilResource;
 
     ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
 
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU{};
-    uint32_t descriptorSizeSRV{};
-    uint32_t descriptorSizeRTV{};
-    uint32_t descriptorSizeDSV{};
-
-    VertexData* vertexData{};
     Matrix4x4   viewProjectionMatrix;
 
     // 内部初期化
@@ -164,21 +146,10 @@ private:
     void RenderAllRequests();
 
     // 描画オブジェクト
-    Sphere       sphere_;
-    TriangleModel triangle;
-    MeshModel* meshModel_;
     std::unique_ptr<DynamicMeshModel> m_dynamicMeshModel;
     std::unique_ptr<Sprite>           sprite;
 
     // 頂点・定数バッファ（ComPtr に統一、重複していた生ポインタ版を削除）
-    ComPtr<ID3D12Resource>       m_vertexBuffer;
-    D3D12_VERTEX_BUFFER_VIEW     m_vertexBufferView;
-    ComPtr<ID3D12Resource>       m_constantBuffer;
-    ComPtr<ID3D12DescriptorHeap> m_srvHeapImgui;
-    D3D12_VIEWPORT               m_viewport{};
-    D3D12_RECT                   m_scissorRect{};
-    UINT                         m_constantBufferDescriptorSize = 0;
-    ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
 
     // ライトリソースは外部から SetDirectionalLightResource() で差し込む設計のため生ポインタを維持
     ComPtr<ID3D12Resource> m_pConstantBuffer;

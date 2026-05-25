@@ -93,23 +93,6 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	TextureManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
 
 
-	descriptorSizeSRV = device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-		);
-
-	descriptorSizeRTV = device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_RTV
-		);
-
-	descriptorSizeDSV = device->
-		GetDescriptorHandleIncrementSize(
-			D3D12_DESCRIPTOR_HEAP_TYPE_DSV
-		);
-
-
-
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
 	m_temporarySpheres = std::move(sphere);
@@ -120,8 +103,6 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 	
 	// TUFEngine.cpp のコンストラクタで
-	textureManager = TextureManager::GetInstance(); // ← これを追加
-	textureManager->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
 
 	auto sprite_ = std::make_unique<Sprite>();
 	float sWidth = (float)width;
@@ -184,8 +165,6 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
-	//sphere_.Update();
-
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
 		m_imguiManager->update(this);
@@ -353,7 +332,7 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 	int32_t width,
 	int32_t height)
 {
-	depthResourceDesc = {};
+	D3D12_RESOURCE_DESC depthResourceDesc{};
 	depthResourceDesc.Width = width;
 	depthResourceDesc.Height = height;
 	depthResourceDesc.MipLevels = 1;

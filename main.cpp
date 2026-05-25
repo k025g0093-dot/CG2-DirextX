@@ -27,7 +27,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	int uvChecker = engine->LoadTexture("resources/uvChecker.png");
 	int monsterBall = engine->LoadTexture("resources/monsterBall.png");
-	int umi = engine->LoadTexture("resources/ao.jpg");
+	int umi = engine->LoadTexture("resources/d3e51818e5e84c8c.png");
 
 	MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
 
@@ -47,11 +47,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	WaveGrid waveGrid(cubeCountX, cubeCountZ);
 
-	int wallX = cubeCountX / 3;
+	int wallX = cubeCountX / 5;
+	int wall2= cubeCountX / 2;
+
 	int holeStart = cubeCountZ / 2 - 3;
 	int holeEnd = cubeCountZ / 2 + 3;
 	for (int gz = 0; gz < cubeCountZ; gz++) {
 		waveGrid.setWall(wallX, gz, (gz < holeStart || gz >= holeEnd));
+		waveGrid.setWall(wall2, gz, (gz < holeStart || gz >= holeEnd));
+
 	}
 
 	float waveStrength = 10.0f;
@@ -176,7 +180,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					};
 				}
 			}
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 
