@@ -9,22 +9,22 @@ public:
     Matrix4x4 GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
     bool IsDebug() const { return isDebug; }
 private:
-    struct TransformData {
-        Vector3 scale;
-        Vector3 rotate;
-        Vector3 translate;
-    };
+    Vector3 scale = { 1,1,1 };
+    Vector3 rotate{0,0,0};
+    Vector3 translate = { 0,0,-50.0f };
+
+    float distance = 50;
+
+    Matrix4x4 matRot_;
+    Vector3 pivot = { 0.0f, 0.0f, 0.0f };
+
 
     bool isDebug = false;
 
     float width_ = 0.0f;
     float height_ = 0.0f;
 
-    TransformData transform_ = {
-        { 1, 1,   1 },  // scale
-        { 0, 0,   0 },  // rotate
-        { 0, 0, -50 },  // translate
-    };
+    
 
     Matrix4x4 viewProjectionMatrix_{};
 };

@@ -42,8 +42,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region WaveGrid
 
-	const int cubeCountX = 200;
-	const int cubeCountZ = 200;
+	const int cubeCountX = 150;
+	const int cubeCountZ = 150;
 
 	WaveGrid waveGrid(cubeCountX, cubeCountZ);
 
@@ -176,7 +176,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					};
 				}
 			}
-			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 
@@ -196,8 +196,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 #endif
-	delete sound;
+
 	sound->SoundUnLoad(&soundData1);
+	delete sound;
 	delete engine;
 
 	return 0;
