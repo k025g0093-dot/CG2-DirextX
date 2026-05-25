@@ -8,7 +8,7 @@ struct TransformationMatrix
       row_major float4x4 World;
 
 };
-ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0); // b1に合わせる
+ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b1); // b1に合わせる
 
 struct VertexShaderInput
 {

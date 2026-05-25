@@ -26,7 +26,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	
 	rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // シェーダーリソースビューを使用
 	rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 全シェーダーから参照可能
-	rootParameter[1].Descriptor.ShaderRegister = 0; // register(b0)に対応
+	rootParameter[1].Descriptor.ShaderRegister = 1; // register(b0)に対応
 
 	rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // 定数バッファビューを使用
 	rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
