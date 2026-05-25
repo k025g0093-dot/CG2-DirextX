@@ -60,7 +60,6 @@ public:
     void DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color);
     void DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
     void DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale);
-    void DrawMeshTriangle(Vector3 v0, Vector3 v1, Vector3 v2, Vector4 color, std::vector<Vector2> uvs, Vector3 rot, Vector3 scale, int index);
     void DrawSprite(const Vector2& pos, const float width, const float height,
         const Vector3& rot, const Vector3& scale, const Vector4 color, int textureIndex);
     void DrawDynamicMesh(DynamicMesh& mesh, Vector4 color);
@@ -90,6 +89,14 @@ public:
     const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
     void SetViewProjectionMatrix(const Matrix4x4& vp) { viewProjectionMatrix = vp; }
     void SetDirectionalLightResource(ID3D12Resource* lightResource) { m_directionalLightResource = lightResource; }
+    const Vector2& GetSpriteUVScale() const { return m_spriteUVScale; }
+    const Vector2& GetSpriteUVTranslate() const { return m_spriteUVTranslate; }
+    float GetSpriteUVRotate() const { return m_spriteUVRotate; }
+    void SetSpriteUVScale(const Vector2& scale) { m_spriteUVScale = scale; }
+    void SetSpriteUVTranslate(const Vector2& translate) { m_spriteUVTranslate = translate; }
+    void SetSpriteUVRotate(float rotate) { m_spriteUVRotate = rotate; }
+    void ResetSpriteUVTransform();
+    Matrix4x4 GetSpriteUVTransformMatrix() const;
 
     Camera m_camera;
 
@@ -137,6 +144,9 @@ private:
     ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
 
     Matrix4x4   viewProjectionMatrix;
+    Vector2     m_spriteUVScale = { 1.0f, 1.0f };
+    Vector2     m_spriteUVTranslate = { 0.0f, 0.0f };
+    float       m_spriteUVRotate = 0.0f;
 
     // 内部初期化
     void InitWindow(std::wstring name);

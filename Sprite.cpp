@@ -69,6 +69,15 @@ void Sprite::SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) {
     m_pWvpResource->Unmap(0, nullptr);
 }
 
+void Sprite::SetUVTransform(const Matrix4x4& uvTransform) {
+    if (!m_pMaterialResource) return;
+
+    Material* materialData = nullptr;
+    m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+    materialData->uvTransform = uvTransform;
+    m_pMaterialResource->Unmap(0, nullptr);
+}
+
 void Sprite::Resize(float w, float h) {
     m_width = w;
     m_height = h;

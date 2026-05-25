@@ -184,6 +184,19 @@ TUFEngine::~TUFEngine() {
 	CoUninitialize();
 }
 
+void TUFEngine::ResetSpriteUVTransform() {
+	m_spriteUVScale = { 1.0f, 1.0f };
+	m_spriteUVTranslate = { 0.0f, 0.0f };
+	m_spriteUVRotate = 0.0f;
+}
+
+Matrix4x4 TUFEngine::GetSpriteUVTransformMatrix() const {
+	return MakeAffineMatrix(
+		{ m_spriteUVScale.x, m_spriteUVScale.y, 1.0f },
+		{ 0.0f, 0.0f, m_spriteUVRotate },
+		{ m_spriteUVTranslate.x, m_spriteUVTranslate.y, 0.0f });
+}
+
 #pragma endregion
 
 #ifdef USE_IMGUI
@@ -221,6 +234,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 	auto debugWin = std::make_shared<ImGuiDebug>();
 	m_imguiManager->addWindow(debugWin);
+
+	auto spriteUVWin = std::make_shared<ImGuiSpriteUV>();
+	m_imguiManager->addWindow(spriteUVWin);
 }
 #endif // USE_IMGUI
 
@@ -541,6 +557,9 @@ void TUFEngine::RenderAllRequests() {
 		}
 
 		if (!request.model) continue;
+		if (request.isSprite) {
+			request.model->SetUVTransform(GetSpriteUVTransformMatrix());
+		}
 
 		// --- 3. WVP行列を作成 ---
 		Matrix4x4 world;
@@ -675,47 +694,7 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	m_drawRequests.push_back(req);
 }
 
-void TUFEngine::DrawMeshTriangle(
-	Vector3 v0, Vector3 v1, Vector3 v2,
-	Vector4 color,
-	std::vector<Vector2> uvs,
-	Vector3 rot, Vector3 scale,
-	int index)
-{
-	if (!m_temporaryTriangle) {
-		m_temporaryTriangle = std::make_unique<TriangleModel>();
-		m_temporaryTriangle->Initialize(this);
-	}
 
-
-	int meshTriangleCount = 0;
-	for (const auto& request : m_drawRequests) {
-		if (request.model == m_temporaryTriangle.get()) {
-			meshTriangleCount++;
-		}
-	}
-
-	int vertexStartIndex = meshTriangleCount * 3;
-
-
-	m_temporaryTriangle->UpdateVertices(v0, (uvs.size() > 0 ? uvs[0] : Vector2{ 0.0f, 1.0f }), { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 0);
-	m_temporaryTriangle->UpdateVertices(v1, (uvs.size() > 1 ? uvs[1] : Vector2{ 0.5f, 0.0f }), { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 1);
-	m_temporaryTriangle->UpdateVertices(v2, (uvs.size() > 2 ? uvs[2] : Vector2{ 1.0f, 1.0f }), { 0.0f, 1.0f, 0.0f }, vertexStartIndex + 2);
-
-	// 4. 描画リクエストを作成してエンジンに注文を登録
-	DrawRequest req;
-	req.model = m_temporaryTriangle.get();
-	req.color = color;
-
-
-	req.pos = { 0.0f, 0.0f, 0.0f };
-	req.rot = { 0.0f, 0.0f, 0.0f };
-	req.scale = { 1.0f, 1.0f, 1.0f };
-	req.textureIndex = 0; // 必要に応じてテクスチャIDを指定してください
-	req.isMesh = true;
-
-	m_drawRequests.push_back(req);
-}
 
 void TUFEngine::DrawDynamicMesh(DynamicMesh& mesh, Vector4 color) {
 	auto& indices = mesh.getIndices();
