@@ -220,6 +220,19 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 #pragma region テクスチャのロード
 ID3D12Resource* TUFEngine::LoadTexture(const std::string& filePath) {
 
+	// ① テクスチャファイル読み込み
+	DirectX::ScratchImage image{};
+	std::wstring filePathW = ConvertString(filePath);
+	hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	assert(SUCCEEDED(hr));
+
+	// ② ミップマップの作成
+	DirectX::ScratchImage mipImages{};
+	hr = DirectX::GenerateMipMaps(
+		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
+		DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	assert(SUCCEEDED(hr));
+
 	ID3D12Resource* texResource = CreateTextureResource(mipImages.GetMetadata());
 	ID3D12Resource* intermediateResource = UploadTexture(texResource, mipImages);
 
@@ -229,18 +242,24 @@ ID3D12Resource* TUFEngine::LoadTexture(const std::string& filePath) {
 	ID3D12CommandList* commandLists[] = { commandList };
 	commandQueue->ExecuteCommandLists(1, commandLists);
 
+	// FenceでGPU完了待ち
+
 	ID3D12Fence* fence = nullptr;
 	uint64_t fenceValue = 0;
 	hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
 	assert(SUCCEEDED(hr));
+	assert(fence != nullptr);
 
 	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	assert(fenceEvent != nullptr);
 
 	fenceValue++;
-	commandQueue->Signal(fence, fenceValue);
+	hr = commandQueue->Signal(fence, fenceValue);
+	assert(SUCCEEDED(hr));
 
 	if (fence->GetCompletedValue() < fenceValue) {
-		fence->SetEventOnCompletion(fenceValue, fenceEvent);
+		hr = fence->SetEventOnCompletion(fenceValue, fenceEvent);
+		assert(SUCCEEDED(hr));
 		WaitForSingleObject(fenceEvent, INFINITE);
 	}
 
@@ -255,6 +274,7 @@ ID3D12Resource* TUFEngine::LoadTexture(const std::string& filePath) {
 	hr = commandList->Reset(commandAllocator, nullptr);
 	assert(SUCCEEDED(hr));
 
+	//SRVの作成
 	CreateTextureSRV(texResource, mipImages.GetMetadata());
 
 	return texResource;
@@ -325,7 +345,6 @@ ID3D12Resource* TUFEngine::UploadTexture(
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
 	commandList->ResourceBarrier(1, &barrier);
-
 	return intermediateResource;
 
 }
