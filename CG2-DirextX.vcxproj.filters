@@ -64,6 +64,9 @@
     <Filter Include="ソース ファイル\TUFengine\サウンドクラス">
       <UniqueIdentifier>{72ae2431-e364-41c6-a963-213d03830cb2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\Camera\DebugCamera">
+      <UniqueIdentifier>{9a98a508-67eb-410f-bdf5-9dc285d64660}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -158,6 +161,9 @@
     </ClCompile>
     <ClCompile Include="Sound.cpp">
       <Filter>ソース ファイル\TUFengine\サウンドクラス</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugCamer.cpp">
+      <Filter>ソース ファイル\TUFengine\Camera\DebugCamera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -278,6 +284,9 @@
     </ClInclude>
     <ClInclude Include="Sound.h">
       <Filter>ソース ファイル\TUFengine\サウンドクラス</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugCamer.h">
+      <Filter>ソース ファイル\TUFengine\Camera\DebugCamera</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

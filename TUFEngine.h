@@ -157,7 +157,7 @@ private:
     Matrix4x4   viewProjectionMatrix;
 
     // 内部初期化
-    void InitWindow();
+    void InitWindow(std::wstring name);
     void InitializeDXGI(HWND hwnd);
     void InitializeImGui(HWND hwnd);
     ID3D12Resource* CreateDepthStencilTextureResource(int32_t width, int32_t height);
