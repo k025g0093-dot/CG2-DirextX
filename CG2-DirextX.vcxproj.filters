@@ -67,6 +67,9 @@
     <Filter Include="ソース ファイル\TUFengine\Camera\DebugCamera">
       <UniqueIdentifier>{9a98a508-67eb-410f-bdf5-9dc285d64660}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\Texture\専用GUI">
+      <UniqueIdentifier>{d5085894-9bb7-485c-bbb0-34a0af63f468}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -164,6 +167,9 @@
     </ClCompile>
     <ClCompile Include="DebugCamer.cpp">
       <Filter>ソース ファイル\TUFengine\Camera\DebugCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiSpriteUV.cpp">
+      <Filter>ソース ファイル\TUFengine\Texture\専用GUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -287,6 +293,9 @@
     </ClInclude>
     <ClInclude Include="DebugCamer.h">
       <Filter>ソース ファイル\TUFengine\Camera\DebugCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiSpriteUV.h">
+      <Filter>ソース ファイル\TUFengine\Texture\専用GUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

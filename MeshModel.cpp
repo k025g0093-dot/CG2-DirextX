@@ -174,7 +174,6 @@ void MeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
 	if (m_vertexCount == 0 || !m_vertexBuffer) return;
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	auto handle = TextureManager::GetInstance()->GetGPUHandle(textureIndex);
 	if (handle.ptr == 0) {
 		handle = TextureManager::GetInstance()->GetGPUHandle(0);

@@ -22,6 +22,7 @@ public:
 
     void Resize(float w, float h);
     void SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) override;
+    void SetUVTransform(const Matrix4x4& uvTransform) override;
     void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
 
     int GetTextureIndex() const { return m_textureIndex; }

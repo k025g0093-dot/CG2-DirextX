@@ -29,6 +29,7 @@ public:
     // ワールド行列の計算（自作の Matrix4x4 を返す形に戻す）
     Matrix4x4 GetWorldMatrix() const;
     virtual void SetWorldTransform(const Matrix4x4&, const Matrix4x4&) {}
+    virtual void SetUVTransform(const Matrix4x4&) {}
 
     // 頂点データの更新（子クラスで実装。型を自作のものへ変更）
     virtual void UpdateVertices(
