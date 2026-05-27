@@ -213,24 +213,22 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 		srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
 	);
+
+	// フォント設定はDX12初期化の後にやる
 	ImGuiIO& io = ImGui::GetIO();
+	ImFontConfig config;
+	config.SizePixels = 18.0f;
+	io.Fonts->AddFontDefault(&config);
 	io.Fonts->Build();
 
-	// ====================================================
-	// 🌟 ここから新しく追加する処理！
-	// ====================================================
-
-	// 1. 基本初期化が終わったので、マネージャーを生成する
 	m_imguiManager = std::make_unique<ImGuiUIManager>(hwnd);
 
-	// 2. テスト用のスタートアップウィンドウを作って登録する
 	auto startupWin = std::make_shared<IGStartupWindow>();
 	m_imguiManager->addWindow(startupWin);
 
 	auto cameraWin = std::make_shared<ImGuiCamera>();
 	cameraWin->SetTransform(&m_camera.transform);
 	m_imguiManager->addWindow(cameraWin);
-
 
 	auto debugWin = std::make_shared<ImGuiDebug>();
 	m_imguiManager->addWindow(debugWin);
