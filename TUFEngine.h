@@ -68,7 +68,6 @@ public:
     void PreDraw();
     void PostDraw();
 
-    // ゲッターは生ポインタで返す（呼び出し側に所有権を渡さない）
     ID3D12Device* GetDevice() { return device.Get(); }
     ID3D12GraphicsCommandList* GetCommandList() { return commandList.Get(); }
     ID3D12RootSignature* GetRootSignature() { return rootSignature.Get(); }
@@ -76,6 +75,7 @@ public:
     HWND                       GetHwnd()       const { return hwnd; }
     ID3D12DescriptorHeap* GetSrvDescriptorHeap() const { return srvDescriptorHeap.Get(); }
     ID3D12DescriptorHeap* GetDsvDescriptorHeap() const { return dsvDescriptorHeap.Get(); }
+    ImGuiUIManager* GetImGuiManager() { return m_imguiManager.get(); }
 
     void EnableDebugLayer();
     void SetupInfoQueue();
@@ -109,12 +109,10 @@ private:
 
     std::unique_ptr<ImGuiUIManager> m_imguiManager;
 
-    // ウィンドウ
     HWND    hwnd = nullptr;
     int32_t width = 0;
     int32_t height = 0;
 
-    // DirectX 12 基本オブジェクト（Engine が所有 → ComPtr）
     ComPtr<IDXGIFactory7>             dxgiFactory;
     ComPtr<ID3D12Device>              device;
     ComPtr<ID3D12CommandQueue>        commandQueue;
@@ -122,25 +120,19 @@ private:
     ComPtr<ID3D12GraphicsCommandList> commandList;
     HRESULT hr = S_OK;
 
-    // スワップチェーン
     ComPtr<IDXGISwapChain4>  swapChain;
     DXGI_SWAP_CHAIN_DESC1    swapChainDesc{};
     ComPtr<ID3D12Resource>   swapChainResources[2];
 
-    // デスクリプタヒープ
     ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
     ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap;
     D3D12_CPU_DESCRIPTOR_HANDLE  rtvHandles[2]{};
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 
-    // パイプライン
-    // ※ 元コードに生ポインタ版と ComPtr 版が二重に存在していたため、ComPtr 版に統一
     ComPtr<ID3D12RootSignature>  rootSignature;
     ComPtr<ID3D12PipelineState>  pipelineState;
 
-    // リソース類
     ComPtr<ID3D12Resource> depthStencilResource;
-
     ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
 
     Matrix4x4   viewProjectionMatrix;
@@ -148,20 +140,15 @@ private:
     Vector2     m_spriteUVTranslate = { 0.0f, 0.0f };
     float       m_spriteUVRotate = 0.0f;
 
-    // 内部初期化
     void InitWindow(std::wstring name);
     void InitializeDXGI(HWND hwnd);
     void InitializeImGui(HWND hwnd);
     ID3D12Resource* CreateDepthStencilTextureResource(int32_t width, int32_t height);
     void RenderAllRequests();
 
-    // 描画オブジェクト
     std::unique_ptr<DynamicMeshModel> m_dynamicMeshModel;
     std::unique_ptr<Sprite>           sprite;
 
-    // 頂点・定数バッファ（ComPtr に統一、重複していた生ポインタ版を削除）
-
-    // ライトリソースは外部から SetDirectionalLightResource() で差し込む設計のため生ポインタを維持
     ComPtr<ID3D12Resource> m_pConstantBuffer;
     ID3D12Resource* m_directionalLightResource = nullptr;
 
