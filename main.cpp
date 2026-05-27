@@ -140,7 +140,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		};
 #endif // USE_IMGUI
 
-	sound->SoundPlayer(title);
 
 	MSG msg{};
 	while (msg.message != WM_QUIT) {
@@ -237,6 +236,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			if (Input::GetKeyDown(VK_SPACE)) {
 				sound->SoundPlayer(soundData1);
+					sound->SoundPlayer(title);
+
 			}
 		}
 
