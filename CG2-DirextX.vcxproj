@@ -101,6 +101,7 @@
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
     <ClCompile Include="ImGuiCamera.cpp" />
+    <ClCompile Include="ImGuiContentBrowser.cpp" />
     <ClCompile Include="ImGuiDebug.cpp" />
     <ClCompile Include="ImGuiSpriteUV.cpp" />
     <ClCompile Include="ImGuiUIManager.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="ImGuiCamera.h" />
+    <ClInclude Include="ImGuiContentBrowser.h" />
     <ClInclude Include="ImGuiDebug.h" />
     <ClInclude Include="ImGuiSpriteUV.h" />
     <ClInclude Include="ImGuiUIManager.h" />

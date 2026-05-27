@@ -235,8 +235,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto debugWin = std::make_shared<ImGuiDebug>();
 	m_imguiManager->addWindow(debugWin);
 
-	auto spriteUVWin = std::make_shared<ImGuiSpriteUV>();
-	m_imguiManager->addWindow(spriteUVWin);
+	auto contentBrowser = std::make_shared<ImGuiContentBrowser>();
+	m_imguiManager->addWindow(contentBrowser);
 }
 #endif // USE_IMGUI
 
