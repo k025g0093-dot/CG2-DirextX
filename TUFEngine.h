@@ -65,6 +65,10 @@ public:
     void DrawDynamicMesh(DynamicMesh& mesh, Vector4 color);
     void DrawDynamicMeshWithNormal(DynamicMesh& mesh, std::vector<Vector4>& colors, int index);
 
+
+    void RegisterDroppedMesh(MeshModel* mesh);
+
+
     void PreDraw();
     void PostDraw();
 
@@ -97,6 +101,8 @@ public:
     void SetSpriteUVRotate(float rotate) { m_spriteUVRotate = rotate; }
     void ResetSpriteUVTransform();
     Matrix4x4 GetSpriteUVTransformMatrix() const;
+
+    void OnFileDropped(const std::wstring& path);
 
     Camera m_camera;
 
@@ -157,6 +163,7 @@ private:
     std::unique_ptr<Sphere>       m_temporarySpheres;
     std::unique_ptr<TriangleModel> m_temporaryTriangle;
     std::map<std::string, std::unique_ptr<MeshModel>> m_meshes;
+    std::vector<MeshModel*> m_droppedMeshes;
 
     ComPtr<ID3D12Fence> m_fence;
     uint64_t            m_fenceValue = 0;

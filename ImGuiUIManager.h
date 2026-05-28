@@ -16,6 +16,7 @@ public:
 
     void addWindow(std::shared_ptr<ImGuiUIWindow> newWin);
     std::function<void()> onDrawGUI = nullptr;
+    std::function<void(const std::wstring&)> onFileDrop = nullptr;
 private:
     std::vector<std::shared_ptr<ImGuiUIWindow>> windows;
 

@@ -165,6 +165,8 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
+
+
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
 		m_imguiManager->update(this);
@@ -235,7 +237,36 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 	auto contentBrowser = std::make_shared<ImGuiContentBrowser>();
 	m_imguiManager->addWindow(contentBrowser);
+
+	m_imguiManager->onFileDrop = [this](const std::wstring& path) {
+		OnFileDropped(path);
+		};
 }
+
+void TUFEngine::OnFileDropped(const std::wstring& path) {
+	std::filesystem::path filePath(path);
+	std::string ext = filePath.extension().string();
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+	if (ext == ".png" || ext == ".jpg") {
+		std::string pathStr = ConvertString(path); // ここを変更
+		int index = LoadTexture("resources/" + pathStr);
+		OutputDebugStringA(("Texture Loaded: " + pathStr + "\n").c_str());
+	}
+	else if (ext == ".obj") {
+		std::string dir = filePath.parent_path().string();
+		std::string filename = filePath.filename().string();
+		MeshModel* mesh = LoadModel("resources/" + dir, filename);
+		if (mesh) {
+			m_droppedMeshes.push_back(mesh);
+			OutputDebugStringA(("Mesh Registered: " + filename + "\n").c_str()); // 追加
+		}
+	}
+	else {
+		OutputDebugStringA("Unknown file type dropped\n");
+	}
+}
+
 #endif // USE_IMGUI
 
 #pragma region DirectX 12 初期化関連
@@ -450,6 +481,10 @@ void TUFEngine::PostDraw() {
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+	for (auto* mesh : m_droppedMeshes) {
+		RegisterDroppedMesh(mesh);
+	}
 
 	RenderAllRequests();
 
@@ -692,6 +727,17 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	m_drawRequests.push_back(req);
 }
 
+void TUFEngine::RegisterDroppedMesh(MeshModel* mesh) {
+	if (!mesh) return;
+	DrawRequest req;
+	req.model = mesh;
+	req.pos = { 0.0f, 0.0f, 0.0f };
+	req.rot = { 0.0f, 0.0f, 0.0f };
+	req.scale = { 1.0f, 1.0f, 1.0f };
+	req.textureIndex = mesh->GetTextureIndex();
+	req.isMesh = true;
+	m_drawRequests.push_back(req);
+}
 
 
 void TUFEngine::DrawDynamicMesh(DynamicMesh& mesh, Vector4 color) {
