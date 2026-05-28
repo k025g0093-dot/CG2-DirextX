@@ -163,14 +163,32 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 		std::istringstream s(line);
 		s >> identifire;
 
+		// 修正後
 		if (identifire == "map_Kd")
 		{
-			//identifireに応じた処理
+			std::string token;
 			std::string textureFilename;
-			s >> textureFilename;
-			//連結してファイルパスにする
-			materialData.textureFilPath = directoryPath + "/" + textureFilename;
+			while (s >> token) {
+				// -s, -bm などのオプションフラグはスキップ
+				if (token[0] == '-') {
+					// オプションの引数も読み飛ばす（-s は引数3つ、-bm は1つなど）
+					if (token == "-s" || token == "-o") {
+						float tmp; s >> tmp >> tmp >> tmp; // x y z
+					}
+					else if (token == "-bm") {
+						float tmp; s >> tmp;
+					}
+					continue;
+				}
+				textureFilename = token;
+			}
 
+			// バックスラッシュをスラッシュに統一
+			std::replace(textureFilename.begin(), textureFilename.end(), '\\', '/');
+
+			if (!textureFilename.empty()) {
+				materialData.textureFilPath = directoryPath + "/" + textureFilename;
+			}
 		}
 
 	}

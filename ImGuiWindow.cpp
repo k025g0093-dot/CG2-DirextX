@@ -83,3 +83,37 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 	}
 #endif
 }
+
+
+// --- ImGuiWindow.cpp の最後に追記 ---
+
+void ImGuiViewportWindow::update(TUFEngine* engine) {
+#ifdef USE_IMGUI
+	// "Game Viewport" という名前の新しいウィンドウを作る
+	if (begin("dorp Obj")) {
+
+		ImGui::Text("drop to obj");
+
+		// ウィンドウの残り全域をドロップ可能なエリア（ダミー領域）にする
+		ImVec2 availableSize = ImGui::GetContentRegionAvail();
+		ImGui::Dummy(availableSize);
+
+		// ★このウィンドウ（直前に作ったDummy領域）をドロップの受け皿にする
+		if (ImGui::BeginDragDropTarget()) {
+			// マウスが離された瞬間だけデータを取り出す
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+				const wchar_t* itemPath = (const wchar_t*)payload->Data;
+
+				// TUFEngine の OnFileDropped を呼び出す
+				auto manager = engine->GetImGuiManager();
+				if (manager && manager->onFileDrop) {
+					manager->onFileDrop(itemPath);
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		end();
+	}
+#endif
+}

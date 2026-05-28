@@ -42,3 +42,9 @@ class ImGuiSceneWindow : public ImGuiUIWindow
 public:
     void update(TUFEngine* engine) override;
 };
+
+class ImGuiViewportWindow : public ImGuiUIWindow
+{
+public:
+    void update(TUFEngine* engine) override;
+};
