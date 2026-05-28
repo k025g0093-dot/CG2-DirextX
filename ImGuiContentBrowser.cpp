@@ -49,20 +49,49 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 			auto relativePath = std::filesystem::relative(path, s_AssetsPath);
 			std::string filenameString = relativePath.filename().string();
 
-			auto gpuHandle = TextureManager::GetInstance()->GetGPUHandle(directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon);
+			ImGui::PushID(filenameString.c_str());
 
+
+			auto gpuHandle = TextureManager::GetInstance()->GetGPUHandle(directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon);
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,0));
 			ImGui::ImageButton(filenameString.c_str(), (ImTextureID)gpuHandle.ptr, { thumbnailSize,thumbnailSize });
+
+			if (ImGui::BeginDragDropSource()) 
+			{
+				const wchar_t* itemPath = relativePath.c_str();
+
+				ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM",itemPath,(wcslen(itemPath)+1)*sizeof(wchar_t));
+				
+				if (!directoryEntry.is_directory())
+				{
+					// engineを経由してUIManagerのコールバックを呼ぶ
+					auto manager = engine->GetImGuiManager();
+					if (manager->onFileDrop)
+					{
+						manager->onFileDrop(relativePath.wstring());
+					}
+				}
+				
+				ImGui::EndDragDropSource();
+			}
+
+			ImGui::PopStyleColor();
 
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
+
 				if (directoryEntry.is_directory())
 					m_CurrentDirectory /= path.filename();
 			}
 
+
+			
+
+
 			ImGui::Text(filenameString.c_str());
 
 			ImGui::NextColumn();
-
+			ImGui::PopID();
 		}
 
 		ImGui::Columns(1);

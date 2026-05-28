@@ -55,9 +55,6 @@
     <Filter Include="ソース ファイル\TUFengine\各種モデル群\各種図形">
       <UniqueIdentifier>{d1bdb031-4692-41a0-a0c9-af5b0dbeec11}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\各種モデル群\Mesh">
-      <UniqueIdentifier>{90893312-83cc-4757-83f8-23278a455907}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\TUFengine\オブジェクトのリリース関数">
       <UniqueIdentifier>{55dcfd81-49c3-400e-8986-2aab9a04e915}</UniqueIdentifier>
     </Filter>
@@ -72,6 +69,9 @@
     </Filter>
     <Filter Include="ソース ファイル\TUFengine\ImGui\アセット管理用GUI">
       <UniqueIdentifier>{b960d42e-b0f7-4a8a-937d-4c3e15b34e49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\各種モデル群\板ポリ">
+      <UniqueIdentifier>{90893312-83cc-4757-83f8-23278a455907}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -115,7 +115,7 @@
       <Filter>ソース ファイル\TUFengine\各種モデル群\各種図形</Filter>
     </ClCompile>
     <ClCompile Include="DynamicMesh.cpp">
-      <Filter>ソース ファイル\TUFengine\各種モデル群\Mesh</Filter>
+      <Filter>ソース ファイル\TUFengine\各種モデル群\板ポリ</Filter>
     </ClCompile>
     <ClCompile Include="WaveGrid.cpp">
       <Filter>外部から持ってきた関数やファイル</Filter>
@@ -148,7 +148,7 @@
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="DynamicMeshModel.cpp">
-      <Filter>ソース ファイル\TUFengine\各種モデル群\Mesh</Filter>
+      <Filter>ソース ファイル\TUFengine\各種モデル群\板ポリ</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>ソース ファイル\TUFengine\Camera</Filter>
@@ -238,7 +238,7 @@
       <Filter>ソース ファイル\TUFengine\各種モデル群\各種図形</Filter>
     </ClInclude>
     <ClInclude Include="DynamicMesh.h">
-      <Filter>ソース ファイル\TUFengine\各種モデル群\Mesh</Filter>
+      <Filter>ソース ファイル\TUFengine\各種モデル群\板ポリ</Filter>
     </ClInclude>
     <ClInclude Include="WaveGrid.h">
       <Filter>外部から持ってきた関数やファイル</Filter>
@@ -277,7 +277,7 @@
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="DynamicMeshModel.h">
-      <Filter>ソース ファイル\TUFengine\各種モデル群\Mesh</Filter>
+      <Filter>ソース ファイル\TUFengine\各種モデル群\板ポリ</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>ソース ファイル\TUFengine\Camera</Filter>
