@@ -82,6 +82,15 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 
 				if (directoryEntry.is_directory())
 					m_CurrentDirectory /= path.filename();
+				if (!directoryEntry.is_directory())
+				{
+					// engineを経由してUIManagerのコールバックを呼ぶ
+					auto manager = engine->GetImGuiManager();
+					if (manager->onFileDrop)
+					{
+						manager->onFileDrop(relativePath.wstring());
+					}
+				}
 			}
 
 

@@ -359,7 +359,7 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	// TUFEngine.cpp の初期化処理（例えば InitializeDXGI の最後など）に以下を追加
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
 	// 256個分のオブジェクトの行列が入る巨大なバッファを作る
-	m_pConstantBuffer = CreateBufferResource(device.Get(), cbSize * MAX_DRAW_COUNT);
+	m_pConstantBuffer = CreateBufferResource(device.Get(), cbSize * m_maxDrawCount);
 	// 最初に1回だけMapして、書き込み先ポインタ（m_pCbvDataBegin）を保存しておく
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 
@@ -571,6 +571,11 @@ void TUFEngine::SetupInfoQueue() {
 #pragma region	レンダーリクエスト
 
 void TUFEngine::RenderAllRequests() {
+
+	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
+		GrowConstantBuffer();
+	}
+
 	// ⭕ GPUに「このエンジンのシェーダーと設計図を使うよ」と教える
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 	commandList->SetPipelineState(pipelineState.Get());
@@ -585,7 +590,7 @@ void TUFEngine::RenderAllRequests() {
 	m_cbvIndex = 0;
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
 	for (auto& request : m_drawRequests) {
-		if (m_cbvIndex >= MAX_DRAW_COUNT) {
+		if (m_cbvIndex >= m_maxDrawCount) {
 			break;
 		}
 
@@ -784,7 +789,7 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	cbData.World = world;
 
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
-	if (m_cbvIndex >= MAX_DRAW_COUNT || !m_pCbvDataBegin || !m_pConstantBuffer) {
+	if (m_cbvIndex >= m_maxDrawCount || !m_pCbvDataBegin || !m_pConstantBuffer) {
 		return;
 	}
 
@@ -799,3 +804,20 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	m_dynamicMeshModel->Draw(commandList.Get(), index);
 }
 #pragma endregion
+
+
+void TUFEngine::GrowConstantBuffer() {
+	m_maxDrawCount *= 2;
+	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
+
+	m_fenceValue++;
+	commandQueue->Signal(m_fence.Get(), m_fenceValue);
+	if (m_fence->GetCompletedValue() < m_fenceValue) {
+		m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+	}
+
+	m_pConstantBuffer->Unmap(0, nullptr);
+	m_pConstantBuffer = CreateBufferResource(device.Get(), cbSize * m_maxDrawCount);
+	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
+}
