@@ -47,6 +47,14 @@ struct DrawRequest {
     bool               isSprite = false;
 };
 
+struct SceneObject {
+    std::string name;
+    MeshModel* mesh = nullptr;
+    Vector3 pos = { 0.0f, 0.0f, 0.0f };
+    Vector3 rot = { 0.0f, 0.0f, 0.0f };
+    Vector3 scale = { 1.0f, 1.0f, 1.0f };
+};
+
 class TUFEngine {
 public:
     TUFEngine(int32_t width, int32_t height, std::wstring name);
@@ -66,7 +74,7 @@ public:
     void DrawDynamicMeshWithNormal(DynamicMesh& mesh, std::vector<Vector4>& colors, int index);
 
 
-    void RegisterDroppedMesh(MeshModel* mesh);
+    void RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale);
 
 
     void PreDraw();
@@ -102,7 +110,12 @@ public:
     void ResetSpriteUVTransform();
     Matrix4x4 GetSpriteUVTransformMatrix() const;
 
+
+    //std::vector<std::pair<std::string, MeshModel*>>& GetDroppedMeshes() { return m_droppedMeshes; }
+    void RemoveDroppedMesh(int index) { m_droppedMeshes.erase(m_droppedMeshes.begin() + index); }
+
     void OnFileDropped(const std::wstring& path);
+    std::vector<SceneObject>& GetDroppedMeshes() { return m_droppedMeshes; }
 
     Camera m_camera;
 
@@ -166,7 +179,8 @@ private:
     std::unique_ptr<Sphere>       m_temporarySpheres;
     std::unique_ptr<TriangleModel> m_temporaryTriangle;
     std::map<std::string, std::unique_ptr<MeshModel>> m_meshes;
-    std::vector<MeshModel*> m_droppedMeshes;
+    std::vector<SceneObject> m_droppedMeshes;
+
 
     ComPtr<ID3D12Fence> m_fence;
     uint64_t            m_fenceValue = 0;

@@ -241,6 +241,10 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	m_imguiManager->onFileDrop = [this](const std::wstring& path) {
 		OnFileDropped(path);
 		};
+
+	auto sceneWin = std::make_shared<ImGuiSceneWindow>();
+	m_imguiManager->addWindow(sceneWin);
+
 }
 
 void TUFEngine::OnFileDropped(const std::wstring& path) {
@@ -258,8 +262,7 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 		std::string filename = filePath.filename().string();
 		MeshModel* mesh = LoadModel("resources/" + dir, filename);
 		if (mesh) {
-			m_droppedMeshes.push_back(mesh);
-			OutputDebugStringA(("Mesh Registered: " + filename + "\n").c_str()); // 追加
+			m_droppedMeshes.push_back({ filename, mesh });
 		}
 	}
 	else {
@@ -482,8 +485,8 @@ void TUFEngine::PostDraw() {
 	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-	for (auto* mesh : m_droppedMeshes) {
-		RegisterDroppedMesh(mesh);
+	for (auto& obj : m_droppedMeshes) {
+		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
 	}
 
 	RenderAllRequests();
@@ -732,13 +735,13 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	m_drawRequests.push_back(req);
 }
 
-void TUFEngine::RegisterDroppedMesh(MeshModel* mesh) {
+void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale) {
 	if (!mesh) return;
 	DrawRequest req;
 	req.model = mesh;
-	req.pos = { 0.0f, 0.0f, 0.0f };
-	req.rot = { 0.0f, 0.0f, 0.0f };
-	req.scale = { 1.0f, 1.0f, 1.0f };
+	req.pos = pos;
+	req.rot = rot;
+	req.scale = scale;
 	req.textureIndex = mesh->GetTextureIndex();
 	req.isMesh = true;
 	m_drawRequests.push_back(req);

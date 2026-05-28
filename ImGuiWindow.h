@@ -35,3 +35,10 @@ public:
 private:
     int counter = 0;
 };
+
+// ImGuiWindow.h に追加
+class ImGuiSceneWindow : public ImGuiUIWindow
+{
+public:
+    void update(TUFEngine* engine) override;
+};
