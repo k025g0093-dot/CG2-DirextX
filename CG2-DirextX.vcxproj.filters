@@ -175,7 +175,7 @@
       <Filter>ソース ファイル\TUFengine\Texture\専用GUI</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiContentBrowser.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\TUFengine\ImGui\アセット管理用GUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -304,7 +304,7 @@
       <Filter>ソース ファイル\TUFengine\Texture\専用GUI</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiContentBrowser.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ソース ファイル\TUFengine\ImGui\アセット管理用GUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
