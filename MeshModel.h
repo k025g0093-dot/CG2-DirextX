@@ -54,10 +54,15 @@ private:
     std::vector<Vector3> normals;
     std::vector<Vector2> texcoords;
     std::string          line;
-
+    ComPtr<ID3D12Resource> m_pMaterialResource;
     ComPtr<ID3D12Resource>   m_vertexBuffer;      // 元々 ComPtr のため実質変更なし
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
     size_t                   m_vertexCount = 0;
     TUFEngine* m_pEngine = nullptr;
-    int                      m_textureIndex = 0;
+    int                      m_textureIndex = -1;
+
+    uint32_t Align256(uint32_t size)
+    {
+        return (size + 0xff) & ~0xff;
+    }
 };

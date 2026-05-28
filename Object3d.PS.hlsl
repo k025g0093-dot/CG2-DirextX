@@ -30,24 +30,38 @@ SamplerState gSampler : register(s0); // s0に合わせる
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 
 
-// ピクセルシェーダーのメイン
 PixelShaderOutput main(VertexShaderOutput input)
 {
       PixelShaderOutput output;
       float4 transformedUV = mul(float32_t4(input.texcoord, 0.0f, 1.0f), gMaterial.uvTransform);
-     float32_t4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
 
-      if (gMaterial.enableLighting != 0)
+    float32_t4 textureColor;
+      if (gMaterial.enableLighting == -1)
+      {
+            textureColor = float32_t4(1.0f, 1.0f, 1.0f, 1.0f); // テクスチャなし
+      }
+      else
+      {
+            textureColor = gTexture.Sample(gSampler, transformedUV.xy);
+      }
+
+      if (gMaterial.enableLighting != 0 && gMaterial.enableLighting != -1)
       {
             float Ndotl = dot(normalize(input.normal), -gDirectionalLight.direction);
             float cos = pow(Ndotl * 0.5f + 0.5f, 2.0f);
             output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
+      }
+      else if (gMaterial.enableLighting == -1)
+      {
+        // テクスチャなしでライティングあり
+            float Ndotl = dot(normalize(input.normal), -gDirectionalLight.direction);
+            float cos = pow(Ndotl * 0.5f + 0.5f, 2.0f);
+            output.color = gMaterial.color * gDirectionalLight.color * cos * gDirectionalLight.intensity;
       }
       else
       {
             output.color = gMaterial.color * textureColor;
       }
 
-    
       return output;
 }

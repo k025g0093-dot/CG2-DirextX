@@ -6,6 +6,15 @@ MeshModel::~MeshModel() = default;
 
 void MeshModel::InitMeshModel(TUFEngine* engine) {
 	m_pEngine = engine;
+	ID3D12Device* device = engine->GetDevice();
+
+	m_pMaterialResource = CreateBufferResource(device, Align256(sizeof(Material)));
+	Material* materialData = nullptr;
+	m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+	materialData->color = { 0.5f, 0.5f, 0.5f, 0.5f };
+	materialData->enableLifhting = 1;
+	materialData->uvTransform = MakeIdentity4x4();
+	m_pMaterialResource->Unmap(0, nullptr);
 }
 
 bool MeshModel::LoadFromOBJ(
@@ -154,7 +163,7 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 		std::istringstream s(line);
 		s >> identifire;
 
-		if (identifire == "map_kd")
+		if (identifire == "map_Kd")
 		{
 			//identifireに応じた処理
 			std::string textureFilename;
@@ -174,12 +183,22 @@ void MeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
 	if (m_vertexCount == 0 || !m_vertexBuffer) return;
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	auto handle = TextureManager::GetInstance()->GetGPUHandle(textureIndex);
-	if (handle.ptr == 0) {
-		handle = TextureManager::GetInstance()->GetGPUHandle(0);
-		if (handle.ptr == 0) return;
+	cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
+
+	if (textureIndex >= 0) {
+		auto handle = TextureManager::GetInstance()->GetGPUHandle(textureIndex);
+		if (handle.ptr != 0) {
+			cmdList->SetGraphicsRootDescriptorTable(2, handle);
+		}
 	}
-	cmdList->SetGraphicsRootDescriptorTable(2, handle);
+	// textureIndex < 0 の場合はenableLightingを-1にして色だけ返す
+	else {
+		Material* materialData = nullptr;
+		m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+		materialData->enableLifhting = -1;
+		m_pMaterialResource->Unmap(0, nullptr);
+	}
+
 	cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 	cmdList->DrawInstanced(static_cast<UINT>(m_vertexCount), 1, 0, 0);
 }

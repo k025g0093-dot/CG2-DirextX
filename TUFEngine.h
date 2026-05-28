@@ -107,10 +107,13 @@ public:
     Camera m_camera;
 
 private:
+
+    void GrowConstantBuffer();
+
     static TUFEngine* s_instance;
 
     int          m_cbvIndex = 0;
-    static const int MAX_DRAW_COUNT = 10000;
+    int m_maxDrawCount = 128;
     UINT8* m_pCbvDataBegin = nullptr;
 
     std::unique_ptr<ImGuiUIManager> m_imguiManager;
