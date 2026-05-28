@@ -58,3 +58,28 @@ void IGStartupWindow::update(TUFEngine* engine)
 	}
 #endif
 }
+
+
+// ImGuiWindow.cpp に追加
+void ImGuiSceneWindow::update(TUFEngine* engine) {
+#ifdef USE_IMGUI
+	if (begin("Scene")) {
+		auto& objects = engine->GetDroppedMeshes();
+		for (int i = 0; i < (int)objects.size(); i++) {
+			ImGui::PushID(i);
+			ImGui::Text(objects[i].name.c_str());
+			ImGui::DragFloat3("Position", &objects[i].pos.x, 0.1f);
+			ImGui::DragFloat3("Rotation", &objects[i].rot.x, 0.01f);
+			ImGui::DragFloat3("Scale", &objects[i].scale.x, 0.01f, 0.01f, 10.0f);
+			if (ImGui::Button("Delete")) {
+				engine->RemoveDroppedMesh(i);
+				ImGui::PopID();
+				break;
+			}
+			ImGui::Separator();
+			ImGui::PopID();
+		}
+		end();
+	}
+#endif
+}
