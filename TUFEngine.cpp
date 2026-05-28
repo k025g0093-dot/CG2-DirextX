@@ -217,7 +217,7 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	// フォント設定はDX12初期化の後にやる
 	ImGuiIO& io = ImGui::GetIO();
 	ImFontConfig config;
-	config.SizePixels = 18.0f;
+	config.SizePixels = 13.0f;
 	io.Fonts->AddFontDefault(&config);
 	io.Fonts->Build();
 
