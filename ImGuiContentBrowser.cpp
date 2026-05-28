@@ -56,22 +56,13 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,0));
 			ImGui::ImageButton(filenameString.c_str(), (ImTextureID)gpuHandle.ptr, { thumbnailSize,thumbnailSize });
 
+
 			if (ImGui::BeginDragDropSource()) 
 			{
 				const wchar_t* itemPath = relativePath.c_str();
+				ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM",itemPath,(wcslen(itemPath)+1)*sizeof(wchar_t));				
+				ImGui::Text("%s", filenameString.c_str());
 
-				ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM",itemPath,(wcslen(itemPath)+1)*sizeof(wchar_t));
-				
-				if (!directoryEntry.is_directory())
-				{
-					// engineを経由してUIManagerのコールバックを呼ぶ
-					auto manager = engine->GetImGuiManager();
-					if (manager->onFileDrop)
-					{
-						manager->onFileDrop(relativePath.wstring());
-					}
-				}
-				
 				ImGui::EndDragDropSource();
 			}
 
@@ -96,8 +87,7 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 
 			
 
-
-			ImGui::Text(filenameString.c_str());
+			ImGui::TextWrapped(filenameString.c_str());
 
 			ImGui::NextColumn();
 			ImGui::PopID();

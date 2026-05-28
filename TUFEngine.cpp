@@ -245,6 +245,10 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto sceneWin = std::make_shared<ImGuiSceneWindow>();
 	m_imguiManager->addWindow(sceneWin);
 
+	auto viewportWin = std::make_shared<ImGuiViewportWindow>();
+	m_imguiManager->addWindow(viewportWin);
+
+
 }
 
 void TUFEngine::OnFileDropped(const std::wstring& path) {
