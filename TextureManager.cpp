@@ -26,10 +26,21 @@ int TextureManager::LoadTexture(const std::string& filePath) {
 
 	// ↓ const参照ではなく、mipImagesから取得する
 	DirectX::ScratchImage mipImages{};
-	hr = DirectX::GenerateMipMaps(
-		image.GetImages(), image.GetImageCount(), image.GetMetadata(),
-		DirectX::TEX_FILTER_SRGB, 0, mipImages);
-	assert(SUCCEEDED(hr));
+	if (image.GetMetadata().width > 1 && image.GetMetadata().height > 1) { // 1x1テクスチャはミップマップ不要
+
+		hr = DirectX::GenerateMipMaps(
+			image.GetImages(), image.GetImageCount(), image.GetMetadata(),
+			DirectX::TEX_FILTER_SRGB, 0, mipImages);
+		assert(SUCCEEDED(hr));
+
+	}
+	else
+	{
+		// 1x1テクスチャはミップマップ生成せず、そのままコピー用のScratchImageにセット
+		hr = mipImages.InitializeFromImage(*image.GetImage(0, 0, 0));
+		assert(SUCCEEDED(hr));
+
+	}
 
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata(); // ← ここで取得
 
