@@ -230,7 +230,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					};
 				}
 			}
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 

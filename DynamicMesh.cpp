@@ -24,14 +24,14 @@ DynamicMesh::DynamicMesh(int gridW, int gridH) : mGridW(gridW), mGridH(gridH) {
             int br = vertexIndex(x + 1, y + 1);  // 右下
 
             // 三角形①
-            mIndices.push_back(tl);
-            mIndices.push_back(tr);
-            mIndices.push_back(bl);
+            mIndices.push_back(tl);  // 左上
+            mIndices.push_back(bl);  // 左下  ← trとblを入れ替え
+            mIndices.push_back(tr);  // 右上
 
             // 三角形②
-            mIndices.push_back(tr);
-            mIndices.push_back(br);
-            mIndices.push_back(bl);
+            mIndices.push_back(tr);  // 右上
+            mIndices.push_back(bl);  // 左下  ← brとblを入れ替え
+            mIndices.push_back(br);  // 右下
         }
     }
 }
