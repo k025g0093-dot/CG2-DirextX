@@ -65,12 +65,11 @@ public:
     int        LoadTexture(const std::string& filePath);
     MeshModel* LoadModel(const std::string& directoryPath, const std::string& filename);
 
-    void DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color);
+    void DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color, int textureInd);
     void DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex);
     void DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale);
     void DrawSprite(const Vector2& pos, const float width, const float height,
         const Vector3& rot, const Vector3& scale, const Vector4 color, int textureIndex);
-    void DrawDynamicMesh(DynamicMesh& mesh, Vector4 color);
     void DrawDynamicMeshWithNormal(DynamicMesh& mesh, std::vector<Vector4>& colors, int index);
 
 
@@ -177,7 +176,7 @@ private:
     std::vector<DrawRequest> m_drawRequests;
 
     std::unique_ptr<Sphere>       m_temporarySpheres;
-    std::unique_ptr<TriangleModel> m_temporaryTriangle;
+    std::vector<std::unique_ptr<TriangleModel>> m_trianglePool;
     std::map<std::string, std::unique_ptr<MeshModel>> m_meshes;
     std::vector<SceneObject> m_droppedMeshes;
 

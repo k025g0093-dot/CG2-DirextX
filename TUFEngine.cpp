@@ -99,7 +99,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 	auto tri = std::make_unique<TriangleModel>();
 	tri->Initialize(this);
-	m_temporaryTriangle = std::move(tri);
+	m_trianglePool.push_back(std::move(tri));
 
 	
 	// TUFEngine.cpp のコンストラクタで
@@ -680,24 +680,28 @@ void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3
 }
 
 //三角形
-void TUFEngine::DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color) {
-	if (!m_temporaryTriangle) {
-		m_temporaryTriangle = std::make_unique<TriangleModel>();
-		m_temporaryTriangle->Initialize(this);
+void TUFEngine::DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color, int textureIndex) {
+
+	// リクエスト数分のTriangleModelを確保
+	int triIndex = (int)m_drawRequests.size();
+	while ((int)m_trianglePool.size() <= triIndex) {
+		auto tri = std::make_unique<TriangleModel>();
+		tri->Initialize(this);
+		m_trianglePool.push_back(std::move(tri));
 	}
 
-	// ← 現在の描画インデックスに頂点を書き込む
-	int triIndex = (int)m_drawRequests.size();
-	m_temporaryTriangle->UpdateVertices({ -0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 0);
-	m_temporaryTriangle->UpdateVertices({ 0.0f,  0.5f, 0.0f }, { 0.5f, 0.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 1);
-	m_temporaryTriangle->UpdateVertices({ 0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 2);
+	TriangleModel* tri = m_trianglePool[triIndex].get();
+	tri->UpdateVertices({ -0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 0);
+	tri->UpdateVertices({ 0.0f,  0.5f, 0.0f }, { 0.5f, 0.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 1);
+	tri->UpdateVertices({ 0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, triIndex * 3 + 2);
 
 	DrawRequest req;
-	req.model = m_temporaryTriangle.get();
+	req.model = tri;  // ←それぞれ別インスタンス
 	req.pos = pos;
 	req.rot = rot;
 	req.scale = scale;
 	req.color = color;
+	req.textureIndex = textureIndex;
 	req.isMesh = false;
 	m_drawRequests.push_back(req);
 }
@@ -752,22 +756,6 @@ void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const V
 }
 
 
-void TUFEngine::DrawDynamicMesh(DynamicMesh& mesh, Vector4 color) {
-	auto& indices = mesh.getIndices();
-	auto& vertices = mesh.getVertices();
-
-	for (int i = 0; i < (int)indices.size(); i += 3) {
-		int i0 = indices[i] * 3;
-		int i1 = indices[i + 1] * 3;
-		int i2 = indices[i + 2] * 3;
-
-		Vector3 v0 = { vertices[i0],     vertices[i0 + 1], vertices[i0 + 2] };
-		Vector3 v1 = { vertices[i1],     vertices[i1 + 1], vertices[i1 + 2] };
-		Vector3 v2 = { vertices[i2],     vertices[i2 + 1], vertices[i2 + 2] };
-
-		DrawTriangle({}, { 0,0,0 }, { 1,1,1 }, color);
-	}
-}
 
 void TUFEngine::DrawDynamicMeshWithNormal(
 	DynamicMesh& mesh,

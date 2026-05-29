@@ -204,7 +204,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					{ triBasePos.x + i * 0.5f, triBasePos.y, triBasePos.z },
 					triRot,
 					triScale,
-					triColor);
+					triColor,
+					uvChecker);
 			}
 
 			engine->DrawSprite(
