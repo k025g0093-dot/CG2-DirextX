@@ -14,8 +14,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	SetUnhandledExceptionFilter(ExportDump);
 
-	const int32_t kClineWidth = 1280;
-	const int32_t kClineHeight = 720;
+	const int32_t kClineWidth = 1920;
+	const int32_t kClineHeight = 1080;
 
 	TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, L"CG2_TUFEngine_LE2B_29_ヤマト_ユウヤ");
 	assert(engine->GetDevice() != nullptr);
@@ -58,9 +58,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #pragma endregion
 
 	engine->m_camera.transform.translate.x = 0.0f;
-	engine->m_camera.transform.translate.y = 0.0f;
-	engine->m_camera.transform.translate.z = -10.0f;
-	engine->m_camera.transform.rotate.x = 0.0f;
+	engine->m_camera.transform.translate.y = 200.0f;
+	engine->m_camera.transform.translate.z = -300.0f;
+	engine->m_camera.transform.rotate.x = 0.6f;
 
 	bool  useMonsterBall = true;
 	float cameraRotateSpeed = 0.01f;
@@ -210,7 +210,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->DrawSprite(
 				spritePos,
-				360 * spriteScale.x, 360 * spriteScale.y,
+				720 * spriteScale.x, 360 * spriteScale.y,
 				spriteRot,
 				{ 1, 1, 1 },
 				{ 1, 1, 1, 1 },
@@ -231,7 +231,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					};
 				}
 			}
-			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 

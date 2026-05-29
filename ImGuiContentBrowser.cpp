@@ -18,7 +18,7 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 	if (m_DirectoryIcon == -1) {
 		//フォルダの画像とか読み込み
 		m_DirectoryIcon = TextureManager::GetInstance()->LoadTexture("ContentBrowserAsset/Icons/ContentBrowser/DirectoryIcon.png");
-		m_FileIcon = TextureManager::GetInstance()->LoadTexture("ContentBrowserAsset/Icons/ContentBrowser/FileIcon.png");
+		m_FileIcon = TextureManager::GetInstance()->LoadTexture("ContentBrowserAsset/Icons/ContentBrowser/FileIcon2.png");
 	}
 
 	if (!show) return;
