@@ -70,9 +70,9 @@ void TriangleModel::UpdateVertices(const Vector3& points,
 {
     if (!m_pVertexData || index < 0 || static_cast<uint32_t>(index) >= m_vertexCount) return;
 
-    m_pVertexData[index].position = { points.x * -1.0f, points.y, points.z, 1.0f };
+    m_pVertexData[index].position = { points.x , points.y, points.z, 1.0f };
     m_pVertexData[index].texcoord = texcoord;
-    m_pVertexData[index].normal = { normal.x * -1.0f, normal.y, normal.z };
+    m_pVertexData[index].normal = { normal.x , normal.y, normal.z };
 }
 
 void TriangleModel::SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) {
