@@ -6,6 +6,7 @@
 using Microsoft::WRL::ComPtr;
 
 struct VertexData;
+struct Material;
 class TUFEngine;
 
 class TriangleModel : public Model {
@@ -21,7 +22,7 @@ public:
         int index) override;
 
     void Draw(ID3D12GraphicsCommandList* cmdList, int index) override;
-    void Draw(ID3D12GraphicsCommandList* cmdList, int drawIndex, int textureIndex);
+    void Draw(ID3D12GraphicsCommandList* cmdList, int drawIndex, int textureIndex, const Vector4& color = { 1,1,1,1 });
     void SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world);
 
 private:
@@ -30,6 +31,7 @@ private:
     ComPtr<ID3D12Resource>   m_pMaterialResource;
     ComPtr<ID3D12Resource>   m_pWvpResource;
     ComPtr<ID3D12Resource>   m_pLightResource;   // ★追加
+    Material* materialData = nullptr;
 
     VertexData* m_pVertexData = nullptr;
 
