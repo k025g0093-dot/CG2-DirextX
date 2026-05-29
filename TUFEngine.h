@@ -125,6 +125,7 @@ private:
     static TUFEngine* s_instance;
 
     int          m_cbvIndex = 0;
+    int          m_triangleRequestCount = 0;
     int m_maxDrawCount = 128;
     UINT8* m_pCbvDataBegin = nullptr;
 
