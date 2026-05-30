@@ -1,3 +1,58 @@
 {
-    "objects": []
+    "objects": [
+        {
+            "modelPath": "resources/asset\\cube/cube.obj",
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                2.009999990463257,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        {
+            "modelPath": "resources//suzanne.obj",
+            "position": [
+                0.0,
+                2.299999952316284,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                3.440000057220459,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        {
+            "modelPath": "resources//suzanne.obj",
+            "position": [
+                -3.0,
+                0.20000000298023224,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                2.9200000762939453,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        }
+    ]
 }

@@ -58,9 +58,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #pragma endregion
 
 	engine->m_camera.transform.translate.x = 0.0f;
-	engine->m_camera.transform.translate.y = 200.0f;
-	engine->m_camera.transform.translate.z = -300.0f;
-	engine->m_camera.transform.rotate.x = 0.6f;
+	engine->m_camera.transform.translate.y = 0.0f;
+	engine->m_camera.transform.translate.z = -10.0f;
+	engine->m_camera.transform.rotate.x = 0.0f;
 
 	bool  useMonsterBall = true;
 	float cameraRotateSpeed = 0.01f;

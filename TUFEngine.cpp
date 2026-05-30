@@ -202,6 +202,7 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
+	SaveSceneObjectsToFile();
 
 
 #ifdef USE_IMGUI
@@ -218,7 +219,6 @@ TUFEngine::~TUFEngine() {
 		CloseHandle(m_fenceEvent);
 		m_fenceEvent = nullptr;
 	}
-
 	logStream.close();
 	CoUninitialize();
 }
