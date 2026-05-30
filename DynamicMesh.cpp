@@ -5,13 +5,15 @@ DynamicMesh::DynamicMesh(int gridW, int gridH) : mGridW(gridW), mGridH(gridH) {
     mNormals.resize(gridW * gridH * 3, 0.0f);
     mIndices.reserve((gridW - 1) * (gridH - 1) * 6);
 
+    float width = 50.0f;
+
     // XZ座標を初期化（Yは0.0fのまま）
     for (int y = 0; y < gridH; y++) {
         for (int x = 0; x < gridW; x++) {
             int index = vertexIndex(x, y) * 3;
-            mVertices[index] = (float)x - gridW / 2.0f;  // 中心を0に  // X座標
+            mVertices[index] = ((float)x - gridW / 2.0f)* width;  // 中心を0に  // X座標
             mVertices[index + 1] = 0.0f;      // Y座標（高さ）
-            mVertices[index + 2] = (float)y - gridH / 2.0f;  // Z座標
+            mVertices[index + 2] = ((float)y - gridH / 2.0f)* width;  // Z座標
         }
     }
 

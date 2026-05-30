@@ -24,7 +24,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	int uvChecker = engine->LoadTexture("resources/uvChecker.png");
 	int monsterBall = engine->LoadTexture("resources/monsterBall.png");
-	int umi = engine->LoadTexture("resources/d3e51818e5e84c8c.png");
+	int umi = engine->LoadTexture("resources/ao.jpg");
 
 	MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
 
@@ -58,9 +58,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #pragma endregion
 
 	engine->m_camera.transform.translate.x = 0.0f;
-	engine->m_camera.transform.translate.y = 0.0f;
-	engine->m_camera.transform.translate.z = -10.0f;
-	engine->m_camera.transform.rotate.x = 0.0f;
+	engine->m_camera.transform.translate.y = 600.0f;
+	engine->m_camera.transform.translate.z = -1000.0f;
+	engine->m_camera.transform.rotate.x = 0.6f;
 
 	bool  useMonsterBall = true;
 	float cameraRotateSpeed = 0.01f;
@@ -168,7 +168,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			t += 0.016f;
 			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 20.0f) * waveStrength;
+				float waveA = sinf(t * 18.0f + gz * 0.08f) * waveStrength * 1.0f;
+				float waveB = cosf(t * 13.0f + gz * 0.12f + 1.5f) * waveStrength * 0.55f;
+				float waveC = sinf(t * 9.0f + gz * 0.05f + 3.0f) * waveStrength * 0.30f;
+
+				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = waveA;
+				waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX / 3, gz)] = waveB;
+				waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 3, gz)] = waveC;
 			}
 			waveGrid.update();
 
@@ -208,13 +214,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					uvChecker);
 			}
 
-			engine->DrawSprite(
-				spritePos,
-				720 * spriteScale.x, 360 * spriteScale.y,
-				spriteRot,
-				{ 1, 1, 1 },
-				{ 1, 1, 1, 1 },
-				uvChecker);
+			//engine->DrawSprite(
+			//	spritePos,
+			//	720 * spriteScale.x, 360 * spriteScale.y,
+			//	spriteRot,
+			//	{ 1, 1, 1 },
+			//	{ 1, 1, 1, 1 },
+			//	uvChecker);
 
 			for (int iz = 0; iz < cubeCountZ; iz++) {
 				for (int ix = 0; ix < cubeCountX; ix++) {
