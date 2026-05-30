@@ -154,6 +154,7 @@
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="externals\nlohmann\json.hpp" />
     <ClInclude Include="ImGuiCamera.h" />
     <ClInclude Include="ImGuiContentBrowser.h" />
     <ClInclude Include="ImGuiDebug.h" />

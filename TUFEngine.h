@@ -4,6 +4,7 @@
 #include <wrl.h>
 
 using Microsoft::WRL::ComPtr;
+using json = nlohmann::json;
 
 struct VertexData {
     Vector4 position;
@@ -111,8 +112,11 @@ public:
 
 
     //std::vector<std::pair<std::string, MeshModel*>>& GetDroppedMeshes() { return m_droppedMeshes; }
-    void RemoveDroppedMesh(int index) { m_droppedMeshes.erase(m_droppedMeshes.begin() + index); }
-
+    void RemoveDroppedMesh(int index) {
+        m_droppedMeshes.erase(m_droppedMeshes.begin() + index); 
+        SaveSceneObjectsToFile();
+    }
+	void SaveSceneObjectsToFile();
     void OnFileDropped(const std::wstring& path);
     std::vector<SceneObject>& GetDroppedMeshes() { return m_droppedMeshes; }
 

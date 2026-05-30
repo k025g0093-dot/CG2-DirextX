@@ -23,8 +23,12 @@
 #include "DXC.h"
 #include "PSO.h"
 #include "VertexResource.h"
+
+
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
+#include "externals/nlohmann/json.hpp"
+
 #include <vector>
 #include "TextureManager.h"
 #include "allVector.h"

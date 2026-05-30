@@ -73,6 +73,9 @@
     <Filter Include="ソース ファイル\TUFengine\各種モデル群\板ポリ">
       <UniqueIdentifier>{90893312-83cc-4757-83f8-23278a455907}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\json">
+      <UniqueIdentifier>{27826810-ec8c-4f1d-8a35-34226bd9fcd1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -305,6 +308,9 @@
     </ClInclude>
     <ClInclude Include="ImGuiContentBrowser.h">
       <Filter>ソース ファイル\TUFengine\ImGui\アセット管理用GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\nlohmann\json.hpp">
+      <Filter>ソース ファイル\TUFengine\json</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

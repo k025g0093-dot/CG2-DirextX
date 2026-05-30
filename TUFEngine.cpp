@@ -2,7 +2,7 @@
 #include "ImGuiUIManager.h" 
 #include "ImGuiWindow.h" 
 
-// --- 繧ｦ繧｣繝ｳ繝峨え繝励Ο繧ｷ繝ｼ繧ｸ繝｣・啗indows縺九ｉ縺ｮ繝｡繝・そ繝ｼ繧ｸ・磯哩縺倥ｋ繝懊ち繝ｳ縺ｪ縺ｩ・峨ｒ蜃ｦ逅・---
+// --- ウィンドウプロシージャ。Windowsからのメッセージを処理する ---
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #ifdef USE_IMGUI
 
@@ -23,7 +23,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 
 void TUFEngine::InitWindow(std::wstring name) {
-	// 1. 繧ｦ繧｣繝ｳ繝峨え繧ｯ繝ｩ繧ｹ縺ｮ逋ｻ骭ｲ
+	// 1. ウィンドウクラスを登録する
 	WNDCLASS wc{};
 	wc.lpfnWndProc = WindowProc;
 	wc.lpszClassName = L"MyWindowClass";
@@ -31,13 +31,13 @@ void TUFEngine::InitWindow(std::wstring name) {
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	RegisterClass(&wc);
 
-	// 2. 繧ｯ繝ｩ繧､繧｢繝ｳ繝磯伜沺縺ｮ繧ｵ繧､繧ｺ縺九ｉ繧ｦ繧｣繝ｳ繝峨え蜈ｨ菴薙・繧ｵ繧､繧ｺ繧定ｨ育ｮ・
-	// width 縺ｨ height 縺ｯ繧ｯ繝ｩ繧ｹ縺ｮ繝｡繝ｳ繝仙､画焚縺ｨ縺励※菫晄戟縺励※縺・ｋ繧ゅ・繧剃ｽｿ縺・∪縺・
+	// 2. クライアント領域のサイズからウィンドウ全体のサイズを計算する
+	// width と height はクラスのメンバー変数に保存されている値を使う
 	RECT wrc = { 0, 0, width, height };
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
-	// 3. 繧ｦ繧｣繝ｳ繝峨え菴懈・
-	// 菴懈・縺励◆繝上Φ繝峨Ν縺ｯ繝｡繝ｳ繝仙､画焚縺ｮ hwnd 縺ｫ譬ｼ邏阪＠縺ｾ縺・
+	// 3. ウィンドウを作成する
+	// 作成したハンドルはメンバー変数 hwnd に保存する
 	hwnd = CreateWindow(
 		wc.lpszClassName,
 		name.c_str(),
@@ -52,7 +52,7 @@ void TUFEngine::InitWindow(std::wstring name) {
 		nullptr
 	);
 
-	assert(hwnd != nullptr); // 菴懈・縺ｫ螟ｱ謨励＠縺ｦ縺・↑縺・°繝√ぉ繝・け
+	assert(hwnd != nullptr); // 作成に失敗していないか確認する
 }
 
 #pragma region BasicEngine
@@ -60,28 +60,28 @@ void TUFEngine::InitWindow(std::wstring name) {
 TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	: width(width), height(height) {
 
-	// --- 1. 繧ｷ繧ｹ繝・Β蝓ｺ逶､縺ｮ蛻晄悄蛹・---
-	// COM縺ｯ荳逡ｪ譛蛻昴↓蛻晄悄蛹悶＠縺ｦ縺翫￥縺ｮ縺・Windows 繝励Ο繧ｰ繝ｩ繝溘Φ繧ｰ縺ｮ螳夂浹
+	// --- 1. システム基盤の初期化 ---
+	// COM は Windows 機能を使うために先に初期化しておく
 	HRESULT hrCo = CoInitializeEx(0, COINIT_MULTITHREADED);
 
-	// 繝輔か繝ｫ繝菴懈・縺ｨ繝ｭ繧ｰ蛻晄悄蛹・
+	// ログ用フォルダの作成とログ初期化
 	std::filesystem::create_directory("logs");
 	InitializeLog();
 
-	// --- 2. 繧ｦ繧｣繝ｳ繝峨え縺ｨ繝ｬ繝ｳ繝繝ｩ繝ｼ縺ｮ貅門ｙ ---
+	// --- 2. ウィンドウとレンダラーの準備 ---
 	InitWindow(name);
 
 #ifdef _DEBUG
-	EnableDebugLayer(); // 繝・ヰ繝・げ繝ｬ繧､繝､繝ｼ縺ｯ繝・ヰ繧､繧ｹ菴懈・蜑阪↓蜻ｼ縺ｶ蠢・ｦ√′縺ゅｋ縺溘ａ縺薙％縺後・繧ｹ繝・
+	EnableDebugLayer(); // デバッグレイヤーはデバイス作成前に有効化する
 #endif
 
-	InitializeDXGI(hwnd); // 縺薙％縺ｧ device, rootSignature 縺ｪ縺ｩ縺御ｽ懊ｉ繧後ｋ
+	InitializeDXGI(hwnd); // device や rootSignature などを作成する
 #ifdef _DEBUG
 	SetupInfoQueue();
 #endif
 
-	// --- 3. 謠冗判繝ｫ繝ｼ繝ｫ縺ｮ讒狗ｯ・---
-	// InitializeDXGI 縺ｧ device 縺ｨ rootSignature 縺御ｽ懊ｉ繧後◆蠕後↓螳溯｡後☆繧・
+	// --- 3. 描画ルールの構築 ---
+	// InitializeDXGI で作成した device と rootSignature を使って PSO を作る
 	pipelineState = CreatePipelineStateDesc(device.Get(), rootSignature, hr);
 
 #ifdef USE_IMGUI
@@ -101,16 +101,53 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	tri->Initialize(this);
 	m_trianglePool.push_back(std::move(tri));
 
-	
-	// TUFEngine.cpp 縺ｮ繧ｳ繝ｳ繧ｹ繝医Λ繧ｯ繧ｿ縺ｧ
+
+	// スプライト描画用モデルを初期化する
 
 	auto sprite_ = std::make_unique<Sprite>();
 	float sWidth = (float)width;
 	float sheight = (float)height;
 
 
-	sprite_->InitSprite(this,0, sWidth, sheight);
+	sprite_->InitSprite(this, 0, sWidth, sheight);
 	sprite = std::move(sprite_);
+
+
+	std::ifstream f("scene.json");
+	if (f.is_open()) {
+		json modelData = json::parse(f);
+		{
+
+			for (const auto& object : modelData["objects"])
+			{
+
+				std::string modelPath = object["modelPath"];
+				std::string directory = modelPath.substr(0, modelPath.find_last_of("/"));
+				std::string filename = modelPath.substr(modelPath.find_last_of("/") + 1);
+
+				MeshModel* mesh = LoadModel(directory, filename);
+
+				if (mesh) {
+					Vector3	pos = { object["position"][0], object["position"][1], object["position"][2] };
+					Vector3	rot = { object["rotation"][0], object["rotation"][1], object["rotation"][2] };
+					Vector3	scale = { object["scale"][0], object["scale"][1], object["scale"][2] };
+
+					m_droppedMeshes.push_back({
+							modelPath ,
+							mesh,
+							pos,
+							rot,
+							scale
+
+						});
+
+				}
+
+				
+			}
+		}
+
+	}
 }
 
 // TUFEngine.cpp
@@ -124,7 +161,7 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 		return m_meshes[filename].get();
 	}
 
-	// MeshModel繧剃ｽ懈・
+	// MeshModel を作成する
 	auto mesh = std::make_unique<MeshModel>();
 	mesh->InitMeshModel(this);
 
@@ -216,7 +253,7 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
 	);
 
-	// 繝輔か繝ｳ繝郁ｨｭ螳壹・DX12蛻晄悄蛹悶・蠕後↓繧・ｋ
+	// フォント設定は DX12 の初期化後に行う
 	ImGuiIO& io = ImGui::GetIO();
 	ImFontConfig config;
 	config.SizePixels = 13.0f;
@@ -257,7 +294,7 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
 	if (ext == ".png" || ext == ".jpg") {
-		std::string pathStr = ConvertString(path); // 縺薙％繧貞､画峩
+		std::string pathStr = ConvertString(path); // パスを文字列に変換する
 		int index = LoadTexture("resources/" + pathStr);
 		OutputDebugStringA(("Texture Loaded: " + pathStr + "\n").c_str());
 	}
@@ -266,7 +303,32 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 		std::string filename = filePath.filename().string();
 		MeshModel* mesh = LoadModel("resources/" + dir, filename);
 		if (mesh) {
-			m_droppedMeshes.push_back({ filename, mesh });
+			std::string modelPath = "resources/" + dir + "/" + filename;
+
+			m_droppedMeshes.push_back({
+				modelPath,
+				mesh,
+				{ 0.0f, 0.0f, 0.0f },
+				{ 0.0f, 0.0f, 0.0f },
+				{ 1.0f, 1.0f, 1.0f }
+				});
+
+			json data;
+			data["objects"] = json::array();
+
+			for (const auto& object : m_droppedMeshes) {
+				json obj;
+
+				obj["modelPath"] = object.name;
+				obj["position"] = { object.pos.x, object.pos.y, object.pos.z };
+				obj["rotation"] = { object.rot.x, object.rot.y, object.rot.z };
+				obj["scale"] = { object.scale.x, object.scale.y, object.scale.z };
+
+				data["objects"].push_back(obj);
+			}
+
+			std::ofstream file("scene.json");
+			file << data.dump(4);
 		}
 	}
 	else {
@@ -274,9 +336,31 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 	}
 }
 
+
+void TUFEngine::SaveSceneObjectsToFile() {
+
+	json data;
+	data["objects"] = json::array();
+
+	for (const auto& object : m_droppedMeshes) {
+		json obj;
+
+		obj["modelPath"] = object.name;
+		obj["position"] = { object.pos.x, object.pos.y, object.pos.z };
+		obj["rotation"] = { object.rot.x, object.rot.y, object.rot.z };
+		obj["scale"] = { object.scale.x, object.scale.y, object.scale.z };
+
+		data["objects"].push_back(obj);
+	}
+
+	std::ofstream file("scene.json");
+	file << data.dump(4);
+
+}
+
 #endif // USE_IMGUI
 
-#pragma region DirectX 12 蛻晄悄蛹夜未騾｣
+#pragma region DirectX 12 初期化関連
 
 void TUFEngine::InitializeDXGI(HWND hwnd) {
 	hr = CreateDXGIFactory(IID_PPV_ARGS(dxgiFactory.GetAddressOf()));
@@ -363,11 +447,11 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
 
-	// TUFEngine.cpp 縺ｮ蛻晄悄蛹門・逅・ｼ井ｾ九∴縺ｰ InitializeDXGI 縺ｮ譛蠕後↑縺ｩ・峨↓莉･荳九ｒ霑ｽ蜉
+	// 変換行列用の定数バッファを作成する
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
-	// 256蛟句・縺ｮ繧ｪ繝悶ず繧ｧ繧ｯ繝医・陦悟・縺悟・繧句ｷｨ螟ｧ縺ｪ繝舌ャ繝輔ぃ繧剃ｽ懊ｋ
+	// 複数オブジェクト分の行列を書き込める大きめのバッファを用意する
 	m_pConstantBuffer = CreateBufferResource(device.Get(), cbSize * m_maxDrawCount);
-	// 譛蛻昴↓1蝗槭□縺閃ap縺励※縲∵嶌縺崎ｾｼ縺ｿ蜈医・繧､繝ｳ繧ｿ・・_pCbvDataBegin・峨ｒ菫晏ｭ倥＠縺ｦ縺翫￥
+	// 最初に一度だけ Map して、書き込み先ポインタを保持する
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 
 	m_fenceValue = 0;
@@ -434,7 +518,7 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 
 
 
-#pragma region 謠冗判縺ｮ繧ｳ繝槭Φ繝・
+#pragma region 描画コマンド
 
 void TUFEngine::PreDraw() {
 	m_triangleRequestCount = 0;
@@ -510,7 +594,7 @@ void TUFEngine::PostDraw() {
 	commandQueue->ExecuteCommandLists(1, commandLists);
 	swapChain->Present(1, 0);
 
-	// 箝・豈弱ヵ繝ｬ繝ｼ繝縺ｮ譁ｰ隕丈ｽ懈・/遐ｴ譽・ｒ蜈ｨ蜑企勁・∵里蟄倥・繝輔ぉ繝ｳ繧ｹ繧剃ｽｿ縺・屓縺励※GPU繧貞ｾ・▽
+	// フレームごとにフェンスを進め、GPU の完了を待つ
 	m_fenceValue++;
 	commandQueue->Signal(m_fence.Get(), m_fenceValue);
 
@@ -547,7 +631,7 @@ ComPtr<ID3D12DescriptorHeap> TUFEngine::CreateDescriptorHeap(
 
 
 #ifdef _DEBUG
-// --- 繝・ヰ繝・げ螻､・壹お繝ｩ繝ｼ縺後≠縺｣縺滓凾縺ｫ繧ｳ繝ｳ繧ｽ繝ｼ繝ｫ縺ｫ隧ｳ邏ｰ繧貞・縺励※縺上ｌ繧区ｩ溯・ ---
+// --- デバッグレイヤー。エラー時に詳細情報を出すための機能 ---
 void TUFEngine::EnableDebugLayer() {
 	ID3D12Debug1* debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
@@ -556,7 +640,7 @@ void TUFEngine::EnableDebugLayer() {
 	}
 }
 
-// --- 繝｡繝・そ繝ｼ繧ｸ繝輔ぅ繝ｫ繧ｿ・夂音螳壹・隴ｦ蜻翫ｄ諠・ｱ繧堤┌隕悶☆繧玖ｨｭ螳・---
+// --- メッセージフィルター。不要な警告や情報を無視する設定 ---
 void TUFEngine::SetupInfoQueue() {
 	ID3D12InfoQueue* infoQueue = nullptr;
 	if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
@@ -585,15 +669,15 @@ void TUFEngine::RenderAllRequests() {
 		GrowConstantBuffer();
 	}
 
-	// 箝・GPU縺ｫ縲後％縺ｮ繧ｨ繝ｳ繧ｸ繝ｳ縺ｮ繧ｷ繧ｧ繝ｼ繝繝ｼ縺ｨ險ｭ險亥峙繧剃ｽｿ縺・ｈ縲阪→謨吶∴繧・
+	// GPU に、このエンジンのシェーダー設定を使うように伝える
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 	commandList->SetPipelineState(pipelineState.Get());
 
-	// 繝・け繧ｹ繝√Ε逕ｨ縺ｪ縺ｩ縺ｮ繝・せ繧ｯ繝ｪ繝励ち繝偵・繝励ｒ繧ｻ繝・ヨ
+	// テクスチャ用などのディスクリプタヒープをセットする
 	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	// 2. 繧ｫ繝｡繝ｩ陦悟・
+	// 2. カメラ行列
 	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
 
 	m_cbvIndex = 0;
@@ -608,7 +692,7 @@ void TUFEngine::RenderAllRequests() {
 			request.model->SetUVTransform(GetSpriteUVTransformMatrix());
 		}
 
-		// --- 3. WVP陦悟・繧剃ｽ懈・ ---
+		// --- 3. WVP 行列を作成する ---
 		Matrix4x4 world;
 		Matrix4x4 wvp;
 
@@ -616,7 +700,7 @@ void TUFEngine::RenderAllRequests() {
 		if (request.isSprite) {
 			world = MakeAffineMatrix(request.scale, request.rot, { request.posV2.x, request.posV2.y, 0.0f });
 			Matrix4x4 ortho = MakeOrthographicMatrix(0.0f, 0.0f, (float)width, (float)height, 0.1f, 100.0f);
-			wvp = Multiply(world, ortho); // 竊・豁｣蟆・ｽｱ陦悟・繧剃ｽｿ縺・
+			wvp = Multiply(world, ortho); // スプライトは正射影行列を使う
 		}
 		else {
 			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
@@ -636,7 +720,7 @@ void TUFEngine::RenderAllRequests() {
 			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
 		}
 
-		// --- 6. 謠冗判螳溯｡・---
+		// --- 6. 描画を実行する ---
 		if (!request.isMesh) {
 
 			auto* triangle = static_cast<TriangleModel*>(request.model);
@@ -656,7 +740,7 @@ void TUFEngine::RenderAllRequests() {
 
 // --- TUFEngine.cpp ---
 
-#pragma region	蜷・Δ繝・Ν縺ｮ謠冗判蜻ｼ縺ｳ蜃ｺ縺・
+#pragma region 各モデルの描画呼び出し
 
 void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex) {
 	if (!m_temporarySpheres) {
@@ -667,7 +751,7 @@ void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3
 		m_temporarySpheres->SetLightResource(m_directionalLightResource);
 	}
 
-	// 3. 謠冗判繝ｪ繧ｯ繧ｨ繧ｹ繝医ｒ菴懈・縺吶ｋ
+	// 3. 描画リクエストを作成する
 	DrawRequest req;
 	req.pos = pos;
 	req.rot = rot;
@@ -675,14 +759,14 @@ void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3
 	req.textureIndex = textureIndex;
 	req.isMesh = true;
 
-	// 4. 繧ｳ繝ｳ繝・リ縺ｫ菫晏ｭ倥＆繧後◆縲檎ｵｶ蟇ｾ縺ｫ豸医∴縺ｪ縺・帥菴薙阪・繝昴う繝ｳ繧ｿ繧貞ｮ牙・縺ｫ蜿門ｾ励＠縺ｦ逋ｻ骭ｲ・・
+	// 4. 保持している球モデルのポインタを登録する
 	req.model = m_temporarySpheres.get();
 
-	// 5. 繝ｪ繧ｯ繧ｨ繧ｹ繝医ｒ逋ｻ骭ｲ
+	// 5. リクエストを登録する
 	m_drawRequests.push_back(req);
 }
 
-//荳芽ｧ貞ｽ｢
+// 三角形
 void TUFEngine::DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color, int textureIndex) {
 
 	int triIndex = m_triangleRequestCount++;
@@ -698,7 +782,7 @@ void TUFEngine::DrawTriangle(const Vector3& pos, const Vector3& rot, const Vecto
 	tri->UpdateVertices({ 0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, 2);
 
 	DrawRequest req;
-	req.model = tri;  // 竊舌◎繧後◇繧悟挨繧､繝ｳ繧ｹ繧ｿ繝ｳ繧ｹ
+	req.model = tri;  // このフレーム用の三角形インスタンス
 	req.pos = pos;
 	req.rot = rot;
 	req.scale = scale;
@@ -709,13 +793,13 @@ void TUFEngine::DrawTriangle(const Vector3& pos, const Vector3& rot, const Vecto
 }
 
 void TUFEngine::DrawSprite(
-	const Vector2& pos, 
+	const Vector2& pos,
 	const float width,
 	const float height,
 	const Vector3& rot,
 	const Vector3& scale,
 	const Vector4 color,
-	int textureIndex) 
+	int textureIndex)
 {
 	sprite->Resize(width, height);
 	DrawRequest req;
@@ -725,7 +809,7 @@ void TUFEngine::DrawSprite(
 	req.scale = scale;
 	req.width = width;
 	req.height = height;
-	req.textureIndex = textureIndex; // 笘・Γ繝ｳ繝舌°繧芽・蜍募叙蠕・
+	req.textureIndex = textureIndex; // 引数で指定されたテクスチャを使う
 	req.isMesh = true;
 	req.model = sprite.get();
 	m_drawRequests.push_back(req);
@@ -740,7 +824,7 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	req.pos = pos;
 	req.rot = rot;
 	req.scale = scale;
-	req.textureIndex = mesh->GetTextureIndex(); // 笘・Γ繝ｳ繝舌°繧芽・蜍募叙蠕・
+	req.textureIndex = mesh->GetTextureIndex(); // メッシュに設定されているテクスチャを使う
 	req.isMesh = true;
 	m_drawRequests.push_back(req);
 }
