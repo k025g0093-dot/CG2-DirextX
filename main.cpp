@@ -35,21 +35,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DebugCamer* debugCamer_ = new DebugCamer;
 	debugCamer_->Initialize((float)kClineWidth, (float)kClineHeight);
 
-#pragma region WaveGrid
-	const int cubeCountX = 150;
-	const int cubeCountZ = 150;
 
-	WaveGrid waveGrid(cubeCountX, cubeCountZ);
+const int cubeCountX = 150;
+const int cubeCountZ = 150;
+
+WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 
 	int wallX = cubeCountX / 5;
 	int wall2 = cubeCountX / 2;
 	int holeStart = cubeCountZ / 2 - 3;
 	int holeEnd = cubeCountZ / 2 + 3;
 
-	for (int gz = 0; gz < cubeCountZ; gz++) {
-		waveGrid.setWall(wallX, gz, (gz < holeStart || gz >= holeEnd));
-		waveGrid.setWall(wall2, gz, (gz < holeStart || gz >= holeEnd));
-	}
+	//for (int gz = 0; gz < cubeCountZ; gz++) {
+	//	waveGrid.setWall(wallX, gz, (gz < holeStart || gz >= holeEnd));
+	//	waveGrid.setWall(wall2, gz, (gz < holeStart || gz >= holeEnd));
+	//}
 
 	float waveStrength = 10.0f;
 	DynamicMesh mesh(cubeCountX, cubeCountZ);
@@ -57,9 +57,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	float t = 0.0f;
 #pragma endregion
 
+	const auto& droppedMeshes = engine->GetDroppedMeshes();
+
 	engine->m_camera.transform.translate.x = 0.0f;
-	engine->m_camera.transform.translate.y = 600.0f;
-	engine->m_camera.transform.translate.z = -1000.0f;
+	engine->m_camera.transform.translate.y = 200.0f;
+	engine->m_camera.transform.translate.z = -300.0f;
 	engine->m_camera.transform.rotate.x = 0.6f;
 
 	bool  useMonsterBall = true;
@@ -150,6 +152,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		else {
 			engine->OnUpdate();
 
+			
+
 			engine->m_camera.transform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
 			engine->m_camera.transform.rotate.x -= Input::GetRightStickY() * cameraRotateSpeed;
 			engine->m_camera.transform.translate.x += Input::GetLeftStickX();
@@ -168,15 +172,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			t += 0.016f;
 			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-				float waveA = sinf(t * 18.0f + gz * 0.08f) * waveStrength * 1.0f;
-				float waveB = cosf(t * 13.0f + gz * 0.12f + 1.5f) * waveStrength * 0.55f;
-				float waveC = sinf(t * 9.0f + gz * 0.05f + 3.0f) * waveStrength * 0.30f;
-
-				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = waveA;
-				waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX / 3, gz)] = waveB;
-				waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 3, gz)] = waveC;
+				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 30.0f) * waveStrength;
 			}
 			waveGrid.update();
+
+			waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
 			if (frameIndex % 15 == 0) {
 				waveLog << frameIndex;
@@ -204,6 +204,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 			engine->DrawMesh(modelData, meshPos, meshRot, meshScale);
+
+
 
 			for (int i = 0; i < 10; i++) {
 				engine->DrawTriangle(
@@ -237,7 +239,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					};
 				}
 			}
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 

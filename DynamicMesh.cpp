@@ -5,7 +5,7 @@ DynamicMesh::DynamicMesh(int gridW, int gridH) : mGridW(gridW), mGridH(gridH) {
     mNormals.resize(gridW * gridH * 3, 0.0f);
     mIndices.reserve((gridW - 1) * (gridH - 1) * 6);
 
-    float width = 50.0f;
+    float width = 1.0f;
 
     // XZ座標を初期化（Yは0.0fのまま）
     for (int y = 0; y < gridH; y++) {
