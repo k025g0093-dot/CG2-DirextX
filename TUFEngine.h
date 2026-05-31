@@ -118,7 +118,7 @@ public:
     }
 	void SaveSceneObjectsToFile();
     void OnFileDropped(const std::wstring& path);
-    std::vector<SceneObject>& GetDroppedMeshes() { return m_droppedMeshes; }
+    std::vector<SceneObject>& GetDroppedMeshes(){ return m_droppedMeshes; }
 
     Camera m_camera;
 
