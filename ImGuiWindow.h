@@ -6,6 +6,8 @@
 #include "externals/imgui/imgui_impl_win32.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+#include "externals/imgui/imguizmo.h"
+
 #endif // USE_IMGUI
 
 // 🌟 超重要：相互参照バグを防ぐための前方宣言
@@ -47,4 +49,11 @@ class ImGuiViewportWindow : public ImGuiUIWindow
 {
 public:
     void update(TUFEngine* engine) override;
+};
+
+class ImGuiZmoWindow : public ImGuiUIWindow
+{
+public:
+    int selectedIndex = -1;
+	void update(TUFEngine* engine) override;
 };

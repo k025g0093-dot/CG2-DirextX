@@ -285,6 +285,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto viewportWin = std::make_shared<ImGuiViewportWindow>();
 	m_imguiManager->addWindow(viewportWin);
 
+	auto imGuizmowindow = std::make_shared<ImGuiZmoWindow>();
+	m_imguiManager->addWindow(imGuizmowindow);
+
 
 }
 

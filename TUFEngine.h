@@ -98,6 +98,9 @@ public:
         uint32_t numDescriptors,
         bool shaderVisible);
 
+	const Matrix4x4& GetViewMatrix() const { return viewProjectionMatrix; }
+	const Matrix4x4& GetProjectionMatrix() const { return viewProjectionMatrix; }
+
     const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
     void SetViewProjectionMatrix(const Matrix4x4& vp) { viewProjectionMatrix = vp; }
     void SetDirectionalLightResource(ID3D12Resource* lightResource) { m_directionalLightResource = lightResource; }

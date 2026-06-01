@@ -85,6 +85,62 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 }
 
 
+void ImGuiZmoWindow::update(TUFEngine* engine) {
+#ifdef _DEBUG
+
+	// "ImGuizmo Test" という名前の新しいウィンドウを作る
+	if (begin("ImGuizmo Test")) {
+	
+		ImGuizmo::BeginFrame();          // フレームの開始を宣言
+		ImGuizmo::SetOrthographic(false);
+
+		float transform[16] = {
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		};
+		auto& objects = engine->GetDroppedMeshes();
+		for (int i = 0; i < (int)objects.size(); i++) {
+			objects[i].pos;
+			objects[i].rot;
+			objects[i].scale;
+			transform;
+
+			transform[0] = objects[i].scale.x * cosf(objects[i].rot.y) * cosf(objects[i].rot.x);
+			transform[1] = objects[i].scale.x * sinf(objects[i].rot.x);
+			transform[2] = objects[i].scale.x * sinf(objects[i].rot.y) * cosf(objects[i].rot.x);
+			transform[3] = 0.0f;
+			transform[4] = 0.0f;
+			transform[5] = objects[i].scale.y * cosf(objects[i].rot.x);
+			transform[6] = 0.0f;
+			transform[7] = 0.0f;
+			transform[8] = -objects[i].scale.z * sinf(objects[i].rot.y) * cosf(objects[i].rot.x);
+			transform[9] = -objects[i].scale.z * sinf(objects[i].rot.x);
+			transform[10] = objects[i].scale.z * cosf(objects[i].rot.y) * cosf(objects[i].rot.x);
+			transform[11] = 0.0f;
+			transform[12] = objects[i].pos.x;
+			transform[13] = objects[i].pos.y;
+			transform[14] = objects[i].pos.z;
+			transform[15] = 1.0f;
+
+			ImGuiIO& io = ImGui::GetIO();
+			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y); // 描画範囲
+			ImGuizmo::Manipulate(
+				&engine->GetViewMatrix().m[0][0],
+				&engine->GetProjectionMatrix().m[0][0],
+				ImGuizmo::TRANSLATE,
+				ImGuizmo::LOCAL,
+				transform
+			);
+		}
+		end();
+	}
+
+
+#endif // _DEBUG
+}
+
 // --- ImGuiWindow.cpp の最後に追記 ---
 
 void ImGuiViewportWindow::update(TUFEngine* engine) {
@@ -117,3 +173,6 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 	}
 #endif
 }
+
+
+
