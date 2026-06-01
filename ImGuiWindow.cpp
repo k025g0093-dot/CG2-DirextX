@@ -4,6 +4,8 @@
 ImGuiUIWindow::ImGuiUIWindow() : show(true) {}
 ImGuiUIWindow::~ImGuiUIWindow() {}
 
+
+//ここら辺は基底クラスと各種構造を理解するための仮実装です。今後、必要に応じて引数を追加したり、内容を充実させていきます。
 // 💡 引数を追加
 void ImGuiUIWindow::update(TUFEngine* engine) {
 	if (begin("Default Window")) {
@@ -36,30 +38,9 @@ void ImGuiUIWindow::end()
 //IGStartupWindowの実装
 //=============================
 
-// 💡 引数を追加
-void IGStartupWindow::update(TUFEngine* engine)
-{
-#ifdef USE_IMGUI
-	if (show)
-	{
-		// beginが正常に開いたときだけ中身を描く（Endの重複呼び出しバグを防ぐ安全な書き方に微調整しました）
-		if (begin("Startup"))
-		{
-			ImGui::Text("Press me:");
-			if (ImGui::Button("button"))
-			{
-
-				counter++;
-			}
-			ImGui::Text("Counter: %d", counter);
-
-			end(); // 💡 開いたので閉じる
-		}
-	}
-#endif
-}
 
 
+//ここも似た感じの者です
 void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
 	if (begin("Scene")) {
@@ -101,7 +82,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 }
 
 
-
+//ギズモの仮実装。まだまだいらないものとか将来的に自由にアイテムを選択できるようにしたりしていきたい
 void ImGuiZmoWindow::update(TUFEngine* engine) {
 #ifdef _DEBUG
 
@@ -188,6 +169,8 @@ void ImGuiZmoWindow::update(TUFEngine* engine) {
 
 // --- ImGuiWindow.cpp の最後に追記 ---
 
+
+//開発路駐できたら神なんだけど、とりあえずはここに ImGuiViewportWindow の実装を置いておきます。将来的には別ファイルに分けるかもしれません。
 void ImGuiViewportWindow::update(TUFEngine* engine) {
 //#ifdef USE_IMGUI
 //	// "Game Viewport" という名前の新しいウィンドウを作る

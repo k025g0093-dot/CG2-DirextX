@@ -7,9 +7,6 @@ TUFEngine* TUFEngine::s_instance = nullptr;
 // --- ウィンドウプロシージャ。Windowsからのメッセージを処理する ---
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #ifdef USE_IMGUI
-
-
-
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam)) {
 		return true;
 	}
@@ -35,8 +32,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		}
 
 	}
-
-
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
@@ -74,7 +69,7 @@ void TUFEngine::InitWindow(std::wstring name) {
 	assert(hwnd != nullptr); // 作成に失敗していないか確認する
 }
 
-#pragma region BasicEngine
+#pragma region 初期化もとい必要なものの作成だったりを行っています
 
 TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	: width(width), height(height) {
@@ -260,6 +255,10 @@ Matrix4x4 TUFEngine::GetSpriteUVTransformMatrix() const {
 
 #pragma endregion
 
+//ちなみにmainでも書けるように調整済み
+
+#pragma region ImGuiの初期化関数基本的に ImGui を初期化して、いくつかのウィンドウを作成している
+
 #ifdef USE_IMGUI
 void TUFEngine::InitializeImGui(HWND hwnd) {
 	IMGUI_CHECKVERSION();
@@ -284,8 +283,7 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 	m_imguiManager = std::make_unique<ImGuiUIManager>(hwnd);
 
-	auto startupWin = std::make_shared<IGStartupWindow>();
-	m_imguiManager->addWindow(startupWin);
+	//ここから各種windowを宣言していきます
 
 	auto cameraWin = std::make_shared<ImGuiCamera>();
 	cameraWin->SetTransform(&m_camera.transform);
@@ -313,6 +311,10 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 }
 
+#pragma endregion
+
+
+#pragma region ドロップ処理とシーン保存処理
 void TUFEngine::OnFileDropped(const std::wstring& path) {
 	std::filesystem::path filePath(path);
 	std::string ext = filePath.extension().string();
@@ -382,6 +384,8 @@ void TUFEngine::SaveSceneObjectsToFile() {
 	file << data.dump(4);
 
 }
+
+#pragma endregion
 
 #endif // USE_IMGUI
 
@@ -488,6 +492,7 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 
 }
 #pragma endregion
+
 
 ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 	int32_t width,
@@ -655,6 +660,7 @@ ComPtr<ID3D12DescriptorHeap> TUFEngine::CreateDescriptorHeap(
 	return descriptorHeap;
 }
 
+#pragma region Logに関する処理ここにあっていいのかの検討中
 
 #ifdef _DEBUG
 // --- デバッグレイヤー。エラー時に詳細情報を出すための機能 ---
@@ -686,6 +692,8 @@ void TUFEngine::SetupInfoQueue() {
 	}
 }
 #endif
+
+#pragma endregion 
 
 #pragma region RenderRequests
 
@@ -912,7 +920,9 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 }
 #pragma endregion
 
+//windowだったりいろいろなものの拡張機能作成場所
 
+#pragma region 現在はその他機能として実装しています
 void TUFEngine::GrowConstantBuffer() {
 	m_maxDrawCount *= 2;
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
@@ -997,3 +1007,4 @@ void TUFEngine::EndSceneRender() {
 	PostDraw();
 }
 
+#pragma endregion

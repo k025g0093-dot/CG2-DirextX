@@ -29,14 +29,7 @@ protected:
     bool show = true; // 💡 最初から表示状態（true）にしておくとバグりにくいです
 };
 
-class IGStartupWindow : public ImGuiUIWindow
-{
-public:
-    // 💡 親クラスに合わせて引数を追加
-    void update(TUFEngine* engine) override;
-private:
-    int counter = 0;
-};
+
 
 // ImGuiWindow.h に追加
 class ImGuiSceneWindow : public ImGuiUIWindow
