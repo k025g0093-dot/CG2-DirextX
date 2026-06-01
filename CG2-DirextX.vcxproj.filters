@@ -79,6 +79,9 @@
     <Filter Include="ソース ファイル\TUFengine\ImGui\デバック情報をまとめるGUI">
       <UniqueIdentifier>{050d8f04-21f2-4415-81d9-4b40050f2d66}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\ImGui\imGuiZmo">
+      <UniqueIdentifier>{7a83f7e2-04f6-46dc-b7f0-e76933dd39d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -182,6 +185,9 @@
     </ClCompile>
     <ClCompile Include="ImGuiContentBrowser.cpp">
       <Filter>ソース ファイル\TUFengine\ImGui\アセット管理用GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\ImGuizmo.cpp">
+      <Filter>ソース ファイル\TUFengine\ImGui\imGuiZmo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -314,6 +320,9 @@
     </ClInclude>
     <ClInclude Include="externals\nlohmann\json.hpp">
       <Filter>ソース ファイル\TUFengine\json</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\ImGuizmo.h">
+      <Filter>ソース ファイル\TUFengine\ImGui\imGuiZmo</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
