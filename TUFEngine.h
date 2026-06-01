@@ -3,6 +3,10 @@
 #include "DynamicMeshModel.h"
 #include <wrl.h>
 
+//ここから下はTUFEngineの中身を定義していきます。必要に応じて、構造体や関数を追加していきます。
+//現在ここの中身がくそほどごちゃついててマジでファックなので随時修正していきます
+//なにとぞよろしくお願いします
+
 using Microsoft::WRL::ComPtr;
 using json = nlohmann::json;
 

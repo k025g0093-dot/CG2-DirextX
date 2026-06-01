@@ -150,8 +150,14 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 			DispatchMessageW(&msg);
 		}
 		else {
-			engine->OnUpdate();
 
+			////================================================================================================================
+			////更新処理ここから
+			////================================================================================================================
+
+
+			engine->OnUpdate();
+			
 			
 
 			engine->m_camera.transform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
@@ -191,7 +197,18 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 
 			engine->SetSpriteUVScale({ uvTransformSprite.scale.x, uvTransformSprite.scale.y });
 			engine->SetSpriteUVTranslate({ uvTransformSprite.translate.x, uvTransformSprite.translate.y });
+			
 			engine->SetSpriteUVRotate(uvTransformSprite.rotate.z);
+
+			////================================================================================================================
+			////更新処理ここまで
+			////================================================================================================================
+
+
+
+			////================================================================================================================
+			////描画処理ここから
+			////================================================================================================================
 
 			engine->PreDraw();
 
@@ -243,6 +260,11 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 
 			engine->PostDraw();
 
+			////================================================================================================================
+			////描画処理ここまで
+			////================================================================================================================
+
+			//謎の音声鳴らす処理多分ここじゃないほうがいい
 			if (Input::GetKeyDown(VK_SPACE)) {
 				sound->SoundPlayer(soundData1);
 					sound->SoundPlayer(title);
@@ -250,6 +272,7 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 			}
 		}
 
+		//デバック時のみEscキーで終了できるようにするここはあとで変更しても全然ダイジョブ
 #ifdef _DEBUG
 		if (Input::GetKeyDown(VK_ESCAPE)) break;
 #endif

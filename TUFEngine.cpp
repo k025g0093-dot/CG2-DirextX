@@ -257,7 +257,7 @@ Matrix4x4 TUFEngine::GetSpriteUVTransformMatrix() const {
 
 //ちなみにmainでも書けるように調整済み
 
-#pragma region ImGuiの初期化関数基本的に ImGui を初期化して、いくつかのウィンドウを作成している
+#pragma region ImGuiの初期化関数基本的に ImGui を初期化していくつかのウィンドウを作成している
 
 #ifdef USE_IMGUI
 void TUFEngine::InitializeImGui(HWND hwnd) {
