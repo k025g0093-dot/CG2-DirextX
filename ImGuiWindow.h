@@ -43,6 +43,7 @@ class ImGuiSceneWindow : public ImGuiUIWindow
 {
 public:
     void update(TUFEngine* engine) override;
+
 };
 
 class ImGuiViewportWindow : public ImGuiUIWindow
@@ -56,4 +57,5 @@ class ImGuiZmoWindow : public ImGuiUIWindow
 public:
     int selectedIndex = -1;
 	void update(TUFEngine* engine) override;
+	void SetObjectsIndex(int index) { selectedIndex = index; }
 };

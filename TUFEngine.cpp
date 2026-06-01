@@ -2,6 +2,8 @@
 #include "ImGuiUIManager.h" 
 #include "ImGuiWindow.h" 
 
+TUFEngine* TUFEngine::s_instance = nullptr;
+
 // --- ウィンドウプロシージャ。Windowsからのメッセージを処理する ---
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #ifdef USE_IMGUI
@@ -17,7 +19,24 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	case WM_SIZE:
+		if (wParam == SIZE_MINIMIZED) {
+			return 0; // 最小化されたときはリサイズ処理をスキップする
+		}
+		int pendingWidth = LOWORD(lParam);
+		int pendingHeight = HIWORD(lParam);
+		// ウィンドウがまだ作成されていない場合は、リサイズ処理をスキップする
+		if (TUFEngine::GetInstance() == nullptr || TUFEngine::GetInstance()->GetHwnd() == nullptr) {
+			return 0;
+		}
+		else {
+
+			TUFEngine::GetInstance()->ResizeWindow(pendingWidth, pendingHeight);
+		}
+
 	}
+
+
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
@@ -59,6 +78,7 @@ void TUFEngine::InitWindow(std::wstring name) {
 
 TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	: width(width), height(height) {
+	s_instance = this;
 
 	// --- 1. システム基盤の初期化 ---
 	// COM は Windows 機能を使うために先に初期化しておく
@@ -143,7 +163,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 				}
 
-				
+
 			}
 		}
 
@@ -204,7 +224,6 @@ void TUFEngine::OnUpdate() {
 	Input::Update();
 	SaveSceneObjectsToFile();
 
-
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
 		m_imguiManager->update(this);
@@ -215,6 +234,9 @@ void TUFEngine::OnUpdate() {
 }
 
 TUFEngine::~TUFEngine() {
+	if (s_instance == this) {
+		s_instance = nullptr;
+	}
 	if (m_fenceEvent) {
 		CloseHandle(m_fenceEvent);
 		m_fenceEvent = nullptr;
@@ -588,6 +610,7 @@ void TUFEngine::PostDraw() {
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 #endif // USE_IMGUI
 
+
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	commandList->ResourceBarrier(1, &barrier);
 
@@ -905,3 +928,72 @@ void TUFEngine::GrowConstantBuffer() {
 	m_pConstantBuffer = CreateBufferResource(device.Get(), cbSize * m_maxDrawCount);
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 }
+
+
+void TUFEngine::ResizeWindow(int newWidth, int newHeight) {
+	if (newWidth <= 0 || newHeight <= 0) {
+		return;
+	}
+
+
+	m_fenceValue++;
+	commandQueue->Signal(m_fence.Get(), m_fenceValue);
+	if (m_fence->GetCompletedValue() < m_fenceValue) {
+		m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+	}
+
+	width = newWidth;
+	height = newHeight;
+
+#ifdef USE_IMGUI
+	ImGui_ImplDX12_Shutdown(); // ← Invalidate/Createの代わり
+	ImGui_ImplWin32_Shutdown();
+#endif
+
+	// GPUがbackbufferを使い終わるまで待つ
+
+	swapChainResources[0].Reset();
+	swapChainResources[1].Reset();
+
+	swapChain->ResizeBuffers(
+		2,
+		width,
+		height,
+		DXGI_FORMAT_R8G8B8A8_UNORM,
+		0
+	);
+
+	// RTVを再作成する
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle =
+		rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandles[0] = rtvStartHandle;
+	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(swapChainResources[0].GetAddressOf()));
+	assert(SUCCEEDED(hr));
+	device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
+	rtvHandles[1].ptr = rtvHandles[0].ptr +
+		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(swapChainResources[1].GetAddressOf()));
+	assert(SUCCEEDED(hr));
+	device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
+
+	CreateDepthStencilTextureResource(width, height);
+
+#ifdef USE_IMGUI
+	InitializeImGui(hwnd); // ← 丸ごと再初期化
+#endif
+
+}
+
+void TUFEngine::GetSceneTextureGpuHandle(D3D12_GPU_DESCRIPTOR_HANDLE& handle) {
+	handle = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+}
+
+void TUFEngine::BeginSceneRender() {
+	PreDraw();
+}
+
+void TUFEngine::EndSceneRender() {
+	PostDraw();
+}
+

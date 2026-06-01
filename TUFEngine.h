@@ -54,10 +54,15 @@ struct SceneObject {
     Vector3 pos = { 0.0f, 0.0f, 0.0f };
     Vector3 rot = { 0.0f, 0.0f, 0.0f };
     Vector3 scale = { 1.0f, 1.0f, 1.0f };
+	bool isSelected = false;
 };
 
 class TUFEngine {
 public:
+
+    Camera m_camera;
+
+
     TUFEngine(int32_t width, int32_t height, std::wstring name);
     ~TUFEngine();
     static TUFEngine* GetInstance() { return s_instance; }
@@ -98,8 +103,8 @@ public:
         uint32_t numDescriptors,
         bool shaderVisible);
 
-	const Matrix4x4& GetViewMatrix() const { return viewProjectionMatrix; }
-	const Matrix4x4& GetProjectionMatrix() const { return viewProjectionMatrix; }
+    Matrix4x4 GetViewMatrix()  { return m_camera.GetViewMatrix(); }
+    Matrix4x4 GetProjectionMatrix()  { return m_camera.GetProjectionMatrix((float)width, (float)height); }
 
     const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
     void SetViewProjectionMatrix(const Matrix4x4& vp) { viewProjectionMatrix = vp; }
@@ -114,6 +119,20 @@ public:
     Matrix4x4 GetSpriteUVTransformMatrix() const;
 
 
+    void SetViewportSize(float  width, float  height){
+        m_sceneViewportSize = { static_cast<float>(width), static_cast<float>(height) };
+    };
+
+    Vector2 GetViewportSize() const {
+        return m_sceneViewportSize;
+    };
+
+    void ResizeSceneRenderTexture();
+	void GetSceneTextureGpuHandle(D3D12_GPU_DESCRIPTOR_HANDLE& handle);
+	void BeginSceneRender();
+	void EndSceneRender();
+
+
     //std::vector<std::pair<std::string, MeshModel*>>& GetDroppedMeshes() { return m_droppedMeshes; }
     void RemoveDroppedMesh(int index) {
         m_droppedMeshes.erase(m_droppedMeshes.begin() + index); 
@@ -123,11 +142,12 @@ public:
     void OnFileDropped(const std::wstring& path);
     std::vector<SceneObject>& GetDroppedMeshes(){ return m_droppedMeshes; }
 
-    Camera m_camera;
+    void ResizeWindow(int newWidth, int newHeight);
 
 private:
 
     void GrowConstantBuffer();
+
 
     static TUFEngine* s_instance;
 
@@ -142,6 +162,8 @@ private:
     int32_t width = 0;
     int32_t height = 0;
 
+    Vector2 m_sceneViewportSize;
+
     ComPtr<IDXGIFactory7>             dxgiFactory;
     ComPtr<ID3D12Device>              device;
     ComPtr<ID3D12CommandQueue>        commandQueue;
@@ -152,6 +174,8 @@ private:
     ComPtr<IDXGISwapChain4>  swapChain;
     DXGI_SWAP_CHAIN_DESC1    swapChainDesc{};
     ComPtr<ID3D12Resource>   swapChainResources[2];
+
+
 
     ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
     ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap;
@@ -189,7 +213,25 @@ private:
     std::vector<SceneObject> m_droppedMeshes;
 
 
+
+    ComPtr<ID3D12Resource> m_sceneColorResource;
+    ComPtr<ID3D12Resource> m_sceneDepthResource;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE m_sceneRtvHandle{};
+    D3D12_CPU_DESCRIPTOR_HANDLE m_sceneSrvCpuHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE m_sceneSrvGpuHandle{};
+    D3D12_CPU_DESCRIPTOR_HANDLE m_sceneDsvHandle{};
+
+    int32_t m_sceneTextureWidth = 0;
+    int32_t m_sceneTextureHeight = 0;
+
+
+
     ComPtr<ID3D12Fence> m_fence;
     uint64_t            m_fenceValue = 0;
     HANDLE              m_fenceEvent = nullptr;
+    bool m_needsImGuiRebuild = false;
+
+
+
 };
