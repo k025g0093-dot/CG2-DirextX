@@ -36,10 +36,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	debugCamer_->Initialize((float)kClineWidth, (float)kClineHeight);
 
 
-const int cubeCountX = 150;
-const int cubeCountZ = 150;
+	const int cubeCountX = 200;
+	const int cubeCountZ = 200;
 
-WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
+	WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 
 	int wallX = cubeCountX / 5;
 	int wall2 = cubeCountX / 2;
@@ -60,9 +60,9 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 	const auto& droppedMeshes = engine->GetDroppedMeshes();
 
 	engine->m_camera.transform.translate.x = 0.0f;
-	engine->m_camera.transform.translate.y = 0.0f;
-	engine->m_camera.transform.translate.z = -10.0f;
-	engine->m_camera.transform.rotate.x = 0.0f;
+	engine->m_camera.transform.translate.y = 200.0f;
+	engine->m_camera.transform.translate.z = -300.0f;
+	engine->m_camera.transform.rotate.x = 0.6f;
 
 	bool  useMonsterBall = true;
 	float cameraRotateSpeed = 0.01f;
@@ -95,52 +95,6 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 	int frameIndex = 0;
 	int observeX = wallX + 40;
 
-#ifdef USE_IMGUI
-	engine->GetImGuiManager()->onDrawGUI = [&]() {
-
-		if (ImGui::CollapsingHeader("Wave Settings")) {
-			ImGui::DragFloat("Wave Strength", &waveStrength, 0.1f, 0.0f, 50.0f);
-		}
-
-		if (ImGui::CollapsingHeader("Sphere Settings")) {
-			for (int i = 0; i < 2; ++i) {
-				ImGui::PushID(i);
-				ImGui::Text("Sphere %d", i);
-				ImGui::DragFloat3("Position", &spherePos[i].x, 0.1f);
-				ImGui::DragFloat3("Rotation", &sphereRot[i].x, 0.01f);
-				ImGui::DragFloat3("Scale", &sphereScale[i].x, 0.01f, 0.01f, 10.0f);
-				ImGui::Checkbox("MonsterBall", &sphereUseMonsterBall[i]);
-				ImGui::Separator();
-				ImGui::PopID();
-			}
-		}
-
-		if (ImGui::CollapsingHeader("Mesh Settings")) {
-			ImGui::DragFloat3("Position", &meshPos.x, 0.1f);
-			ImGui::DragFloat3("Rotation", &meshRot.x, 0.01f);
-			ImGui::DragFloat3("Scale", &meshScale.x, 0.01f, 0.01f, 10.0f);
-		}
-
-		if (ImGui::CollapsingHeader("Triangle Settings")) {
-			ImGui::DragFloat3("Base Position", &triBasePos.x, 0.1f);
-			ImGui::DragFloat3("Rotation", &triRot.x, 0.01f);
-			ImGui::DragFloat3("Scale", &triScale.x, 0.01f, 0.01f, 10.0f);
-			ImGui::ColorEdit4("Color", &triColor.x);
-		}
-
-		if (ImGui::CollapsingHeader("Sprite Settings")) {
-			ImGui::DragFloat2("Position", &spritePos.x, 1.0f, -1280.0f, 1280.0f);
-			ImGui::DragFloat2("Scale", &spriteScale.x, 0.1f, 0.01f, 20.0f);
-			ImGui::SliderAngle("Rotate", &spriteRot.z);
-		}
-
-		if (ImGui::CollapsingHeader("Sprite UV Settings")) {
-			ImGui::DragFloat2("UV Translate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-			ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-			ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
-		}
-		};
-#endif // USE_IMGUI
 
 
 	MSG msg{};
@@ -157,8 +111,59 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 
 
 			engine->OnUpdate();
-			
-			
+
+#ifdef USE_IMGUI
+			engine->GetImGuiManager()->onDrawGUI = [&]() {
+
+				if (ImGui::Begin("SceneSettingsModel")) {
+
+					if (ImGui::CollapsingHeader("Wave Settings")) {
+						ImGui::DragFloat("Wave Strength", &waveStrength, 0.1f, 0.0f, 50.0f);
+					}
+
+					if (ImGui::CollapsingHeader("Sphere Settings")) {
+						for (int i = 0; i < 2; ++i) {
+							ImGui::PushID(i);
+							ImGui::Text("Sphere %d", i);
+							ImGui::DragFloat3("Position", &spherePos[i].x, 0.1f);
+							ImGui::DragFloat3("Rotation", &sphereRot[i].x, 0.01f);
+							ImGui::DragFloat3("Scale", &sphereScale[i].x, 0.01f, 0.01f, 10.0f);
+							ImGui::Checkbox("MonsterBall", &sphereUseMonsterBall[i]);
+							ImGui::Separator();
+							ImGui::PopID();
+						}
+					}
+
+					if (ImGui::CollapsingHeader("Mesh Settings")) {
+						ImGui::DragFloat3("Position", &meshPos.x, 0.1f);
+						ImGui::DragFloat3("Rotation", &meshRot.x, 0.01f);
+						ImGui::DragFloat3("Scale", &meshScale.x, 0.01f, 0.01f, 10.0f);
+					}
+
+					if (ImGui::CollapsingHeader("Triangle Settings")) {
+						ImGui::DragFloat3("Base Position", &triBasePos.x, 0.1f);
+						ImGui::DragFloat3("Rotation", &triRot.x, 0.01f);
+						ImGui::DragFloat3("Scale", &triScale.x, 0.01f, 0.01f, 10.0f);
+						ImGui::ColorEdit4("Color", &triColor.x);
+					}
+
+					if (ImGui::CollapsingHeader("Sprite Settings")) {
+						ImGui::DragFloat2("Position", &spritePos.x, 1.0f, -1280.0f, 1280.0f);
+						ImGui::DragFloat2("Scale", &spriteScale.x, 0.1f, 0.01f, 20.0f);
+						ImGui::SliderAngle("Rotate", &spriteRot.z);
+					}
+
+					if (ImGui::CollapsingHeader("Sprite UV Settings")) {
+						ImGui::DragFloat2("UV Translate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+						ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+						ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
+					}
+					ImGui::End();
+				}
+				};
+#endif // USE_IMGUI
+
+
 
 			engine->m_camera.transform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
 			engine->m_camera.transform.rotate.x -= Input::GetRightStickY() * cameraRotateSpeed;
@@ -180,24 +185,37 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
 				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 30.0f) * waveStrength;
 			}
+
+			// 右端から別の波
+			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
+				waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 2, gz)] = sinf(t * 20.0f) * waveStrength;
+			}
+
+			// 中心点から円形に広がる波
+			waveGrid.addSource(cubeCountX / 2, cubeCountZ / 2, sinf(t * 15.0f) * waveStrength);
+
+			// 上端から
+			for (int gx = 1; gx < cubeCountX - 1; gx++) {
+				waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
+			}
 			waveGrid.update();
 
 			waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
-			if (frameIndex % 15 == 0) {
-				waveLog << frameIndex;
-				for (int iz = 0; iz < cubeCountZ; iz++) {
-					for (int ix = 0; ix < cubeCountX; ix++) {
-						waveLog << "," << waveGrid.getHeight(ix, iz);
-					}
-				}
-				waveLog << "\n";
-			}
+			//if (frameIndex % 60 == 0) {
+			//	waveLog << frameIndex;
+			//	for (int iz = 0; iz < cubeCountZ; iz++) {
+			//		for (int ix = 0; ix < cubeCountX; ix++) {
+			//			waveLog << "," << waveGrid.getHeight(ix, iz);
+			//		}
+			//	}
+			//	waveLog << "\n";
+			//}
 			frameIndex++;
 
 			engine->SetSpriteUVScale({ uvTransformSprite.scale.x, uvTransformSprite.scale.y });
 			engine->SetSpriteUVTranslate({ uvTransformSprite.translate.x, uvTransformSprite.translate.y });
-			
+
 			engine->SetSpriteUVRotate(uvTransformSprite.rotate.z);
 
 			////================================================================================================================
@@ -256,7 +274,7 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 					};
 				}
 			}
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 
@@ -267,7 +285,7 @@ WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 			//謎の音声鳴らす処理多分ここじゃないほうがいい
 			if (Input::GetKeyDown(VK_SPACE)) {
 				sound->SoundPlayer(soundData1);
-					sound->SoundPlayer(title);
+				sound->SoundPlayer(title);
 
 			}
 		}

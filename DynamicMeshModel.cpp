@@ -3,12 +3,19 @@
 #include "TUFEngine.h"
 
 bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
-    m_vertexCount = (uint32_t)((gridW - 1) * (gridH - 1) * 6);
+    m_gridW = gridW;
+    m_gridH = gridH;
 
+    // ★ 実頂点数は W*H だけ（元の約1/6）
+    m_vertexCount = (uint32_t)(gridW * gridH);
+    m_indexCount = (uint32_t)((gridW - 1) * (gridH - 1) * 6);
+
+    // -------------------------------------------------------
+    // 頂点バッファ（毎フレーム書き換える → Map したまま）
+    // -------------------------------------------------------
     m_vertexBuffer = CreateBufferResource(
         engine->GetDevice(), sizeof(VertexData) * m_vertexCount);
     if (!m_vertexBuffer) return false;
-
     m_vertexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_mappedData));
     memset(m_mappedData, 0, sizeof(VertexData) * m_vertexCount);
 
@@ -16,6 +23,42 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     m_vertexBufferView.SizeInBytes = sizeof(VertexData) * m_vertexCount;
     m_vertexBufferView.StrideInBytes = sizeof(VertexData);
 
+    // -------------------------------------------------------
+    // ★ インデックスバッファ（初回のみ書いてあとは触らない）
+    // -------------------------------------------------------
+    m_indexBuffer = CreateBufferResource(
+        engine->GetDevice(), sizeof(uint32_t) * m_indexCount);
+    if (!m_indexBuffer) return false;
+    m_indexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_mappedIndex));
+
+    int ii = 0;
+    for (int y = 0; y < gridH - 1; y++) {
+        for (int x = 0; x < gridW - 1; x++) {
+            uint32_t tl = y * gridW + x;
+            uint32_t tr = y * gridW + (x + 1);
+            uint32_t bl = (y + 1) * gridW + x;
+            uint32_t br = (y + 1) * gridW + (x + 1);
+            // 三角形①
+            m_mappedIndex[ii++] = tl;
+            m_mappedIndex[ii++] = bl;
+            m_mappedIndex[ii++] = tr;
+            // 三角形②
+            m_mappedIndex[ii++] = tr;
+            m_mappedIndex[ii++] = bl;
+            m_mappedIndex[ii++] = br;
+        }
+    }
+    // インデックスは変わらないのでUnmapしてOK
+    m_indexBuffer->Unmap(0, nullptr);
+    m_mappedIndex = nullptr;
+
+    m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
+    m_indexBufferView.SizeInBytes = sizeof(uint32_t) * m_indexCount;
+    m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+    // -------------------------------------------------------
+    // マテリアル・ライトバッファ（元のまま）
+    // -------------------------------------------------------
     m_materialBuffer = CreateBufferResource(engine->GetDevice(), sizeof(Material));
     Material* materialData = nullptr;
     m_materialBuffer->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
@@ -40,25 +83,21 @@ void DynamicMeshModel::SyncFrom(const DynamicMesh& mesh) {
 
     auto& verts = mesh.getVertices();
     auto& normals = mesh.getNormals();
-    auto& indices = mesh.getIndices();
 
-    int vi = 0;
-    for (int i = 0; i < (int)indices.size(); i += 3) {
-        for (int j = 0; j < 3; j++) {
-            int idx = indices[i + j] * 3;
-            m_mappedData[vi].position = { verts[idx], verts[idx + 1], verts[idx + 2], 1.0f };
-            m_mappedData[vi].normal = { normals[idx], normals[idx + 1], normals[idx + 2] };
-            m_mappedData[vi].texcoord = {
-                (verts[idx] + mesh.getGridW() / 2.0f) / (float)mesh.getGridW(),
-                (verts[idx + 2] + mesh.getGridH() / 2.0f) / (float)mesh.getGridH()
-            };
-            vi++;
-        }
+    // ★ インデックス展開なし・W*H 頂点をそのまま書くだけ
+    for (int i = 0; i < (int)m_vertexCount; i++) {
+        int idx = i * 3;
+        m_mappedData[i].position = { verts[idx], verts[idx + 1], verts[idx + 2], 1.0f };
+        m_mappedData[i].normal = { normals[idx], normals[idx + 1], normals[idx + 2] };
+        m_mappedData[i].texcoord = {
+            (verts[idx] + m_gridW / 2.0f) / (float)m_gridW,
+            (verts[idx + 2] + m_gridH / 2.0f) / (float)m_gridH
+        };
     }
 }
 
 void DynamicMeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
-    if (m_vertexCount == 0 || !m_vertexBuffer) return;
+    if (m_indexCount == 0 || !m_vertexBuffer || !m_indexBuffer) return;
 
     cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -66,13 +105,15 @@ void DynamicMeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex
     if (handle.ptr == 0) handle = TextureManager::GetInstance()->GetGPUHandle(0);
     if (handle.ptr == 0) return;
 
-    if (m_materialBuffer) {
+    if (m_materialBuffer)
         cmdList->SetGraphicsRootConstantBufferView(0, m_materialBuffer->GetGPUVirtualAddress());
-    }
-    if (m_lightBuffer) {
+    if (m_lightBuffer)
         cmdList->SetGraphicsRootConstantBufferView(3, m_lightBuffer->GetGPUVirtualAddress());
-    }
+
     cmdList->SetGraphicsRootDescriptorTable(2, handle);
     cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-    cmdList->DrawInstanced(m_vertexCount, 1, 0, 0);
+
+    // ★ インデックスバッファをセットして DrawIndexedInstanced で描画
+    cmdList->IASetIndexBuffer(&m_indexBufferView);
+    cmdList->DrawIndexedInstanced(m_indexCount, 1, 0, 0, 0);
 }
