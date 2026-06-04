@@ -382,3 +382,9 @@ git push origin master
 
 
 git status
+
+git lfs install
+git lfs track "*.csv"
+git add .gitattributes
+git commit -m "Setup Git LFS for large files"
+git push origin master
