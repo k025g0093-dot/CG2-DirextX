@@ -369,22 +369,17 @@ FodyWeavers.xsd
 Dumps/
 
 
-# 1. .gitignoreを編集（なければ作成）
-echo "wave_analysis.csv" >> .gitignore
-
-
-
-# 3. コミット
-git commit -m "Add wave_analysis.csv to .gitignore and remove from tracking"
-
-# 4. プッシュ
-git push origin master
-
-
+# 1. 現在の状態を確認
 git status
 
-git lfs install
-git lfs track "*.csv"
-git add .gitattributes
-git commit -m "Setup Git LFS for large files"
-git push origin master
+# 2. wave_analysis.csv を削除
+rm wave_analysis.csv
+
+# 3. .gitignore に CSV を除外
+echo "*.csv" >> .gitignore
+
+# 4. 全てをリセット
+git reset --hard HEAD
+
+# 5. プッシュ（強制）
+git push origin master --force
