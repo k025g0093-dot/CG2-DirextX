@@ -367,3 +367,18 @@ FodyWeavers.xsd
 
 *.dmp
 Dumps/
+
+
+# 1. .gitignoreを編集（なければ作成）
+echo "wave_analysis.csv" >> .gitignore
+
+
+
+# 3. コミット
+git commit -m "Add wave_analysis.csv to .gitignore and remove from tracking"
+
+# 4. プッシュ
+git push origin master
+
+
+git status
