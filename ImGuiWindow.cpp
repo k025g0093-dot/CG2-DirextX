@@ -40,7 +40,7 @@ void ImGuiUIWindow::end()
 
 
 
-//ここも似た感じの者です
+//ここも似た感じの者です将来的にはもっといろんな情報であったりほかのクラスと連動していろんなことができるようにしていきたいですね
 void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
 	if (begin("Scene")) {

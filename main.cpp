@@ -90,8 +90,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	uvTransformSprite.rotate = { 0.0f, 0.0f, 0.0f };
 	uvTransformSprite.translate = { 0.0f, 0.0f, 0.0f };
 
-	std::ofstream waveLog("wave_analysis.csv");
-	waveLog << "frame,z,height,intensity\n";
+	//std::ofstream waveLog("wave_analysis.csv");
+	//waveLog << "frame,z,height,intensity\n";
 	int frameIndex = 0;
 	int observeX = wallX + 40;
 
@@ -202,15 +202,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
-			if (frameIndex % 60 == 0) {
-				waveLog << frameIndex;
-				for (int iz = 0; iz < cubeCountZ; iz++) {
-					for (int ix = 0; ix < cubeCountX; ix++) {
-						waveLog << "," << waveGrid.getHeight(ix, iz);
-					}
-				}
-				waveLog << "\n";
-			}
+			//if (frameIndex % 60 == 0) {
+			//	waveLog << frameIndex;
+			//	for (int iz = 0; iz < cubeCountZ; iz++) {
+			//		for (int ix = 0; ix < cubeCountX; ix++) {
+			//			waveLog << "," << waveGrid.getHeight(ix, iz);
+			//		}
+			//	}
+			//	waveLog << "\n";
+			//}
 			frameIndex++;
 
 			engine->SetSpriteUVScale({ uvTransformSprite.scale.x, uvTransformSprite.scale.y });
