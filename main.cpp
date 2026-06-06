@@ -24,9 +24,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	int uvChecker = engine->LoadTexture("resources/uvChecker.png");
 	int monsterBall = engine->LoadTexture("resources/monsterBall.png");
-	int umi = engine->LoadTexture("resources/ao.jpg");
+	int umi = engine->LoadTexture("resources/top normal.png");
 
-	MeshModel* modelData = engine->LoadModel("resources", "plane.obj");
+	MeshModel* modelData = engine->LoadModel("resources", "axis.obj");
 
 	Sound* sound = new Sound;
 	SoundData soundData1 = sound->SoundLoad("resources/fanfare.wav");

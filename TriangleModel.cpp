@@ -29,11 +29,11 @@ void TriangleModel::Initialize(TUFEngine* engine) {
     m_pMaterialResource = CreateBufferResource(device, Align256(sizeof(Material)));
     m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
     materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    materialData->enableLifhting = false;
+    materialData->enableLighting = false;
     materialData->uvTransform = MakeIdentity4x4();
 
-    m_pLightResource = CreateBufferResource(device, Align256(sizeof(DirectionalLLight)));
-    DirectionalLLight* lightData = nullptr;
+    m_pLightResource = CreateBufferResource(device, Align256(sizeof(DirectionalLight)));
+    DirectionalLight* lightData = nullptr;
     m_pLightResource->Map(0, nullptr, reinterpret_cast<void**>(&lightData));
     lightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
     lightData->direction = { 0.0f, -1.0f, 0.0f };

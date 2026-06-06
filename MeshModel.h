@@ -14,6 +14,7 @@ class TUFEngine;
 struct MaterialData
 {
     std::string textureFilPath;
+    std::string normalTextureFilePath;
 };
 
 struct ModelData
@@ -59,7 +60,9 @@ private:
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
     size_t                   m_vertexCount = 0;
     TUFEngine* m_pEngine = nullptr;
-    int                      m_textureIndex = -1;
+
+    int m_textureIndex = -1;
+    int m_normalTextureIndex = -1;
 
     uint32_t Align256(uint32_t size)
     {

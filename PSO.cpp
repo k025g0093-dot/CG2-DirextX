@@ -11,15 +11,20 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
+	D3D12_DESCRIPTOR_RANGE descriptorRange[2] = {};
 	descriptorRange[0].BaseShaderRegister = 0;//0から始まる
 	descriptorRange[0].NumDescriptors = 1;//数は一つ
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;//SRVを使う
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;//自動で決める].OffsetInDescriptorsFromTableStart
 
+	descriptorRange[1].BaseShaderRegister = 1;
+	descriptorRange[1].NumDescriptors = 1;//数は一つ
+	descriptorRange[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;//SRVを使う
+	descriptorRange[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;//自動で決める].OffsetInDescriptorsFromTableStart
+
 
 	// ルートパラメータの設定（シェーダーに渡すリソースの種類を定義）
-	D3D12_ROOT_PARAMETER rootParameter[4] = {};
+	D3D12_ROOT_PARAMETER rootParameter[5] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使用
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // 全シェーダーから参照可能
 	rootParameter[0].Descriptor.ShaderRegister = 0; // register(b0)に対応
@@ -30,12 +35,18 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 
 	rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // 定数バッファビューを使用
 	rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameter[2].DescriptorTable.pDescriptorRanges = descriptorRange;
-	rootParameter[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+	rootParameter[2].DescriptorTable.pDescriptorRanges = &descriptorRange[0];
+	rootParameter[2].DescriptorTable.NumDescriptorRanges = 1;
 
 	rootParameter[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[3].Descriptor.ShaderRegister = 1;
+
+	rootParameter[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // 定数バッファビューを使用
+	rootParameter[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[4].DescriptorTable.pDescriptorRanges = &descriptorRange[1];
+	rootParameter[4].DescriptorTable.NumDescriptorRanges = 1;
+
 
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);
@@ -85,7 +96,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 D3D12_INPUT_LAYOUT_DESC CreateLayout() {
 
 	// 頂点データの要素定義（今回はPOSITIONのみ）
-	static D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+	static D3D12_INPUT_ELEMENT_DESC inputElementDescs[4] = {};
 	inputElementDescs[0].SemanticName = "POSITION"; // シェーダー側のセマンティクス名
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // float4形式
@@ -102,6 +113,11 @@ D3D12_INPUT_LAYOUT_DESC CreateLayout() {
 	inputElementDescs[2].AlignedByteOffset =
 		D3D12_APPEND_ALIGNED_ELEMENT;
 
+
+	inputElementDescs[3].SemanticName = "TANGENT";
+	inputElementDescs[3].SemanticIndex = 0;
+	inputElementDescs[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDescs[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
@@ -164,6 +180,7 @@ ComPtr<ID3D12PipelineState> CreatePipelineStateDesc(
 
 	// インプットレイアウトの設定
 	graphicsPipelineStateDesc.InputLayout = inputLayout;
+
 
 	// シェーダーの設定
 	graphicsPipelineStateDesc.VS = {

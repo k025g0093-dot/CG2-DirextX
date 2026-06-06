@@ -34,8 +34,9 @@ void Sprite::InitSprite(TUFEngine* engine, int textureIndex, float w, float h) {
     Material* materialData = nullptr;
     m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
     materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    materialData->enableLifhting = false;
+    materialData->enableLighting = false;
     materialData->uvTransform = MakeIdentity4x4();
+    materialData->enableNormalMap = 0;
     m_pMaterialResource->Unmap(0, nullptr);
 
     // --- WVP（正射影行列）バッファ ---
@@ -59,6 +60,7 @@ void Sprite::UpdateVertices(
     m_pVertexData[index].position = { point.x, point.y, point.z, 1.0f };
     m_pVertexData[index].texcoord = texcoord;
     m_pVertexData[index].normal = normal;
+    m_pVertexData[index].tangent = { 1.0f, 0.0f, 0.0f };
 }
 
 void Sprite::SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) {
@@ -85,10 +87,10 @@ void Sprite::Resize(float w, float h) {
     Vertex* data = nullptr;
     m_pVertexResource->Map(0, nullptr, reinterpret_cast<void**>(&data));
 
-    data[0].position = { 0.0f, 0.0f, 0.0f, 1.0f }; data[0].texcoord = { 0.0f, 0.0f }; // 左上
-    data[1].position = { w,    0.0f, 0.0f, 1.0f }; data[1].texcoord = { 1.0f, 0.0f }; // 右上
-    data[2].position = { 0.0f, h,    0.0f, 1.0f }; data[2].texcoord = { 0.0f, 1.0f }; // 左下
-    data[3].position = { w,    h,    0.0f, 1.0f }; data[3].texcoord = { 1.0f, 1.0f }; // 右下
+    data[0].position = { 0.0f, 0.0f, 0.0f, 1.0f }; data[0].texcoord = { 0.0f, 0.0f }; data[0].normal = { 0.0f, 0.0f, -1.0f }; data[0].tangent = { 1.0f, 0.0f, 0.0f };
+    data[1].position = { w,    0.0f, 0.0f, 1.0f }; data[1].texcoord = { 1.0f, 0.0f }; data[1].normal = { 0.0f, 0.0f, -1.0f }; data[1].tangent = { 1.0f, 0.0f, 0.0f };
+    data[2].position = { 0.0f, h,    0.0f, 1.0f }; data[2].texcoord = { 0.0f, 1.0f }; data[2].normal = { 0.0f, 0.0f, -1.0f }; data[2].tangent = { 1.0f, 0.0f, 0.0f };
+    data[3].position = { w,    h,    0.0f, 1.0f }; data[3].texcoord = { 1.0f, 1.0f }; data[3].normal = { 0.0f, 0.0f, -1.0f }; data[3].tangent = { 1.0f, 0.0f, 0.0f };
 
     m_pVertexResource->Unmap(0, nullptr);
 }

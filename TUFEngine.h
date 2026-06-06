@@ -14,12 +14,14 @@ struct VertexData {
     Vector4 position;
     Vector2 texcoord;
     Vector3 normal;
+	Vector3 tangent;
 };
 
 struct Material {
     Vector4 color;
-    int32_t enableLifhting;
-    float padding[3];
+    int32_t enableLighting;
+    int32_t enableNormalMap;
+    Vector2 padding;
     Matrix4x4 uvTransform;
 };
 
@@ -28,7 +30,7 @@ struct TransformationMatrix {
     Matrix4x4 World;
 };
 
-struct DirectionalLLight {
+struct DirectionalLight {
     Vector4 color;
     Vector3 direction;
     float intensity;

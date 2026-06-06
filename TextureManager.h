@@ -29,6 +29,11 @@
 
 using Microsoft::WRL::ComPtr;   // ★追加
 
+struct MaterialTextureSet {
+    int baseTextureIndex;
+    int normalTextureIndex;
+};
+
 class TextureManager
 {
 public:

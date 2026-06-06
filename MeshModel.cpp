@@ -12,8 +12,9 @@ void MeshModel::InitMeshModel(TUFEngine* engine) {
 	Material* materialData = nullptr;
 	m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 	materialData->color = { 0.5f, 0.5f, 0.5f, 0.5f };
-	materialData->enableLifhting = 1;
+	materialData->enableLighting = 1;
 	materialData->uvTransform = MakeIdentity4x4();
+	materialData->enableNormalMap = 0;
 	m_pMaterialResource->Unmap(0, nullptr);
 }
 
@@ -114,6 +115,11 @@ bool MeshModel::LoadFromOBJ(
 				// 読み込んだインデックスを自分自身に保存する
 				SetTextureIndex(textureIndex);
 			}
+
+			if (!modelData.material.normalTextureFilePath.empty()) {
+				int normalIndex = TextureManager::GetInstance()->LoadTexture(modelData.material.normalTextureFilePath);
+				m_normalTextureIndex = normalIndex;
+			}
 		}
 	}
 
@@ -190,6 +196,32 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 				materialData.textureFilPath = directoryPath + "/" + textureFilename;
 			}
 		}
+		//法線マップ用のファイル読み込み
+		else if (identifire == "map_Bump"||identifire=="bump") {
+			std::string token;
+			std::string textureFilename;
+			while (s >> token) {
+				// -s, -bm などのオプションフラグはスキップ
+				if (token[0] == '-') {
+					// オプションの引数も読み飛ばす（-s は引数3つ、-bm は1つなど）
+					if (token == "-s" || token == "-o") {
+						float tmp; s >> tmp >> tmp >> tmp; // x y z
+					}
+					else if (token == "-bm") {
+						float tmp; s >> tmp;
+					}
+					continue;
+				}
+				textureFilename = token;
+			}
+
+			// バックスラッシュをスラッシュに統一
+			std::replace(textureFilename.begin(), textureFilename.end(), '\\', '/');
+
+			if (!textureFilename.empty()) {
+				materialData.normalTextureFilePath = directoryPath + "/" + textureFilename;
+			}
+		}
 
 	}
 
@@ -197,23 +229,45 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 
 }
 
-void MeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
+void MeshModel::Draw(
+	ID3D12GraphicsCommandList* cmdList,
+	int textureIndex
+	) 
+{
 	if (m_vertexCount == 0 || !m_vertexBuffer) return;
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
+
+	bool hasNormalTexture = false;
 
 	if (textureIndex >= 0) {
 		auto handle = TextureManager::GetInstance()->GetGPUHandle(textureIndex);
 		if (handle.ptr != 0) {
 			cmdList->SetGraphicsRootDescriptorTable(2, handle);
 		}
+
+		if (m_normalTextureIndex >= 0) {
+			auto normalHandle = TextureManager::GetInstance()->GetGPUHandle(m_normalTextureIndex);
+			if (normalHandle.ptr != 0) {
+				cmdList->SetGraphicsRootDescriptorTable(4, normalHandle);
+				hasNormalTexture = true;
+			}
+		}
 	}
 	// textureIndex < 0 の場合はenableLightingを-1にして色だけ返す
 	else {
 		Material* materialData = nullptr;
 		m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-		materialData->enableLifhting = -1;
+		materialData->enableLighting = -1;
+		materialData->enableNormalMap = 0;
+		m_pMaterialResource->Unmap(0, nullptr);
+	}
+
+	if (textureIndex >= 0) {
+		Material* materialData = nullptr;
+		m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+		materialData->enableNormalMap = hasNormalTexture ? 1 : 0;
 		m_pMaterialResource->Unmap(0, nullptr);
 	}
 
@@ -239,6 +293,7 @@ void MeshModel::UpdateVertices(
 	vertices[index].position = { points.x * -1.0f, points.y, points.z, 1.0f };
 	vertices[index].texcoord = texcoord;
 	vertices[index].normal = { normal.x * -1.0f, normal.y, normal.z };
+	vertices[index].tangent = { 0.0f, 0.0f, 0.0f }; // タンジェントは必要に応じて計算して設定
 
 	m_vertexBuffer->Unmap(0, nullptr);
 }

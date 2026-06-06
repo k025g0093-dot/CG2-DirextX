@@ -63,12 +63,13 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     Material* materialData = nullptr;
     m_materialBuffer->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
     materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    materialData->enableLifhting = true;
+    materialData->enableLighting = true;
+	materialData->enableNormalMap = 0;
     materialData->uvTransform = MakeIdentity4x4();
     m_materialBuffer->Unmap(0, nullptr);
 
-    m_lightBuffer = CreateBufferResource(engine->GetDevice(), sizeof(DirectionalLLight));
-    DirectionalLLight* lightData = nullptr;
+    m_lightBuffer = CreateBufferResource(engine->GetDevice(), sizeof(DirectionalLight));
+    DirectionalLight* lightData = nullptr;
     m_lightBuffer->Map(0, nullptr, reinterpret_cast<void**>(&lightData));
     lightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
     lightData->direction = { 0.0f, -1.0f, 0.0f };
@@ -93,6 +94,7 @@ void DynamicMeshModel::SyncFrom(const DynamicMesh& mesh) {
             (verts[idx] + m_gridW / 2.0f) / (float)m_gridW,
             (verts[idx + 2] + m_gridH / 2.0f) / (float)m_gridH
         };
+        m_mappedData[i].tangent = { 1.0f, 0.0f, 0.0f };
     }
 }
 
