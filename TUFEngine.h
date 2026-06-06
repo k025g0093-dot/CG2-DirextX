@@ -131,7 +131,7 @@ public:
         return m_sceneViewportSize;
     };
 
-    void ResizeSceneRenderTexture();
+    void ResizeSceneRenderTexture(int newWidth, int newHeight);
 	void GetSceneTextureGpuHandle(D3D12_GPU_DESCRIPTOR_HANDLE& handle);
 	void BeginSceneRender();
 	void EndSceneRender();
@@ -147,6 +147,10 @@ public:
     std::vector<SceneObject>& GetDroppedMeshes(){ return m_droppedMeshes; }
 
     void ResizeWindow(int newWidth, int newHeight);
+
+	float GetViewportWidth() const { return static_cast<float>(width); }
+	float GetViewportHeight() const { return static_cast<float>(height); }
+
 
 private:
 

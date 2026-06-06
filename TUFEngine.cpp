@@ -990,12 +990,71 @@ void TUFEngine::ResizeWindow(int newWidth, int newHeight) {
 	CreateDepthStencilTextureResource(width, height);
 
 #ifdef USE_IMGUI
-	InitializeImGui(hwnd); // ← 丸ごと再初期化
+	InitializeImGui(hwnd);
 #endif
 
 }
 
+void TUFEngine::ResizeSceneRenderTexture(int newWidth, int newHeight) {
+
+	if (newWidth <= 0 || newHeight <= 0) {
+		return;
+	}
+
+
+	m_fenceValue++;
+	commandQueue->Signal(m_fence.Get(), m_fenceValue);
+	if (m_fence->GetCompletedValue() < m_fenceValue) {
+		m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+	}
+
+	width = newWidth;
+	height = newHeight;
+
+#ifdef USE_IMGUI
+	ImGui_ImplDX12_Shutdown(); // ← Invalidate/Createの代わり
+	ImGui_ImplWin32_Shutdown();
+#endif
+
+	// GPUがbackbufferを使い終わるまで待つ
+
+	swapChainResources[0].Reset();
+	swapChainResources[1].Reset();
+
+	swapChain->ResizeBuffers(
+		2,
+		width,
+		height,
+		DXGI_FORMAT_R8G8B8A8_UNORM,
+		0
+	);
+
+	// RTVを再作成する
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle =
+		rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandles[0] = rtvStartHandle;
+	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(swapChainResources[0].GetAddressOf()));
+	assert(SUCCEEDED(hr));
+	device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
+	rtvHandles[1].ptr = rtvHandles[0].ptr +
+		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(swapChainResources[1].GetAddressOf()));
+	assert(SUCCEEDED(hr));
+	device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
+
+	CreateDepthStencilTextureResource(width, height);
+
+#ifdef USE_IMGUI
+	InitializeImGui(hwnd);
+#endif
+
+
+
+}
+
 void TUFEngine::GetSceneTextureGpuHandle(D3D12_GPU_DESCRIPTOR_HANDLE& handle) {
+
 	handle = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 }
 

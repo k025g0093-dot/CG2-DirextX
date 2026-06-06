@@ -58,16 +58,16 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 				}
 				objects[i].isSelected = true;
 			}
+			if (ImGui::CollapsingHeader("ObjectTransform")) {
+				if (objects[i].isSelected) {
+					ImGui::SameLine();
+					ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Selected]");
+				}
 
-			if (objects[i].isSelected) {
-				ImGui::SameLine();
-				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Selected]");
+				ImGui::DragFloat3("Position", &objects[i].pos.x, 0.1f);
+				ImGui::DragFloat3("Rotation", &objects[i].rot.x, 0.01f);
+				ImGui::DragFloat3("Scale", &objects[i].scale.x, 0.01f, 0.01f, 10.0f);
 			}
-
-			ImGui::DragFloat3("Position", &objects[i].pos.x, 0.1f);
-			ImGui::DragFloat3("Rotation", &objects[i].rot.x, 0.01f);
-			ImGui::DragFloat3("Scale", &objects[i].scale.x, 0.01f, 0.01f, 10.0f);
-
 			if (ImGui::Button("Delete")) {
 				engine->RemoveDroppedMesh(i);
 				ImGui::PopID();
@@ -170,30 +170,28 @@ void ImGuiZmoWindow::update(TUFEngine* engine) {
 // --- ImGuiWindow.cpp の最後に追記 ---
 
 
-//開発路駐できたら神なんだけど、とりあえずはここに ImGuiViewportWindow の実装を置いておきます。将来的には別ファイルに分けるかもしれません。
 void ImGuiViewportWindow::update(TUFEngine* engine) {
 //#ifdef USE_IMGUI
-//	// "Game Viewport" という名前の新しいウィンドウを作る
+//	ImVec2 viewportMin = ImGui::GetMainViewport()->Pos;
 //
+//	ImGui::SetNextWindowPos(viewportMin);
+//	ImGui::SetNextWindowSize(ImVec2(
+//		(float)engine->GetViewportWidth(),
+//		(float)engine->GetViewportHeight()
+//	));
 //
-//	ImGui::Text("Scene");
-//	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-//	if (viewportPanelSize.x > 0 && viewportPanelSize.y > 0) {
-//		engine->SetViewportSize(viewportPanelSize.x, viewportPanelSize.y);
-//	}
-//	ImGui::Dummy(viewportPanelSize); // ビューポートのサイズを確保するためのダミーアイテム
-//	
+//	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+//	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+//	ImGui::SetNextWindowBgAlpha(0.0f);
 //
-//	// ウィンドウの残り全域をドロップ可能なエリア（ダミー領域）にする
-//	if(ImGui::Begin("ViewportWindow")) {
-//		ImVec2 availableSize = ImGui::GetContentRegionAvail();
-//		ImGui::Dummy(availableSize);
+//	if (ImGui::Begin("##ViewportOverlay", nullptr,
+//		ImGuiWindowFlags_NoTitleBar |
+//		ImGuiWindowFlags_NoScrollbar |
+//		ImGuiWindowFlags_NoBringToFrontOnFocus)) {  // ← NoInputs削除
+//
 //		if (ImGui::BeginDragDropTarget()) {
-//
 //			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
 //				const wchar_t* itemPath = (const wchar_t*)payload->Data;
-//
-//				// TUFEngine の OnFileDropped を呼び出す
 //				auto manager = engine->GetImGuiManager();
 //				if (manager && manager->onFileDrop) {
 //					manager->onFileDrop(itemPath);
@@ -201,10 +199,11 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 //			}
 //			ImGui::EndDragDropTarget();
 //		}
+//
+//		ImGui::End();
 //	}
-//	ImGui::End();
+//	ImGui::PopStyleVar(2);
 //#endif
 }
-
 
 
