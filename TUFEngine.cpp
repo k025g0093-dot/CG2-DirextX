@@ -208,6 +208,12 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 		mesh->SetTextureIndex(texIndex);
 	}
 
+	std::string normalMapPath = folderAndBase + "_normal.png";
+	if (GetFileAttributesA(normalMapPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+		int normalIdx = TextureManager::GetInstance()->LoadTexture(normalMapPath);
+		mesh->SetNormalMapIndex(normalIdx);  // ← これ
+	}
+
 	MeshModel* ptr = mesh.get();
 	m_meshes[filename] = std::move(mesh);
 

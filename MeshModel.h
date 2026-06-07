@@ -40,8 +40,12 @@ public:
         const std::string& filename);
 
     void InitMeshModel(TUFEngine* engine);
+
     void SetTextureIndex(int index) { m_textureIndex = index; }
     int  GetTextureIndex() const { return m_textureIndex; }
+
+    void SetNormalMapIndex(int idx) { m_normalTextureIndex = idx; }
+    int  GetNormalMapIndex() const { return m_normalTextureIndex; }
 
     void UpdateVertices(
         const Vector3& points,
