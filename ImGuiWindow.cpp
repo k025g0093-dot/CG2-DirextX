@@ -44,13 +44,50 @@ void ImGuiUIWindow::end()
 void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
 	if (begin("Scene")) {
-		auto& objects = engine->GetDroppedMeshes();
 
+		if (ImGui::CollapsingHeader("Light Setting")) {
+			LightManager* lm = LightManager::GetInstance();
+
+			if (ImGui::CollapsingHeader("Global Light")) {
+				DirectionalLight global = lm->GetGlobalLight();
+				bool changed = false;
+				changed |= ImGui::ColorEdit4("Color", &global.color.x);
+				changed |= ImGui::DragFloat3("Direction", &global.direction.x, 0.01f, -1.0f, 1.0f);
+				changed |= ImGui::DragFloat("Intensity", &global.intensity, 0.01f, 0.0f, 10.0f);
+				if (changed) lm->SetGlobalLight(global);
+			}
+
+			// 個別ライト一覧
+			auto ids = lm->GetPerObjectIds();
+			for (int id : ids) {
+				std::string label = "Object Light " + std::to_string(id);
+				if (ImGui::CollapsingHeader(label.c_str())) {
+					ImGui::PushID(id);
+					DirectionalLight light = lm->GetPerObjectLight(id);
+					bool changed = false;
+					changed |= ImGui::ColorEdit4("##Color", &light.color.x);
+					changed |= ImGui::DragFloat3("##Direction", &light.direction.x, 0.01f, -1.0f, 1.0f);
+					changed |= ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
+					if (changed) lm->SetPerObjectLight(id, light);
+
+					if (ImGui::Button("Reset to Global")) {
+						lm->ClearPerObjectLight(id);
+						ImGui::PopID();
+						break;
+					}
+					ImGui::PopID();
+				}
+			}
+		}
+
+		ImGui::Separator();
+
+		auto& objects = engine->GetDroppedMeshes();
 		for (int i = 0; i < (int)objects.size(); i++) {
 			ImGui::PushID(i);
 
 			ImGui::Text(objects[i].name.c_str());
-			ImGui::SameLine(); // ボタンを横並びにする
+			ImGui::SameLine();
 
 			if (ImGui::Button("Select")) {
 				for (int j = 0; j < (int)objects.size(); j++) {
@@ -63,7 +100,6 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 					ImGui::SameLine();
 					ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Selected]");
 				}
-
 				ImGui::DragFloat3("Position", &objects[i].pos.x, 0.1f);
 				ImGui::DragFloat3("Rotation", &objects[i].rot.x, 0.01f);
 				ImGui::DragFloat3("Scale", &objects[i].scale.x, 0.01f, 0.01f, 10.0f);

@@ -129,9 +129,7 @@ void Sphere::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
 	cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
 	cmdList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetGPUHandle(textureIndex));
 
-	if (m_pLightResource) {
-		cmdList->SetGraphicsRootConstantBufferView(3, m_pLightResource->GetGPUVirtualAddress());
-	}
+
 
 	cmdList->DrawIndexedInstanced(m_indexCount, 1, 0, 0, 0);
 }

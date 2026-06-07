@@ -82,6 +82,9 @@
     <Filter Include="ソース ファイル\TUFengine\ImGui\imGuiZmo">
       <UniqueIdentifier>{7a83f7e2-04f6-46dc-b7f0-e76933dd39d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\ライティングの設定を行うクラス">
+      <UniqueIdentifier>{c1e7bbb4-7929-4348-b8e3-1e6782a46439}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -188,6 +191,9 @@
     </ClCompile>
     <ClCompile Include="externals\imgui\ImGuizmo.cpp">
       <Filter>ソース ファイル\TUFengine\ImGui\imGuiZmo</Filter>
+    </ClCompile>
+    <ClCompile Include="LightManager.cpp">
+      <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -323,6 +329,9 @@
     </ClInclude>
     <ClInclude Include="externals\imgui\ImGuizmo.h">
       <Filter>ソース ファイル\TUFengine\ImGui\imGuiZmo</Filter>
+    </ClInclude>
+    <ClInclude Include="LightManager.h">
+      <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

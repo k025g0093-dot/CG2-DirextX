@@ -103,6 +103,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	InitializeImGui(hwnd);
 #endif
 
+	LightManager::GetInstance()->Initialize(device.Get());
+
 	CreateDepthStencilTextureResource(width, height);
 
 	TextureManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
@@ -720,9 +722,14 @@ void TUFEngine::RenderAllRequests() {
 	// 2. カメラ行列
 	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
 
+
+
 	m_cbvIndex = 0;
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
 	for (auto& request : m_drawRequests) {
+
+
+
 		if (m_cbvIndex >= m_maxDrawCount) {
 			break;
 		}
@@ -759,6 +766,7 @@ void TUFEngine::RenderAllRequests() {
 				m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
 			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
 		}
+		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
 
 		// --- 6. 描画を実行する ---
 		if (!request.isMesh) {
@@ -782,27 +790,21 @@ void TUFEngine::RenderAllRequests() {
 
 #pragma region 各モデルの描画呼び出し
 
-void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale, int textureIndex) {
+void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale,
+	int textureIndex, int lightId) {
 	if (!m_temporarySpheres) {
 		m_temporarySpheres = std::make_unique<Sphere>();
 		m_temporarySpheres->InitSphere(this);
 	}
-	if (m_directionalLightResource) {
-		m_temporarySpheres->SetLightResource(m_directionalLightResource);
-	}
 
-	// 3. 描画リクエストを作成する
 	DrawRequest req;
 	req.pos = pos;
 	req.rot = rot;
 	req.scale = scale;
 	req.textureIndex = textureIndex;
 	req.isMesh = true;
-
-	// 4. 保持している球モデルのポインタを登録する
+	req.lightId = lightId; // ← DrawRequestにも追加が必要
 	req.model = m_temporarySpheres.get();
-
-	// 5. リクエストを登録する
 	m_drawRequests.push_back(req);
 }
 
@@ -857,15 +859,16 @@ void TUFEngine::DrawSprite(
 }
 
 
-void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale) {
+void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scale, int lightId) {
 	if (!mesh) return;
 	DrawRequest req;
 	req.model = mesh;
 	req.pos = pos;
 	req.rot = rot;
 	req.scale = scale;
-	req.textureIndex = mesh->GetTextureIndex(); // メッシュに設定されているテクスチャを使う
+	req.textureIndex = mesh->GetTextureIndex();
 	req.isMesh = true;
+	req.lightId = lightId;
 	m_drawRequests.push_back(req);
 }
 

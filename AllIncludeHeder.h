@@ -47,8 +47,11 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 #endif // USE_IMGUI
 
+//機能敵なの
 #include"ImGuiUIManager.h"
 #include "Camera.h"
+#include "LightManager.h"
+
 //GUIのヘッダー関連
 #include "ImGuiCamera.h"
 #include "ImGuiDebug.h"

@@ -99,6 +99,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int observeX = wallX + 40;
 
 
+	LightManager::GetInstance()->SetPerObjectLight(0, { {1,1,1,1}, {0,-1,0}, 1.0f });
+	LightManager::GetInstance()->SetPerObjectLight(1, { {1,1,1,1}, {0,-1,0}, 1.0f });
+
 
 	MSG msg{};
 	while (msg.message != WM_QUIT) {
@@ -132,6 +135,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 							ImGui::DragFloat3("Rotation", &sphereRot[i].x, 0.01f);
 							ImGui::DragFloat3("Scale", &sphereScale[i].x, 0.01f, 0.01f, 10.0f);
 							ImGui::Checkbox("MonsterBall", &sphereUseMonsterBall[i]);
+
+							ImGui::SeparatorText("Light");
+							DirectionalLight light = LightManager::GetInstance()->GetPerObjectLight(i);
+							bool changed = false;
+							changed |= ImGui::ColorEdit4("##Color", &light.color.x);
+							changed |= ImGui::DragFloat3("##Direction", &light.direction.x, 0.01f, -1.0f, 1.0f);
+							changed |= ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
+
+							if (changed) LightManager::GetInstance()->SetPerObjectLight(i, light);
+
 							ImGui::Separator();
 							ImGui::PopID();
 						}
@@ -238,7 +251,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					spherePos[i],
 					sphereRot[i],
 					sphereScale[i],
-					sphereUseMonsterBall[i] ? monsterBall : uvChecker);
+					sphereUseMonsterBall[i] ? monsterBall : uvChecker,i
+					);
 			}
 
 			engine->DrawMesh(modelData, meshPos, meshRot, meshScale);
@@ -277,7 +291,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					};
 				}
 			}
-			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 

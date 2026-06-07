@@ -1,5 +1,6 @@
 #pragma once
 #include "ConvertString.h"
+#include "LightManager.h"
 
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
@@ -9,6 +10,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "externals/imgui/imguizmo.h"
 
 #endif // USE_IMGUI
+
+
 
 // 🌟 超重要：相互参照バグを防ぐための前方宣言
 class TUFEngine;
@@ -52,3 +55,5 @@ public:
 	void update(TUFEngine* engine) override;
 	void SetObjectsIndex(int index) { selectedIndex = index; }
 };
+
+
