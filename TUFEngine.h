@@ -135,9 +135,12 @@ public:
 	Vector2 GetViewportSize() const {
 		return m_sceneViewportSize;
 	};
+	ComPtr<ID3D12DescriptorHeap> m_sceneRtvDescriptorHeap;
+
+
 
 	void ResizeSceneRenderTexture(int newWidth, int newHeight);
-	void GetSceneTextureGpuHandle(D3D12_GPU_DESCRIPTOR_HANDLE& handle);
+	void GetSceneRtv(int32_t width,int32_t height);
 	void BeginSceneRender();
 	void EndSceneRender();
 
@@ -148,6 +151,7 @@ public:
 		SaveSceneObjectsToFile();
 	}
 	void SaveSceneObjectsToFile();
+
 	void OnFileDropped(const std::wstring& path);
 	std::vector<SceneObject>& GetDroppedMeshes() { return m_droppedMeshes; }
 
@@ -155,7 +159,7 @@ public:
 
 	float GetViewportWidth() const { return static_cast<float>(width); }
 	float GetViewportHeight() const { return static_cast<float>(height); }
-
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSceneSrvGpuHandle() const { return m_sceneSrvGpuHandle; }
 
 private:
 

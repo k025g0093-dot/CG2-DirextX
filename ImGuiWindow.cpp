@@ -3,6 +3,11 @@
 
 ImGuiUIWindow::ImGuiUIWindow() : show(true) {}
 ImGuiUIWindow::~ImGuiUIWindow() {}
+#ifdef USE_IMGUI
+static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
+static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
+#endif // DEBUG
+
 
 
 //ここら辺は基底クラスと各種構造を理解するための仮実装です。今後、必要に応じて引数を追加したり、内容を充実させていきます。
@@ -121,83 +126,26 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 //ギズモの仮実装。まだまだいらないものとか将来的に自由にアイテムを選択できるようにしたりしていきたい
 void ImGuiZmoWindow::update(TUFEngine* engine) {
 #ifdef _DEBUG
-
-	static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
-	static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
 	auto& objects = engine->GetDroppedMeshes();
-	constexpr float kDegToRad = 3.1415926535f / 180.0f;
+	if (objects.empty()) return; // オブジェクトがなければ何もしない
 
-	// オブジェクトが一つもないときは、そもそもギズモを出す必要がないので、早期リターンする
-	if (objects.empty()) {
-		return;
-	}
+	// キー入力による切り替え判定だけを行う
+	if (ImGui::IsKeyPressed(ImGuiKey_T)) mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+	if (ImGui::IsKeyPressed(ImGuiKey_R)) mCurrentGizmoOperation = ImGuizmo::ROTATE;
+	if (ImGui::IsKeyPressed(ImGuiKey_S)) mCurrentGizmoOperation = ImGuizmo::SCALE;
 
-	if (selectedIndex < 0 || selectedIndex >= static_cast<int>(objects.size())) {
-		selectedIndex = 0;
-	}
-
-	ImGuizmo::BeginFrame();
-	ImGuizmo::SetOrthographic(false);
-
-	if (ImGui::IsKeyPressed(ImGuiKey_T))
-		mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-	if (ImGui::IsKeyPressed(ImGuiKey_R))
-		mCurrentGizmoOperation = ImGuizmo::ROTATE;
-	if (ImGui::IsKeyPressed(ImGuiKey_S))
-		mCurrentGizmoOperation = ImGuizmo::SCALE;
-
-	for (int i = 0; i < (int)objects.size(); i++) {
-		if (objects[i].isSelected == false) {
-			continue;
+	// UIの表示（ここからギズモの直接描画コードは全部消す！）
+	if (begin("Gizmo Settings")) {
+		if (mCurrentGizmoOperation != ImGuizmo::SCALE) {
+			if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+				mCurrentGizmoMode = ImGuizmo::LOCAL;
+			ImGui::SameLine();
+			if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+				mCurrentGizmoMode = ImGuizmo::WORLD;
 		}
-
-		Matrix4x4 transform = MakeAffineMatrix(
-			objects[i].scale,
-			objects[i].rot,
-			objects[i].pos
-		);
-
-		float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-
-		if (begin("Local or World")) {
-
-
-			if (mCurrentGizmoOperation != ImGuizmo::SCALE)
-			{
-				if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
-					mCurrentGizmoMode = ImGuizmo::LOCAL;
-				ImGui::SameLine();
-				if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
-					mCurrentGizmoMode = ImGuizmo::WORLD;
-			}
-			end();
-		}
-		ImGuiIO& io = ImGui::GetIO();
-		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-		if (ImGuizmo::Manipulate(
-			&engine->GetViewMatrix().m[0][0],
-			&engine->GetProjectionMatrix().m[0][0],
-			mCurrentGizmoOperation,
-			mCurrentGizmoMode,
-			&transform.m[0][0]
-		)) {
-			ImGuizmo::DecomposeMatrixToComponents(&transform.m[0][0], matrixTranslation, matrixRotation, matrixScale);
-
-			objects[i].pos.x = matrixTranslation[0];
-			objects[i].pos.y = matrixTranslation[1];
-			objects[i].pos.z = matrixTranslation[2];
-
-			objects[i].rot.x = matrixRotation[0] * kDegToRad;
-			objects[i].rot.y = matrixRotation[1] * kDegToRad;
-			objects[i].rot.z = matrixRotation[2] * kDegToRad;
-
-			objects[i].scale.x = matrixScale[0];
-			objects[i].scale.y = matrixScale[1];
-			objects[i].scale.z = matrixScale[2];
-		}
+		end();
 	}
-
-#endif // _DEBUG
+#endif
 }
 
 
@@ -207,39 +155,79 @@ void ImGuiZmoWindow::update(TUFEngine* engine) {
 
 
 void ImGuiViewportWindow::update(TUFEngine* engine) {
-//#ifdef USE_IMGUI
-//	ImVec2 viewportMin = ImGui::GetMainViewport()->Pos;
-//
-//	ImGui::SetNextWindowPos(viewportMin);
-//	ImGui::SetNextWindowSize(ImVec2(
-//		(float)engine->GetViewportWidth(),
-//		(float)engine->GetViewportHeight()
-//	));
-//
-//	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-//	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
-//	ImGui::SetNextWindowBgAlpha(0.0f);
-//
-//	if (ImGui::Begin("##ViewportOverlay", nullptr,
-//		ImGuiWindowFlags_NoTitleBar |
-//		ImGuiWindowFlags_NoScrollbar |
-//		ImGuiWindowFlags_NoBringToFrontOnFocus)) {  // ← NoInputs削除
-//
-//		if (ImGui::BeginDragDropTarget()) {
-//			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-//				const wchar_t* itemPath = (const wchar_t*)payload->Data;
-//				auto manager = engine->GetImGuiManager();
-//				if (manager && manager->onFileDrop) {
-//					manager->onFileDrop(itemPath);
-//				}
-//			}
-//			ImGui::EndDragDropTarget();
-//		}
-//
-//		ImGui::End();
-//	}
-//	ImGui::PopStyleVar(2);
-//#endif
-}
+#ifdef USE_IMGUI
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
 
+	if (ImGui::Begin("Viewport", nullptr,
+		ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_NoScrollWithMouse )) {
+
+		// --- ① シーン（ゲーム画面）の描画 ---
+		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+		ImTextureID sceneTextureId = (ImTextureID)engine->GetSceneSrvGpuHandle().ptr;
+		
+		ImGui::Image(
+			sceneTextureId,
+			viewportSize,
+			ImVec2(0.0f, 0.0f),
+			ImVec2(1.0f, 1.0f),
+			ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // Tint（画像の色：白＝そのまま）
+			ImVec4(0.0f, 0.0f, 0.0f, 1.0f)  // Border（枠線の色：透明）🌟これを追加
+		);
+		
+		// --- ② ギズモ（ImGuizmo）の描画 ---
+#ifdef _DEBUG
+		auto& objects = engine->GetDroppedMeshes();
+		if (!objects.empty()) {
+			// 現在のViewportウィンドウに対して描画を指示
+			ImGuizmo::SetDrawlist();
+
+			// ウィンドウの左上座標を取得して、ギズモの有効範囲をこの枠内に制限する！
+			ImVec2 windowPos = ImGui::GetWindowPos();
+			ImGuizmo::SetRect(windowPos.x, windowPos.y, viewportSize.x, viewportSize.y);
+
+			constexpr float kDegToRad = 3.1415926535f / 180.0f;
+
+			for (int i = 0; i < (int)objects.size(); i++) {
+				if (!objects[i].isSelected) continue;
+
+				Matrix4x4 transform = MakeAffineMatrix(objects[i].scale, objects[i].rot, objects[i].pos);
+
+				// ZmoWindow側で変更された変数をそのまま使う
+				if (ImGuizmo::Manipulate(
+					&engine->GetViewMatrix().m[0][0],
+					&engine->GetProjectionMatrix().m[0][0],
+					mCurrentGizmoOperation,
+					mCurrentGizmoMode,
+					&transform.m[0][0]
+				)) {
+					float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+					ImGuizmo::DecomposeMatrixToComponents(&transform.m[0][0], matrixTranslation, matrixRotation, matrixScale);
+
+					objects[i].pos = { matrixTranslation[0], matrixTranslation[1], matrixTranslation[2] };
+					objects[i].rot = { matrixRotation[0] * kDegToRad, matrixRotation[1] * kDegToRad, matrixRotation[2] * kDegToRad };
+					objects[i].scale = { matrixScale[0], matrixScale[1], matrixScale[2] };
+				}
+			}
+		}
+#endif // _DEBUG
+
+		// --- ③ ドロップターゲットの設定 ---
+		if (ImGui::BeginDragDropTarget()) {
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+				const wchar_t* itemPath = (const wchar_t*)payload->Data;
+				auto manager = engine->GetImGuiManager();
+				if (manager && manager->onFileDrop) {
+					manager->onFileDrop(itemPath);
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+	}
+
+	ImGui::End();
+	ImGui::PopStyleVar(2);
+#endif
+}
 

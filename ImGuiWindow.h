@@ -51,6 +51,7 @@ public:
 class ImGuiZmoWindow : public ImGuiUIWindow
 {
 public:
+
     int selectedIndex = -1;
 	void update(TUFEngine* engine) override;
 	void SetObjectsIndex(int index) { selectedIndex = index; }

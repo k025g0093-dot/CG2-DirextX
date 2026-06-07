@@ -251,7 +251,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					spherePos[i],
 					sphereRot[i],
 					sphereScale[i],
-					sphereUseMonsterBall[i] ? monsterBall : uvChecker,i
+					sphereUseMonsterBall[i] ? monsterBall : uvChecker,
+					i
 					);
 			}
 

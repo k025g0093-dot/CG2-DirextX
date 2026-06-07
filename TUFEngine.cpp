@@ -86,11 +86,15 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	// --- 2. ウィンドウとレンダラーの準備 ---
 	InitWindow(name);
 
+
 #ifdef _DEBUG
 	EnableDebugLayer(); // デバッグレイヤーはデバイス作成前に有効化する
 #endif
 
 	InitializeDXGI(hwnd); // device や rootSignature などを作成する
+
+	GetSceneRtv(width, height);
+
 #ifdef _DEBUG
 	SetupInfoQueue();
 #endif
@@ -288,8 +292,11 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	config.SizePixels = 13.0f;
 	io.Fonts->AddFontDefault(&config);
 	io.Fonts->Build();
-
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	m_imguiManager = std::make_unique<ImGuiUIManager>(hwnd);
+
+
+
 
 	//ここから各種windowを宣言していきます
 
@@ -372,6 +379,10 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 }
 
 
+#pragma endregion
+
+#endif // USE_IMGUI
+
 void TUFEngine::SaveSceneObjectsToFile() {
 
 	json data;
@@ -392,10 +403,6 @@ void TUFEngine::SaveSceneObjectsToFile() {
 	file << data.dump(4);
 
 }
-
-#pragma endregion
-
-#endif // USE_IMGUI
 
 #pragma region DirectX 12 初期化関連
 
@@ -463,8 +470,9 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	assert(SUCCEEDED(hr));
 
 	rtvDescriptorHeap = CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
-
 	srvDescriptorHeap = CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+
+
 
 
 	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(swapChainResources[0].GetAddressOf()));
@@ -569,11 +577,20 @@ void TUFEngine::PreDraw() {
 	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	commandList->ResourceBarrier(1, &barrier);
 
-	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
+	//オフシーン用のバリア
+	D3D12_RESOURCE_BARRIER offScreenbarrier{};
+	offScreenbarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	offScreenbarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	offScreenbarrier.Transition.pResource = m_sceneColorResource.Get();
+	offScreenbarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	offScreenbarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+
+	commandList->ResourceBarrier(1, &barrier);
+	commandList->ResourceBarrier(1, &offScreenbarrier);
+
 	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, descriptorHeaps);
@@ -581,13 +598,18 @@ void TUFEngine::PreDraw() {
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
 		dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
-	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+	commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &dsvHandle);
+	commandList->ClearRenderTargetView(m_sceneRtvHandle, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
+	// 🌟ここから修正：描画する幅と高さを「シーンテクスチャのサイズ」基準にする
+	// まだリサイズされていなければ初期値（width/height）を使う
+	float vpWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
+	float vpHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
+
 	D3D12_VIEWPORT viewport{};
-	viewport.Width = static_cast<float>(width);
-	viewport.Height = static_cast<float>(height);
+	viewport.Width = vpWidth;       // 🌟修正
+	viewport.Height = vpHeight;     // 🌟修正
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
 	viewport.MinDepth = 0.0f;
@@ -596,22 +618,17 @@ void TUFEngine::PreDraw() {
 
 	D3D12_RECT scissorRect{};
 	scissorRect.left = 0;
-	scissorRect.right = width;
+	scissorRect.right = static_cast<LONG>(vpWidth);   // 🌟修正
 	scissorRect.top = 0;
-	scissorRect.bottom = height;
+	scissorRect.bottom = static_cast<LONG>(vpHeight); // 🌟修正
 	commandList->RSSetScissorRects(1, &scissorRect);
-
 }
 
 
 void TUFEngine::PostDraw() {
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-	D3D12_RESOURCE_BARRIER barrier{};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
 
 	for (auto& obj : m_droppedMeshes) {
 		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
@@ -619,13 +636,35 @@ void TUFEngine::PostDraw() {
 
 	RenderAllRequests();
 
+	D3D12_RESOURCE_BARRIER offScreenBarrier{};
+	offScreenBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	offScreenBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	offScreenBarrier.Transition.pResource = m_sceneColorResource.Get();
+	offScreenBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	offScreenBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	commandList->ResourceBarrier(1, &offScreenBarrier);
+
+	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
+
+	// ★ここにクリア処理を追加した方が安全です
+	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f }; // 背景を黒でクリア
+	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+
+
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 #endif // USE_IMGUI
 
 
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	commandList->ResourceBarrier(1, &barrier);
+
+	
 
 	hr = commandList->Close();
 	assert(SUCCEEDED(hr));
@@ -948,7 +987,6 @@ void TUFEngine::GrowConstantBuffer() {
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 }
 
-
 void TUFEngine::ResizeWindow(int newWidth, int newHeight) {
 	if (newWidth <= 0 || newHeight <= 0) {
 		return;
@@ -1005,12 +1043,11 @@ void TUFEngine::ResizeWindow(int newWidth, int newHeight) {
 }
 
 void TUFEngine::ResizeSceneRenderTexture(int newWidth, int newHeight) {
-
 	if (newWidth <= 0 || newHeight <= 0) {
 		return;
 	}
 
-
+	// 1. GPUが現在使っているリソースを解放する前に、処理の完了をしっかり待つ
 	m_fenceValue++;
 	commandQueue->Signal(m_fence.Get(), m_fenceValue);
 	if (m_fence->GetCompletedValue() < m_fenceValue) {
@@ -1018,53 +1055,68 @@ void TUFEngine::ResizeSceneRenderTexture(int newWidth, int newHeight) {
 		WaitForSingleObject(m_fenceEvent, INFINITE);
 	}
 
-	width = newWidth;
-	height = newHeight;
+	// 2. 🌟超重要：ウィンドウ用の width/height ではなく、シーンテクスチャ用のサイズ変数を更新する！
+	m_sceneTextureWidth = newWidth;
+	m_sceneTextureHeight = newHeight;
 
-#ifdef USE_IMGUI
-	ImGui_ImplDX12_Shutdown(); // ← Invalidate/Createの代わり
-	ImGui_ImplWin32_Shutdown();
-#endif
+	// 3. 古いシーンテクスチャを一度リセットし、新しいサイズでRTVとSRVを作り直す
+	m_sceneColorResource.Reset();
+	GetSceneRtv(m_sceneTextureWidth, m_sceneTextureHeight);
 
-	// GPUがbackbufferを使い終わるまで待つ
-
-	swapChainResources[0].Reset();
-	swapChainResources[1].Reset();
-
-	swapChain->ResizeBuffers(
-		2,
-		width,
-		height,
-		DXGI_FORMAT_R8G8B8A8_UNORM,
-		0
-	);
-
-	// RTVを再作成する
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle =
-		rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	rtvHandles[0] = rtvStartHandle;
-	hr = swapChain->GetBuffer(0, IID_PPV_ARGS(swapChainResources[0].GetAddressOf()));
-	assert(SUCCEEDED(hr));
-	device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
-	rtvHandles[1].ptr = rtvHandles[0].ptr +
-		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	hr = swapChain->GetBuffer(1, IID_PPV_ARGS(swapChainResources[1].GetAddressOf()));
-	assert(SUCCEEDED(hr));
-	device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
-
-	CreateDepthStencilTextureResource(width, height);
-
-#ifdef USE_IMGUI
-	InitializeImGui(hwnd);
-#endif
-
-
-
+	// 4. カラーバッファのサイズに合わせて、深度バッファも同じサイズで作り直す
+	// （これを行わないと、サイズ不一致で3D描画時にエラーが出ます）
+	CreateDepthStencilTextureResource(m_sceneTextureWidth, m_sceneTextureHeight);
 }
 
-void TUFEngine::GetSceneTextureGpuHandle(D3D12_GPU_DESCRIPTOR_HANDLE& handle) {
+void TUFEngine::GetSceneRtv(int32_t width,
+	int32_t height) {
 
-	handle = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	D3D12_RESOURCE_DESC desc{};
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = 1;
+	desc.DepthOrArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	desc.SampleDesc.Count = 1;
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+	D3D12_CLEAR_VALUE clearValue{};
+	clearValue.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	clearValue.Color[0] = 0.05f;
+	clearValue.Color[1] = 0.12f;
+	clearValue.Color[2] = 0.25f;
+	clearValue.Color[3] = 1.0f;
+
+	m_sceneRtvDescriptorHeap.Reset();
+	hr = device->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&desc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,  // ← RENDER_TARGET
+		&clearValue,  // ← clearValue を渡す（nullptrは禁止）
+		IID_PPV_ARGS(m_sceneColorResource.GetAddressOf()));
+	assert(SUCCEEDED(hr));
+
+	m_sceneRtvDescriptorHeap = CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1, false);
+	m_sceneRtvHandle = m_sceneRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	device->CreateRenderTargetView(m_sceneColorResource.Get(), nullptr, m_sceneRtvHandle);
+
+	// SRV作成
+	UINT descriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	UINT srvIndex = 100;
+	m_sceneSrvCpuHandle.ptr = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + descriptorSize * srvIndex;
+	m_sceneSrvGpuHandle.ptr = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + descriptorSize * srvIndex;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Texture2D.MipLevels = 1;
+	device->CreateShaderResourceView(m_sceneColorResource.Get(), &srvDesc, m_sceneSrvCpuHandle);
 }
 
 void TUFEngine::BeginSceneRender() {
