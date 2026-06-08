@@ -3,24 +3,6 @@
         {
             "modelPath": "resources/asset\\cube/cube.obj",
             "position": [
-                9.98162841796875,
-                -3.109893798828125,
-                44.739280700683594
-            ],
-            "rotation": [
-                0.0,
-                -0.0,
-                0.0
-            ],
-            "scale": [
-                2.4001615047454834,
-                2.094684600830078,
-                60.3117561340332
-            ]
-        },
-        {
-            "modelPath": "resources/asset\\cube/cube.obj",
-            "position": [
                 -8.116000175476074,
                 1.9730000495910645,
                 -18.388065338134766
@@ -39,7 +21,7 @@
         {
             "modelPath": "resources/asset\\cube/cube.obj",
             "position": [
-                -24.871387481689453,
+                -36.67100143432617,
                 -10.085270881652832,
                 37.804840087890625
             ],
@@ -55,25 +37,61 @@
             ]
         },
         {
-            "modelPath": "resources//axis.obj",
+            "modelPath": "resources/asset\\cube/cube.obj",
             "position": [
+                -39.20000076293945,
                 0.0,
-                0.0,
-                -12.699999809265137
+                0.0
             ],
             "rotation": [
-                -1.44704270362854,
-                -0.6207286715507507,
-                3.0006110668182373
+                0.0,
+                0.0,
+                0.0
             ],
             "scale": [
-                1.0,
-                1.0000019073486328,
-                1.0000001192092896
+                10.0,
+                0.20999999344348907,
+                50.0
             ]
         },
         {
-            "modelPath": "resources/asset\\cube/cube.obj",
+            "modelPath": "resources/asset\\monster/Alien Animal.obj",
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                -0.1599999964237213,
+                -1.9299999475479126,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        {
+            "modelPath": "resources/asset\\monster/Alien Animal.obj",
+            "position": [
+                -51.20000076293945,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                0.009999999776482582,
+                1.0
+            ]
+        },
+        {
+            "modelPath": "resources//suzanne.obj",
             "position": [
                 0.0,
                 0.0,
@@ -81,7 +99,7 @@
             ],
             "rotation": [
                 0.0,
-                0.0,
+                -2.869999885559082,
                 0.0
             ],
             "scale": [

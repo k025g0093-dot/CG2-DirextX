@@ -99,8 +99,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	SetupInfoQueue();
 #endif
 
-	// --- 3. 描画ルールの構築 ---
-	// InitializeDXGI で作成した device と rootSignature を使って PSO を作る
+
 	pipelineState = CreatePipelineStateDesc(device.Get(), rootSignature, hr);
 
 #ifdef USE_IMGUI
