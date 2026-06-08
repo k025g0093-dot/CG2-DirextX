@@ -3,7 +3,7 @@
         {
             "modelPath": "resources/asset\\cube/cube.obj",
             "position": [
-                -8.116000175476074,
+                -1.315999984741211,
                 1.9730000495910645,
                 -18.388065338134766
             ],
@@ -52,60 +52,6 @@
                 10.0,
                 0.20999999344348907,
                 50.0
-            ]
-        },
-        {
-            "modelPath": "resources/asset\\monster/Alien Animal.obj",
-            "position": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "rotation": [
-                -0.1599999964237213,
-                -1.9299999475479126,
-                0.0
-            ],
-            "scale": [
-                1.0,
-                1.0,
-                1.0
-            ]
-        },
-        {
-            "modelPath": "resources/asset\\monster/Alien Animal.obj",
-            "position": [
-                -51.20000076293945,
-                0.0,
-                0.0
-            ],
-            "rotation": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "scale": [
-                1.0,
-                0.009999999776482582,
-                1.0
-            ]
-        },
-        {
-            "modelPath": "resources//suzanne.obj",
-            "position": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "rotation": [
-                0.0,
-                -2.869999885559082,
-                0.0
-            ],
-            "scale": [
-                1.0,
-                1.0,
-                1.0
             ]
         }
     ]

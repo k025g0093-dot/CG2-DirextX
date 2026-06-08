@@ -50,8 +50,14 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
 	if (begin("Scene")) {
 
+		// 🌟全体のパディング（内側の余白）を少し広げる
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
+
 		if (ImGui::CollapsingHeader("Light Setting")) {
 			LightManager* lm = LightManager::GetInstance();
+
+			// ライト設定の内側に少し余白
+			ImGui::Dummy(ImVec2(0.0f, 2.0f));
 
 			if (ImGui::CollapsingHeader("Global Light")) {
 				DirectionalLight global = lm->GetGlobalLight();
@@ -61,6 +67,8 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 				changed |= ImGui::DragFloat("Intensity", &global.intensity, 0.01f, 0.0f, 10.0f);
 				if (changed) lm->SetGlobalLight(global);
 			}
+
+			ImGui::Spacing(); // グローバルと個別ライトの間に隙間
 
 			// 個別ライト一覧
 			auto ids = lm->GetPerObjectIds();
@@ -75,6 +83,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 					changed |= ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
 					if (changed) lm->SetPerObjectLight(id, light);
 
+					ImGui::Spacing(); // ボタンの前に少し隙間
 					if (ImGui::Button("Reset to Global")) {
 						lm->ClearPerObjectLight(id);
 						ImGui::PopID();
@@ -83,40 +92,62 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 					ImGui::PopID();
 				}
 			}
+			ImGui::Dummy(ImVec2(0.0f, 4.0f)); // ヘッダーが閉じる前の余白
 		}
 
+		// 🌟ライト設定とオブジェクト一覧の境界をはっきりさせる大きな余白
+		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
+		// オブジェクト一覧
 		auto& objects = engine->GetDroppedMeshes();
 		for (int i = 0; i < (int)objects.size(); i++) {
 			ImGui::PushID(i);
 
+			// オブジェクト名
 			ImGui::Text(objects[i].name.c_str());
 			ImGui::SameLine();
 
+			// 選択ボタン
 			if (ImGui::Button("Select")) {
 				for (int j = 0; j < (int)objects.size(); j++) {
 					objects[j].isSelected = false;
 				}
 				objects[i].isSelected = true;
 			}
+
+			// 選択状態のバッジ表示
+			if (objects[i].isSelected) {
+				ImGui::SameLine();
+				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Selected]");
+			}
+
+			// トランスフォーム情報
 			if (ImGui::CollapsingHeader("ObjectTransform")) {
-				if (objects[i].isSelected) {
-					ImGui::SameLine();
-					ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Selected]");
-				}
+				ImGui::Dummy(ImVec2(0.0f, 2.0f)); // 内側の微調整
 				ImGui::DragFloat3("Position", &objects[i].pos.x, 0.1f);
 				ImGui::DragFloat3("Rotation", &objects[i].rot.x, 0.01f);
 				ImGui::DragFloat3("Scale", &objects[i].scale.x, 0.01f, 0.01f, 10.0f);
+				ImGui::Dummy(ImVec2(0.0f, 2.0f));
 			}
+
+			ImGui::Spacing(); // 削除ボタンの前に余白
 			if (ImGui::Button("Delete")) {
 				engine->RemoveDroppedMesh(i);
 				ImGui::PopID();
 				break;
 			}
+
+			// 🌟オブジェクトごとの区切りをゆったりさせる
+			ImGui::Dummy(ImVec2(0.0f, 6.0f));
 			ImGui::Separator();
+			ImGui::Dummy(ImVec2(0.0f, 6.0f));
+
 			ImGui::PopID();
 		}
+
+		ImGui::PopStyleVar(); // スタイル設定を元に戻す
 		end();
 	}
 #endif
@@ -135,16 +166,16 @@ void ImGuiZmoWindow::update(TUFEngine* engine) {
 	if (ImGui::IsKeyPressed(ImGuiKey_S)) mCurrentGizmoOperation = ImGuizmo::SCALE;
 
 	// UIの表示（ここからギズモの直接描画コードは全部消す！）
-	if (begin("Gizmo Settings")) {
-		if (mCurrentGizmoOperation != ImGuizmo::SCALE) {
-			if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
-				mCurrentGizmoMode = ImGuizmo::LOCAL;
-			ImGui::SameLine();
-			if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
-				mCurrentGizmoMode = ImGuizmo::WORLD;
-		}
-		end();
-	}
+	//if (begin("Gizmo Settings")) {
+	//	if (mCurrentGizmoOperation != ImGuizmo::SCALE) {
+	//		if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+	//			mCurrentGizmoMode = ImGuizmo::LOCAL;
+	//		ImGui::SameLine();
+	//		if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+	//			mCurrentGizmoMode = ImGuizmo::WORLD;
+	//	}
+	//	end();
+	//}
 #endif
 }
 
