@@ -197,26 +197,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-			//t += 0.016f;
-			//for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-			//	waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 30.0f) * waveStrength;
-			//}
+			t += 0.016f;
+			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
+				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 30.0f) * waveStrength;
+			}
 
-			//// 右端から別の波
-			//for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-			//	waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 2, gz)] = sinf(t * 20.0f) * waveStrength;
-			//}
+			// 右端から別の波
+			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
+				waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 2, gz)] = sinf(t * 20.0f) * waveStrength;
+			}
 
-			//// 中心点から円形に広がる波
-			//waveGrid.addSource(cubeCountX / 2, cubeCountZ / 2, sinf(t * 15.0f) * waveStrength);
+			// 中心点から円形に広がる波
+			waveGrid.addSource(cubeCountX / 2, cubeCountZ / 2, sinf(t * 15.0f) * waveStrength);
 
-			//// 上端から
-			//for (int gx = 1; gx < cubeCountX - 1; gx++) {
-			//	waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
-			//}
-			//waveGrid.update();
+			// 上端から
+			for (int gx = 1; gx < cubeCountX - 1; gx++) {
+				waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
+			}
+			waveGrid.update();
 
-			//waveGrid.setObjectWall(engine->GetDroppedMeshes());
+			waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
 			//if (frameIndex % 60 == 0) {
 			//	waveLog << frameIndex;
@@ -269,13 +269,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					uvChecker);
 			}
 
-			engine->DrawSprite(
-				spritePos,
-				720 * spriteScale.x, 360 * spriteScale.y,
-				spriteRot,
-				{ 1, 1, 1 },
-				{ 1, 1, 1, 1 },
-				uvChecker);
+			//engine->DrawSprite(
+			//	spritePos,
+			//	720 * spriteScale.x, 360 * spriteScale.y,
+			//	spriteRot,
+			//	{ 1, 1, 1 },
+			//	{ 1, 1, 1, 1 },
+			//	uvChecker);
 
 			for (int iz = 0; iz < cubeCountZ; iz++) {
 				for (int ix = 0; ix < cubeCountX; ix++) {
@@ -292,7 +292,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					};
 				}
 			}
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 
