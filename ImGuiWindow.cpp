@@ -164,18 +164,6 @@ void ImGuiZmoWindow::update(TUFEngine* engine) {
 	if (ImGui::IsKeyPressed(ImGuiKey_T)) mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
 	if (ImGui::IsKeyPressed(ImGuiKey_R)) mCurrentGizmoOperation = ImGuizmo::ROTATE;
 	if (ImGui::IsKeyPressed(ImGuiKey_S)) mCurrentGizmoOperation = ImGuizmo::SCALE;
-
-	// UIの表示（ここからギズモの直接描画コードは全部消す！）
-	//if (begin("Gizmo Settings")) {
-	//	if (mCurrentGizmoOperation != ImGuizmo::SCALE) {
-	//		if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
-	//			mCurrentGizmoMode = ImGuizmo::LOCAL;
-	//		ImGui::SameLine();
-	//		if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
-	//			mCurrentGizmoMode = ImGuizmo::WORLD;
-	//	}
-	//	end();
-	//}
 #endif
 }
 
@@ -184,7 +172,6 @@ void ImGuiZmoWindow::update(TUFEngine* engine) {
 
 // --- ImGuiWindow.cpp の最後に追記 ---
 
-
 void ImGuiViewportWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -192,31 +179,35 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 	if (ImGui::Begin("Viewport", nullptr,
 		ImGuiWindowFlags_NoScrollbar |
-		ImGuiWindowFlags_NoScrollWithMouse )) {
+		ImGuiWindowFlags_NoScrollWithMouse)) {
 
 		// --- ① シーン（ゲーム画面）の描画 ---
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+
+		// 🌟重要：タイトルバーを排除した、画像が描画される正確なスクリーン左上座標を取得
+		ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
+
 		ImTextureID sceneTextureId = (ImTextureID)engine->GetSceneSrvGpuHandle().ptr;
-		
+
 		ImGui::Image(
 			sceneTextureId,
 			viewportSize,
 			ImVec2(0.0f, 0.0f),
 			ImVec2(1.0f, 1.0f),
 			ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // Tint（画像の色：白＝そのまま）
-			ImVec4(0.0f, 0.0f, 0.0f, 1.0f)  // Border（枠線の色：透明）🌟これを追加
+			ImVec4(0.0f, 0.0f, 0.0f, 0.0f)  // 🌟Border（枠線の色：透明。ここが1.0fで黒枠になると1ピクセルズレる原因になります）
 		);
-		
+
 		// --- ② ギズモ（ImGuizmo）の描画 ---
 #ifdef _DEBUG
 		auto& objects = engine->GetDroppedMeshes();
 		if (!objects.empty()) {
+			ImGuizmo::BeginFrame();
 			// 現在のViewportウィンドウに対して描画を指示
 			ImGuizmo::SetDrawlist();
 
-			// ウィンドウの左上座標を取得して、ギズモの有効範囲をこの枠内に制限する！
-			ImVec2 windowPos = ImGui::GetWindowPos();
-			ImGuizmo::SetRect(windowPos.x, windowPos.y, viewportSize.x, viewportSize.y);
+			// 🌟修正：windowPosの代わりに、上で取得した画像用の正確な座標（imageScreenPos）を渡す
+			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
 
 			constexpr float kDegToRad = 3.1415926535f / 180.0f;
 

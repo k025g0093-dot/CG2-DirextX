@@ -6,7 +6,7 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     m_gridW = gridW;
     m_gridH = gridH;
 
-    // ★ 実頂点数は W*H だけ（元の約1/6）
+    // 実頂点数は W*H
     m_vertexCount = (uint32_t)(gridW * gridH);
     m_indexCount = (uint32_t)((gridW - 1) * (gridH - 1) * 6);
 
@@ -24,7 +24,7 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     m_vertexBufferView.StrideInBytes = sizeof(VertexData);
 
     // -------------------------------------------------------
-    // ★ インデックスバッファ（初回のみ書いてあとは触らない）
+    // インデックスバッファ（初回のみ書いてあとは触らない）
     // -------------------------------------------------------
     m_indexBuffer = CreateBufferResource(
         engine->GetDevice(), sizeof(uint32_t) * m_indexCount);
@@ -48,7 +48,6 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
             m_mappedIndex[ii++] = br;
         }
     }
-    // インデックスは変わらないのでUnmapしてOK
     m_indexBuffer->Unmap(0, nullptr);
     m_mappedIndex = nullptr;
 
@@ -57,18 +56,25 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
     // -------------------------------------------------------
-    // マテリアル・ライトバッファ（元のまま）
+    // ★ マテリアルバッファ（動的更新のため Unmap せずに保持する）
     // -------------------------------------------------------
     m_materialBuffer = CreateBufferResource(engine->GetDevice(), sizeof(Material));
-    Material* materialData = nullptr;
-    m_materialBuffer->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-    materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    materialData->enableLighting = true;
-	materialData->enableNormalMap = 0;
-    materialData->uvTransform = MakeIdentity4x4();
-    m_materialBuffer->Unmap(0, nullptr);
+    if (!m_materialBuffer) return false;
 
+    // 🌟頂点バッファと同様に、メンバ変数（m_mappedMaterial）にアドレスを固定する
+    m_materialBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_mappedMaterial));
+
+    // 初期値の設定
+    m_mappedMaterial->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    m_mappedMaterial->enableLighting = 1; // シェーダーのint型に合わせる
+    m_mappedMaterial->enableNormalMap = 0;
+    m_mappedMaterial->uvTransform = MakeIdentity4x4(); // 初期状態は単位行列
+
+    // -------------------------------------------------------
+    // ライトバッファ（元のまま）
+    // -------------------------------------------------------
     m_lightBuffer = CreateBufferResource(engine->GetDevice(), sizeof(DirectionalLight));
+    if (!m_lightBuffer) return false;
     DirectionalLight* lightData = nullptr;
     m_lightBuffer->Map(0, nullptr, reinterpret_cast<void**>(&lightData));
     lightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -79,13 +85,22 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     return true;
 }
 
+// 🌟新設：外部（ImGuiやUpdate処理）からUVのタイリング・回転・移動を変更するための関数
+void DynamicMeshModel::UpdateUVTransform(const Vector3& uvScale, float uvRotation, const Vector3& uvTranslation) {
+    if (!m_mappedMaterial) return;
+
+    // 以前ギズモでも使用した MakeAffineMatrix を使って、UV用のトランスフォーム行列を計算
+    // ※UVは2次元なので、回転はZ軸（3番目の引数）に適用します
+    m_mappedMaterial->uvTransform = MakeAffineMatrix(uvScale, { 0.0f, 0.0f, uvRotation }, uvTranslation);
+}
+
 void DynamicMeshModel::SyncFrom(const DynamicMesh& mesh) {
     if (!m_mappedData) return;
 
     auto& verts = mesh.getVertices();
     auto& normals = mesh.getNormals();
 
-    // ★ インデックス展開なし・W*H 頂点をそのまま書くだけ
+    // インデックス展開なし・W*H 頂点をそのまま書くだけ
     for (int i = 0; i < (int)m_vertexCount; i++) {
         int idx = i * 3;
         m_mappedData[i].position = { verts[idx], verts[idx + 1], verts[idx + 2], 1.0f };
@@ -115,7 +130,7 @@ void DynamicMeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex
     cmdList->SetGraphicsRootDescriptorTable(2, handle);
     cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 
-    // ★ インデックスバッファをセットして DrawIndexedInstanced で描画
+    // インデックスバッファをセットして DrawIndexedInstanced で描画
     cmdList->IASetIndexBuffer(&m_indexBufferView);
     cmdList->DrawIndexedInstanced(m_indexCount, 1, 0, 0, 0);
 }
