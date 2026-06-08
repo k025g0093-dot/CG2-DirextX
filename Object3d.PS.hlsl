@@ -64,7 +64,7 @@ PixelShaderOutput main(VertexShaderOutput input)
             normal = normalize(mul(sampledNormal, TBN));
       }
 
-      if (gMaterial.enableLighting != 0 && gMaterial.enableLighting != -1)
+      if (gMaterial.enableLighting != 0)
       {
             float NdotL = dot(normal, -normalize(gDirectionalLight.direction));
             float cos = pow(NdotL * 0.5f + 0.5f, 2.0f);
