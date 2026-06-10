@@ -48,6 +48,27 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
             m_mappedIndex[ii++] = br;
         }
     }
+
+
+    for (int y = 0; y < gridH; y++) {
+        for (int x = 0; x < gridW; x++) {
+            int i = y * gridW + x;
+            m_mappedData[i].position = {
+                ((float)x - gridW / 2.0f),  // X
+                0.0f,                         // Y（UpdateHeights が毎フレーム更新）
+                ((float)y - gridH / 2.0f),  // Z
+                1.0f
+            };
+            m_mappedData[i].texcoord = {
+                (float)x / (float)(gridW - 1),
+                (float)y / (float)(gridH - 1)
+            };
+            m_mappedData[i].normal = { 0.0f, 1.0f, 0.0f };
+            m_mappedData[i].tangent = { 1.0f, 0.0f, 0.0f };
+        }
+    }
+
+
     m_indexBuffer->Unmap(0, nullptr);
     m_mappedIndex = nullptr;
 
@@ -94,22 +115,31 @@ void DynamicMeshModel::UpdateUVTransform(const Vector3& uvScale, float uvRotatio
     m_mappedMaterial->uvTransform = MakeAffineMatrix(uvScale, { 0.0f, 0.0f, uvRotation }, uvTranslation);
 }
 
-void DynamicMeshModel::SyncFrom(const DynamicMesh& mesh) {
+void DynamicMeshModel::UpdateHeights(const DynamicMesh& mesh) {
     if (!m_mappedData) return;
 
     auto& verts = mesh.getVertices();
-    auto& normals = mesh.getNormals();
 
-    // インデックス展開なし・W*H 頂点をそのまま書くだけ
-    for (int i = 0; i < (int)m_vertexCount; i++) {
-        int idx = i * 3;
-        m_mappedData[i].position = { verts[idx], verts[idx + 1], verts[idx + 2], 1.0f };
-        m_mappedData[i].normal = { normals[idx], normals[idx + 1], normals[idx + 2] };
-        m_mappedData[i].texcoord = {
-            (verts[idx] + m_gridW / 2.0f) / (float)m_gridW,
-            (verts[idx + 2] + m_gridH / 2.0f) / (float)m_gridH
-        };
-        m_mappedData[i].tangent = { 1.0f, 0.0f, 0.0f };
+    for (int y = 0; y < m_gridH; y++) {
+        for (int x = 0; x < m_gridW; x++) {
+            int i = y * m_gridW + x;
+            int idx = i * 3;
+
+            m_mappedData[i].position.y = verts[idx + 1];
+
+            // 隣接頂点から法線を計算
+            auto getH = [&](int xi, int yi) -> float {
+                xi = std::clamp(xi, 0, m_gridW - 1);
+                yi = std::clamp(yi, 0, m_gridH - 1);
+                return verts[(yi * m_gridW + xi) * 3 + 1];
+                };
+
+            float nx = getH(x - 1, y) - getH(x + 1, y);
+            float ny = 2.0f;
+            float nz = getH(x, y - 1) - getH(x, y + 1);
+            float len = sqrtf(nx * nx + ny * ny + nz * nz);
+            m_mappedData[i].normal = { nx / len, ny / len, nz / len };
+        }
     }
 }
 

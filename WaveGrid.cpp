@@ -80,14 +80,18 @@ void WaveGrid::setObjectWall(const std::vector<SceneObject>& objects) {
     std::fill(mWall.begin(), mWall.end(), false);
     for (const auto& object : objects) {
 
+        // ===== Y軸チェック追加 =====
+        // 波のシミュレーション平面（Y=0）とオブジェクトが交差しているか
+        float halfY = object.scale.y ;
+        if (object.pos.y - halfY > 0.0f || object.pos.y + halfY < 0.0f) {
+            continue; // 波の平面と交差していないのでスキップ
+        }
+        // ===========================
+
         int centerX = static_cast<int>(object.pos.x / mDeltaX + mWidth * 0.5f);
         int centerZ = static_cast<int>(object.pos.z / mDeltaX + mHeight * 0.5f);
         int halfX = static_cast<int>(object.scale.x / mDeltaX);
         int halfZ = static_cast<int>(object.scale.z / mDeltaX);
-
-        // 最低でも1マスは壁にする
-        //halfX = std::max(0, halfX);
-        //halfZ = std::max(0, halfZ);
 
         int minX = centerX - halfX;
         int maxX = centerX + halfX;

@@ -13,7 +13,7 @@ struct Vector3;  // 🌟追加：UVのスケールや移動に使うベクトル
 class DynamicMeshModel {
 public:
     bool Init(TUFEngine* engine, int gridW, int gridH);
-    void SyncFrom(const DynamicMesh& mesh);
+    void UpdateHeights(const DynamicMesh& mesh);
     void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex);
 
     // 🌟追加：外部からUVのタイリング・回転・移動量を指定して行列を更新する関数

@@ -202,18 +202,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 30.0f) * waveStrength;
 			}
 
-			// 右端から別の波
-			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-				waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 2, gz)] = sinf(t * 20.0f) * waveStrength;
-			}
+			//// 右端から別の波
+			//for (int gz = 1; gz < cubeCountZ - 1; gz++) {
+			//	waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 2, gz)] = sinf(t * 20.0f) * waveStrength;
+			//}
 
-			// 中心点から円形に広がる波
-			waveGrid.addSource(cubeCountX / 2, cubeCountZ / 2, sinf(t * 15.0f) * waveStrength);
+			//// 中心点から円形に広がる波
+			//waveGrid.addSource(cubeCountX / 2, cubeCountZ / 2, sinf(t * 15.0f) * waveStrength);
 
-			// 上端から
-			for (int gx = 1; gx < cubeCountX - 1; gx++) {
-				waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
-			}
+			//// 上端から
+			//for (int gx = 1; gx < cubeCountX - 1; gx++) {
+			//	waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
+			//}
 			waveGrid.update();
 
 			waveGrid.setObjectWall(engine->GetDroppedMeshes());

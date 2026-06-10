@@ -937,7 +937,7 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 		m_dynamicMeshModel->Init(this, mesh.getGridW(), mesh.getGridH());
 	}
 
-	m_dynamicMeshModel->SyncFrom(mesh);
+	m_dynamicMeshModel->UpdateHeights(mesh);
 
 
 	commandList->SetGraphicsRootSignature(rootSignature.Get());

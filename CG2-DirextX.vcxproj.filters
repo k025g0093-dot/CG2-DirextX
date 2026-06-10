@@ -85,6 +85,9 @@
     <Filter Include="ソース ファイル\TUFengine\ライティングの設定を行うクラス">
       <UniqueIdentifier>{c1e7bbb4-7929-4348-b8e3-1e6782a46439}</UniqueIdentifier>
     </Filter>
+    <Filter Include="フーリエ変換から波へ">
+      <UniqueIdentifier>{8c25628c-331d-45bc-a3d3-43f3ffbaf1e7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -294,9 +297,6 @@
     <ClInclude Include="ImGuiUIManager.h">
       <Filter>ソース ファイル\TUFengine\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="DynamicMeshModel.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
-    </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>ソース ファイル\TUFengine\Camera</Filter>
     </ClInclude>
@@ -332,6 +332,9 @@
     </ClInclude>
     <ClInclude Include="LightManager.h">
       <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
+    </ClInclude>
+    <ClInclude Include="DynamicMeshModel.h">
+      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
