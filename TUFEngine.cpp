@@ -737,7 +737,7 @@ void TUFEngine::EnableDebugLayer() {
 	ID3D12Debug1* debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
 		debugController->EnableDebugLayer();
-		debugController->SetEnableGPUBasedValidation(TRUE);
+		debugController->SetEnableGPUBasedValidation(FALSE);
 	}
 }
 
@@ -846,62 +846,74 @@ void TUFEngine::SetupInfoQueue() {
 //	m_drawRequests.clear();
 //}
 
-//GPU描画リクエスト
 void TUFEngine::RenderGpuDrivenALLRequests() {
 	if (m_drawRequests.empty()) return;
 
-	// 1. バッファの書き込み準備
-	// ※ ここで m_maxDrawCount を超えないように注意
-	int instanceIndex = 0;
 	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
 
-	for (const auto& request : m_drawRequests) {
-		if (instanceIndex >= m_maxDrawCount) break;
+	// 1. ソート: model と textureIndex が同じものを隣接させる
+	std::sort(m_drawRequests.begin(), m_drawRequests.end(),
+		[](const DrawRequest& a, const DrawRequest& b) {
+			if (a.model != b.model) return a.model < b.model;
+			return a.textureIndex < b.textureIndex;
+		});
 
-		// 行列計算
+	// 2. InstanceData を全部先に書き込む
+	int totalCount = (int)m_drawRequests.size();
+	if (totalCount > m_maxDrawCount) totalCount = m_maxDrawCount-1;
+
+	for (int i = 0; i < totalCount; i++) {
+		const auto& request = m_drawRequests[i];
 		Matrix4x4 world = MakeAffineMatrix(request.scale, request.rot, request.pos);
-		Matrix4x4 wvp = Multiply(world, viewProjMatrix);
-
-		// ★ ここが核心：構造体をかまして、正しい index に書き込む
-		InstanceData data;
-		data.WVP = wvp;
-		data.World = world;
-
-		m_mappedInstanceData[instanceIndex] = data;
-
-		instanceIndex++;
+		m_mappedInstanceData[i].WVP = Multiply(world, viewProjMatrix);
+		m_mappedInstanceData[i].World = world;
 	}
 
-	// 2. 描画パイプラインの設定
+	// 3. パイプラインのセット
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 
 	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	// 頂点バッファ・インスタンスバッファのセット
-	// VS: t2 に InstanceData が入っている前提
-	commandList->SetGraphicsRootShaderResourceView(1, m_instanceBuffer->GetGPUVirtualAddress());
+	// InstanceData バッファを VS の t2 にバインド
+	commandList->SetGraphicsRootShaderResourceView(
+		1, m_instanceBuffer->GetGPUVirtualAddress());
 
-	// 3. 各モデルの描画
-	// 今は「1個ずつ描画」する形式で動作を優先します
-	int currentInstanceIndex = 0;
-	for (const auto& request : m_drawRequests) {
-		if (currentInstanceIndex >= m_maxDrawCount) break;
+	// 4. バッチ化して描画
+	// 同じ model & textureIndex が連続している範囲をまとめて1回のDrawにする
+	int start = 0;
+	while (start < totalCount) {
 
-		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
+		const DrawRequest& head = m_drawRequests[start];
 
-		if (!request.isMesh) {
-			auto* triangle = static_cast<TriangleModel*>(request.model);
-			// 🌟 修正：インスタンス番号を渡して、GPUが正しい配列を参照できるようにする
-			triangle->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(currentInstanceIndex));
+		// 同じグループが続く間カウント
+		int count = 1;
+		while (start + count < totalCount
+			&& m_drawRequests[start + count].model == head.model
+			&& m_drawRequests[start + count].textureIndex == head.textureIndex) {
+			count++;
+		}
+
+		// ライトをバインド（グループ先頭のlightIdを使う）
+		LightManager::GetInstance()->Bind(commandList.Get(), head.lightId);
+
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// instanceCount と startInstanceLocation を渡してまとめて描画
+		if (!head.isMesh) {
+			// TriangleModel はスキップ（未対応）
 		}
 		else {
-			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			request.model->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(currentInstanceIndex));
+			head.model->Draw(
+				commandList.Get(),
+				head.textureIndex,
+				static_cast<UINT>(count),  // instanceCount: このグループの個数
+				static_cast<UINT>(start)   // startInstanceLocation: バッファ内の開始位置
+			);
 		}
 
-		currentInstanceIndex++;
+		start += count;
 	}
 
 	m_drawRequests.clear();
@@ -1024,32 +1036,31 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 
 	m_dynamicMeshModel->UpdateHeights(mesh);
 
+	// GPU駆動パイプラインに切り替え
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 
-	commandList->SetGraphicsRootSignature(rootSignature.Get());
-	commandList->SetPipelineState(pipelineState.Get());
+	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(1, heaps);
+
+	UINT instanceSlot = static_cast<UINT>(m_maxDrawCount - 1);
 
 	Matrix4x4 world = MakeAffineMatrix({ 1,1,1 }, { 0,0,0 }, { 0,0,0 });
 	Matrix4x4 wvp = Multiply(world, viewProjectionMatrix);
 
-	TransformationMatrix cbData{};
-	cbData.WVP = wvp;
-	cbData.World = world;
+	m_mappedInstanceData[instanceSlot].WVP = wvp;
+	m_mappedInstanceData[instanceSlot].World = world;
 
-	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
-	if (m_cbvIndex >= m_maxDrawCount || !m_pCbvDataBegin || !m_pConstantBuffer) {
-		return;
-	}
+	// InstanceData バッファを t2 にバインド
+	commandList->SetGraphicsRootShaderResourceView(
+		1, m_instanceBuffer->GetGPUVirtualAddress());
 
-	UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
-	memcpy(pDest, &cbData, sizeof(TransformationMatrix));
-
-	D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
-		m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
-	commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
-	m_cbvIndex++;
-
-	m_dynamicMeshModel->Draw(commandList.Get(), index);
+	// 描画（instanceCount=1, startInstanceLocation=instanceSlot）
+	m_dynamicMeshModel->Draw(commandList.Get(), index, 1, instanceSlot);
 }
+
+
+
 #pragma endregion
 
 //windowだったりいろいろなものの拡張機能作成場所

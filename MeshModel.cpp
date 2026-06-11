@@ -229,17 +229,12 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 
 }
 
-void MeshModel::Draw(
-	ID3D12GraphicsCommandList* cmdList,
-	int textureIndex
-	) 
-{
-	Draw(cmdList, textureIndex, 0);
-}
+
 
 void MeshModel::Draw(
 	ID3D12GraphicsCommandList* cmdList,
 	int textureIndex,
+	UINT instanceCount,
 	UINT startInstanceLocation
 	)
 {
@@ -247,7 +242,7 @@ void MeshModel::Draw(
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
-
+	
 	bool hasNormalTexture = false;
 
 	if (textureIndex >= 0) {
@@ -281,7 +276,10 @@ void MeshModel::Draw(
 	}
 
 	cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-	cmdList->DrawInstanced(static_cast<UINT>(m_vertexCount), 1, 0, startInstanceLocation);
+
+	UINT m_indexCount = static_cast<UINT>(m_vertexCount);
+
+	cmdList->DrawInstanced(static_cast<UINT>(m_vertexCount), instanceCount, 0, 0);
 }
 
 // ⭕ 重複を排除し、X反転を正しく行うように一本化した UpdateVertices

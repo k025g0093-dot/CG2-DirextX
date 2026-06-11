@@ -43,6 +43,7 @@ public:
     virtual void Draw(
         ID3D12GraphicsCommandList* cmdList,
         int textureIndex,
+        UINT instanceCount,
         UINT startInstanceLocation) = 0;
 
 };

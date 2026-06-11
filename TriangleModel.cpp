@@ -6,7 +6,8 @@ void TriangleModel::Initialize(TUFEngine* engine) {
     m_pEngine = engine;
     ID3D12Device* device = engine->GetDevice();
 
-    const UINT maxVertices = 3 * 10000;
+    // 1つの三角形を描画するので頂点数は3
+    const UINT maxVertices = 3;
     const UINT bufferSize = sizeof(VertexData) * maxVertices;
     m_vertexCount = maxVertices;
 
@@ -17,21 +18,17 @@ void TriangleModel::Initialize(TUFEngine* engine) {
     m_vertexBufferView.StrideInBytes = sizeof(VertexData);
     m_vertexBufferView.SizeInBytes = bufferSize;
 
-    m_pWvpResource = CreateBufferResource(device, Align256(sizeof(TransformationMatrix)));
-    TransformationMatrix* wvpData = nullptr;
-    m_pWvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
-    wvpData->WVP = MakeIdentity4x4();
-    wvpData->World = MakeIdentity4x4();
-    m_pWvpResource->Unmap(0, nullptr);
+    // ★ 変更点: 個別の m_pWvpResource の初期化は不要になったため削除しました
+    // （行列はすべて TUFEngine 側のインスタンスバッファで一括管理するため）
 
-
-    // ★ Mapしたまま保持してDrawのたびに色を書き換えられるようにする
+    // マテリアルのセットアップ（Mapしたまま保持してDrawのたびに色を書き換えられるようにする）
     m_pMaterialResource = CreateBufferResource(device, Align256(sizeof(Material)));
     m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
     materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
     materialData->enableLighting = false;
     materialData->uvTransform = MakeIdentity4x4();
 
+    // ライトのセットアップ
     m_pLightResource = CreateBufferResource(device, Align256(sizeof(DirectionalLight)));
     DirectionalLight* lightData = nullptr;
     m_pLightResource->Map(0, nullptr, reinterpret_cast<void**>(&lightData));
@@ -41,22 +38,9 @@ void TriangleModel::Initialize(TUFEngine* engine) {
     m_pLightResource->Unmap(0, nullptr);
 }
 
+// ★ 変更点: 以前の個別Update関数は使用しないためコメントアウト、または削除して大丈夫です
 void TriangleModel::Update(const Vector3& pos, const Vector3& rot, const Vector3& scale) {
-    Matrix4x4 viewProjectionMatrix = m_pEngine->GetViewProjectionMatrix();
-
-    Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
-    Matrix4x4 rotateX = MakeRotateXMatrix(rot.x);
-    Matrix4x4 rotateY = MakeRotateYMatrix(rot.y);
-    Matrix4x4 rotateZ = MakeRotateZMatrix(rot.z);
-    Matrix4x4 translateMatrix = MakeTranslateMatrix(pos);
-
-    Matrix4x4 worldMatrix = Multiply(scaleMatrix,
-        Multiply(rotateX,
-            Multiply(rotateY,
-                Multiply(rotateZ, translateMatrix))));
-
-    Matrix4x4 wvpMatrix = Multiply(worldMatrix, viewProjectionMatrix);
-    SetWorldTransform(wvpMatrix, worldMatrix);
+    // 行列計算はすべて TUFEngine::RenderGpuDrivenALLRequests 側で行うため、この関数は空で問題ありません
 }
 
 void TriangleModel::UpdateVertices(const Vector3& points,
@@ -72,24 +56,15 @@ void TriangleModel::UpdateVertices(const Vector3& points,
 }
 
 void TriangleModel::SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) {
-    TransformationMatrix* wvpData = nullptr;
-    m_pWvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
-    wvpData->WVP = wvp;
-    wvpData->World = world;
-    m_pWvpResource->Unmap(0, nullptr);
+    // 個別の定数バッファは使わないため、この関数も空で問題ありません
 }
 
-void TriangleModel::Draw(ID3D12GraphicsCommandList* cmdList, int index) {
-    Draw(cmdList, index, 0);
-}
-
-
-
-// 新しい Draw 関数
+// 🌟 GPU駆動（インスタンシング対応）の Draw 関数
 void TriangleModel::Draw(
     ID3D12GraphicsCommandList* cmdList,
     int textureIndex,
-    UINT startInstanceLocation)
+    UINT instanceCount,
+    UINT startInstanceLocation) // ヘッダー（.h）の定義と引数を一致させました
 {
     if (m_vertexCount == 0 || !m_pVertexResource) return;
 
@@ -110,6 +85,5 @@ void TriangleModel::Draw(
         cmdList->SetGraphicsRootConstantBufferView(3, m_pLightResource->GetGPUVirtualAddress());
     }
 
-
-    cmdList->DrawInstanced(3, 1, 0, startInstanceLocation);
+    cmdList->DrawInstanced(3, instanceCount, 0, startInstanceLocation);
 }

@@ -2,8 +2,8 @@
 
 struct InstanceData
 {
-    row_major float4x4 WVP;
-    row_major float4x4 World;
+      row_major float4x4 WVP;
+      row_major float4x4 World;
 };
 
 StructuredBuffer<InstanceData> gInstances : register(t2);
@@ -19,7 +19,7 @@ struct VertexShaderInput
 
 VertexShaderOutput main(VertexShaderInput input, uint instanceId : SV_InstanceID)
 {
-    InstanceData instance = gInstances[instanceId];
+      InstanceData instance = gInstances[instanceId];
 
     VertexShaderOutput output;
     output.position = mul(input.position, instance.WVP);

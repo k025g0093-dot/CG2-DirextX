@@ -24,10 +24,10 @@ public:
     void SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) override;
     void SetUVTransform(const Matrix4x4& uvTransform) override;
 
-    void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex);
 
     void Draw(ID3D12GraphicsCommandList* cmdList,
         int textureIndex,
+        UINT instanceCount,
         UINT startInstanceLocation)override;
 
     int GetTextureIndex() const { return m_textureIndex; }

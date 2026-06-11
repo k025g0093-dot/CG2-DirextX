@@ -33,11 +33,10 @@ public:
         const std::string& directoryPath,
         const std::string& filename);
 
-    void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex);
-    // MeshModel.h の宣言を基底クラスに合わせる（override を付けると安全です）
     void Draw(
         ID3D12GraphicsCommandList* cmdList,
         int textureIndex,
+        UINT instanceCount,
         UINT startInstanceLocation ) override;
     MaterialData LoadMaterialTemplateFile(
         const std::string& directoryPath,

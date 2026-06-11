@@ -143,18 +143,13 @@ void DynamicMeshModel::UpdateHeights(const DynamicMesh& mesh) {
     }
 }
 
-void DynamicMeshModel::Draw(
-    ID3D12GraphicsCommandList* cmdList,
-    int textureIndex)
-{
 
-    Draw(cmdList, textureIndex, 0);
-}
 
 
 void DynamicMeshModel::Draw(
     ID3D12GraphicsCommandList* cmdList,
     int textureIndex,
+    UINT instanceCount,
     UINT startInstanceLocation) {
     if (m_indexCount == 0 || !m_vertexBuffer || !m_indexBuffer) return;
 
@@ -176,7 +171,7 @@ void DynamicMeshModel::Draw(
     cmdList->IASetIndexBuffer(&m_indexBufferView);
     cmdList->DrawIndexedInstanced(
         m_indexCount,          // インデックスの総数
-        1,                     // インスタンス数
+        instanceCount,                     // インスタンス数
         0,                     // インデックスの開始位置
         0,                     // 頂点のベース位置
         startInstanceLocation  // インスタンスIDの開始位置
