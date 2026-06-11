@@ -83,25 +83,33 @@ void TriangleModel::Draw(ID3D12GraphicsCommandList* cmdList, int index) {
     Draw(cmdList, index, 0);
 }
 
-void TriangleModel::Draw(ID3D12GraphicsCommandList* cmdList, int drawIndex, int textureIndex, const Vector4& color) {
+
+
+// 新しい Draw 関数
+void TriangleModel::Draw(
+    ID3D12GraphicsCommandList* cmdList,
+    int textureIndex,
+    UINT startInstanceLocation)
+{
     if (m_vertexCount == 0 || !m_pVertexResource) return;
 
-    // ★ 毎フレーム色を更新
-    if (materialData) {
-        materialData->color = color;
-    }
-
+    // トポロジーと頂点バッファのセット
     cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 
+    // マテリアルセット
     cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
 
+    // テクスチャセット
     if (textureIndex >= 0) {
         cmdList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetGPUHandle(textureIndex));
     }
+
+    // ライトセット
     if (m_pLightResource) {
         cmdList->SetGraphicsRootConstantBufferView(3, m_pLightResource->GetGPUVirtualAddress());
     }
 
-    cmdList->DrawInstanced(3, 1, drawIndex * 3, 0);
+
+    cmdList->DrawInstanced(3, 1, 0, startInstanceLocation);
 }

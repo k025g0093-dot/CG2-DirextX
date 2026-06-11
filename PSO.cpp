@@ -28,7 +28,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使用
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // 全シェーダーから参照可能
 	rootParameter[0].Descriptor.ShaderRegister = 0; // register(b0)に対応
-	
+
 	rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // シェーダーリソースビューを使用
 	rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 全シェーダーから参照可能
 	rootParameter[1].Descriptor.ShaderRegister = 1; // register(b0)に対応
@@ -53,7 +53,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 
 
 	//Samplerの設定
-	D3D12_STATIC_SAMPLER_DESC staticSamplers[1]={};
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
 	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;//バイリニアフィルタ
 	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;//0~1の範囲を繰り返す
 	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -160,7 +160,7 @@ ComPtr<ID3D12PipelineState> CreatePipelineStateDesc(
 	IDxcBlob* vertexShaderBlob = CompileShader(
 		L"Object3d.VS.hlsl", L"vs_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
-	
+
 	IDxcBlob* pixelShaderBlob = CompileShader(
 		L"Object3d.PS.hlsl", L"ps_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
@@ -244,7 +244,9 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	D3D12_DESCRIPTOR_RANGE descriptorRange[3] = {};
+	// t0: texture, t1: normal texture の2つだけDescriptorTable用に定義
+	// t2: InstanceData は RootSRV で直接アドレスを渡すので不要
+	D3D12_DESCRIPTOR_RANGE descriptorRange[2] = {};
 	descriptorRange[0].BaseShaderRegister = 0; // t0 texture
 	descriptorRange[0].NumDescriptors = 1;
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -255,22 +257,18 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	descriptorRange[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	descriptorRange[2].BaseShaderRegister = 2; // t2 instance data
-	descriptorRange[2].NumDescriptors = 1;
-	descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-
-	// ルートパラメータの設定（シェーダーに渡すリソースの種類を定義）
 	D3D12_ROOT_PARAMETER rootParameter[5] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0; // b0 material
 
-	rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	// 🌟 DescriptorTableからRootSRVに変更
+	// SetGraphicsRootShaderResourceView(1, m_instanceBuffer->GetGPUVirtualAddress()) で渡す
+	rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 	rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameter[1].DescriptorTable.pDescriptorRanges = &descriptorRange[2]; // t2 instance
-	rootParameter[1].DescriptorTable.NumDescriptorRanges = 1;
+	rootParameter[1].Descriptor.ShaderRegister = 2; // register(t2)
+	rootParameter[1].Descriptor.RegisterSpace = 0;
 
 	rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;

@@ -95,14 +95,18 @@ void Sprite::Resize(float w, float h) {
     m_pVertexResource->Unmap(0, nullptr);
 }
 
-void Sprite::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
+void Sprite::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex){
+
+    Draw(cmdList, textureIndex, 0);
+
+}
+
+void Sprite::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex, UINT startInstanceLocation) {
     cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
     cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
     cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
-    // ↓ これを削除！エンジン側が管理する
-    // cmdList->SetGraphicsRootConstantBufferView(1, m_pWvpResource->GetGPUVirtualAddress());
     cmdList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetGPUHandle(textureIndex));
 
-    cmdList->DrawInstanced(4, 1, 0, 0);
+    cmdList->DrawInstanced(4, 1, 0, startInstanceLocation);  // ← 修正
 }

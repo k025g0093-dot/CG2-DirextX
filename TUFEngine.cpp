@@ -517,29 +517,7 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	UINT descriptorSize =
 		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	// scene が 100 を使っているので、まずは 101 あたりを使う
-	UINT instanceSrvIndex = 101;
-
-	m_instanceSrvCpuHandle = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	m_instanceSrvCpuHandle.ptr += descriptorSize * instanceSrvIndex;
-
-	m_instanceSrvGpuHandle = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-	m_instanceSrvGpuHandle.ptr += descriptorSize * instanceSrvIndex;
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Buffer.FirstElement = 0;
-	srvDesc.Buffer.NumElements = m_maxDrawCount;
-	srvDesc.Buffer.StructureByteStride = sizeof(InstanceData);
-	srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-
-	device->CreateShaderResourceView(
-		m_instanceBuffer.Get(),
-		&srvDesc,
-		m_instanceSrvCpuHandle
-	);
+	
 
 
 	m_fenceValue = 0;
@@ -788,196 +766,146 @@ void TUFEngine::SetupInfoQueue() {
 
 #pragma region RenderRequests
 
-void TUFEngine::RenderAllRequests() {
-
-	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
-		GrowConstantBuffer();
-	}
-
-	// GPU に、このエンジンのシェーダー設定を使うように伝える
-	commandList->SetGraphicsRootSignature(rootSignature.Get());
-	commandList->SetPipelineState(pipelineState.Get());
-
-	// テクスチャ用などのディスクリプタヒープをセットする
-	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
-	commandList->SetDescriptorHeaps(1, heaps);
-
-	// 2. カメラ行列
-	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
-
-
-
-	m_cbvIndex = 0;
-	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
-	for (auto& request : m_drawRequests) {
-
-
-
-		if (m_cbvIndex >= m_maxDrawCount) {
-			break;
-		}
-
-		if (!request.model) continue;
-		if (request.isSprite) {
-			request.model->SetUVTransform(GetSpriteUVTransformMatrix());
-		}
-
-		// --- 3. WVP 行列を作成する ---
-		Matrix4x4 world;
-		Matrix4x4 wvp;
-
-
-		if (request.isSprite) {
-			world = MakeAffineMatrix(request.scale, request.rot, { request.posV2.x, request.posV2.y, 0.0f });
-			Matrix4x4 ortho = MakeOrthographicMatrix(0.0f, 0.0f, (float)width, (float)height, 0.1f, 100.0f);
-			wvp = Multiply(world, ortho); // スプライトは正射影行列を使う
-		}
-		else {
-			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
-			wvp = Multiply(world, viewProjMatrix);
-		}
-
-		TransformationMatrix cbData{};
-		cbData.WVP = wvp;
-		cbData.World = world;
-
-		if (m_pCbvDataBegin && m_pConstantBuffer) {
-			UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
-			memcpy(pDest, &cbData, sizeof(TransformationMatrix));
-
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
-				m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
-			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
-		}
-		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
-
-		// --- 6. 描画を実行する ---
-		if (!request.isMesh) {
-
-			auto* triangle = static_cast<TriangleModel*>(request.model);
-			triangle->Draw(commandList.Get(), 0, request.textureIndex, request.color);
-		}
-		else {
-			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			request.model->Draw(commandList.Get(), request.textureIndex);
-		}
-
-		m_cbvIndex++;
-	}
-
-	m_drawRequests.clear();
-}
+//void TUFEngine::RenderAllRequests() {
+//
+//	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
+//		GrowConstantBuffer();
+//	}
+//
+//	// GPU に、このエンジンのシェーダー設定を使うように伝える
+//	commandList->SetGraphicsRootSignature(rootSignature.Get());
+//	commandList->SetPipelineState(pipelineState.Get());
+//
+//	// テクスチャ用などのディスクリプタヒープをセットする
+//	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
+//	commandList->SetDescriptorHeaps(1, heaps);
+//
+//	// 2. カメラ行列
+//	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
+//
+//
+//
+//	m_cbvIndex = 0;
+//	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
+//	for (auto& request : m_drawRequests) {
+//
+//
+//
+//		if (m_cbvIndex >= m_maxDrawCount) {
+//			break;
+//		}
+//
+//		if (!request.model) continue;
+//		if (request.isSprite) {
+//			request.model->SetUVTransform(GetSpriteUVTransformMatrix());
+//		}
+//
+//		// --- 3. WVP 行列を作成する ---
+//		Matrix4x4 world;
+//		Matrix4x4 wvp;
+//
+//
+//		if (request.isSprite) {
+//			world = MakeAffineMatrix(request.scale, request.rot, { request.posV2.x, request.posV2.y, 0.0f });
+//			Matrix4x4 ortho = MakeOrthographicMatrix(0.0f, 0.0f, (float)width, (float)height, 0.1f, 100.0f);
+//			wvp = Multiply(world, ortho); // スプライトは正射影行列を使う
+//		}
+//		else {
+//			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
+//			wvp = Multiply(world, viewProjMatrix);
+//		}
+//
+//		TransformationMatrix cbData{};
+//		cbData.WVP = wvp;
+//		cbData.World = world;
+//
+//		if (m_pCbvDataBegin && m_pConstantBuffer) {
+//			UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
+//			memcpy(pDest, &cbData, sizeof(TransformationMatrix));
+//
+//			D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
+//				m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
+//			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
+//		}
+//		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
+//
+//		// --- 6. 描画を実行する ---
+//		if (!request.isMesh) {
+//
+//			auto* triangle = static_cast<TriangleModel*>(request.model);
+//			triangle->Draw(commandList.Get(), 0, request.textureIndex, request.color);
+//		}
+//		else {
+//			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//			request.model->Draw(commandList.Get(), request.textureIndex);
+//		}
+//
+//		m_cbvIndex++;
+//	}
+//
+//	m_drawRequests.clear();
+//}
 
 //GPU描画リクエスト
-void TUFEngine::RenderGpuDrivenALLRequests()
-{
-	// 描画リクエストがなければ何もしない
-	if (m_drawRequests.empty()) {
-		return;
-	}
+void TUFEngine::RenderGpuDrivenALLRequests() {
+	if (m_drawRequests.empty()) return;
 
-	// InstanceData バッファの最大数を超えそうなら、ここで拡張する
-	// まずは m_maxDrawCount と同じ数を確保しておけばOK
-	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
-		// GrowInstanceBuffer(); みたいな関数を後で作る
-		return;
-	}
-
-	assert(m_instanceBuffer);
-	assert(m_mappedInstanceData);
-	assert(m_instanceSrvGpuHandle.ptr != 0);
-	assert(gpuDrivenRootSignature);
-	assert(gpuDrivenPipelineState);
-
-	// GPU-driven 用の root signature / pipeline state を使う
-	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
-	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
-
-	// texture / normal texture / instance SRV が置いてある descriptor heap をセット
-	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
-	commandList->SetDescriptorHeaps(1, heaps);
-
-	// VS用 InstanceData StructuredBuffer を root[1] に渡す
-	// HLSL: StructuredBuffer<InstanceData> gInstances : register(t2);
-	// Root: root[1] = InstanceData SRV t2 VS
-	commandList->SetGraphicsRootDescriptorTable(1, m_instanceSrvGpuHandle);
-
-	// カメラ行列
+	// 1. バッファの書き込み準備
+	// ※ ここで m_maxDrawCount を超えないように注意
+	int instanceIndex = 0;
 	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
 
-	int instanceIndex = 0;
+	for (const auto& request : m_drawRequests) {
+		if (instanceIndex >= m_maxDrawCount) break;
 
-	for (auto& request : m_drawRequests) {
-
-		// InstanceData バッファの範囲外アクセス防止
-		if (instanceIndex >= m_maxDrawCount) {
-			break;
-		}
-
-		// 既存と同じように world / WVP を作る
-		Matrix4x4 world;
-
-		if (request.isSprite) {
-			// Sprite は2D用なので、最初は既存描画に任せてもいい
-			// GPU-driven の最初の対象から外すなら continue でOK
-			continue;
-		}
-		else {
-			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
-		}
-
+		// 行列計算
+		Matrix4x4 world = MakeAffineMatrix(request.scale, request.rot, request.pos);
 		Matrix4x4 wvp = Multiply(world, viewProjMatrix);
 
-		// VS が読む InstanceData[index] に書き込む
-		// HLSL 側:
-		//   InstanceData instance = gInstances[instanceId];
-		m_mappedInstanceData[instanceIndex].WVP = wvp;
-		m_mappedInstanceData[instanceIndex].World = world;
+		// ★ ここが核心：構造体をかまして、正しい index に書き込む
+		InstanceData data;
+		data.WVP = wvp;
+		data.World = world;
 
-		// PS側の Light をセット
-		// root[3] = Light CBV b1 PS
-		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
+		m_mappedInstanceData[instanceIndex] = data;
 
-		// ここから実際に描画
-		// 重要:
-		//   既存の Draw() は StartInstanceLocation = 0 の可能性が高い。
-		//   なので最初は instanceIndex == 0 の1個表示テスト向け。
-		if (!request.isMesh) {
-			if (!m_temporarySpheres) {
-				continue;
-			}
-
-			// Sphere::Draw() の中で
-			// root[0] material
-			// root[2] texture
-			// DrawIndexedInstanced(..., StartInstanceLocation=0)
-			// をやってくれる想定
-			m_temporarySpheres->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(instanceIndex));
-		}
-		else {
-			if (!request.model) {
-				continue;
-			}
-
-
-			if (auto* mesh = dynamic_cast<MeshModel*>(request.model)) {
-				mesh->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(instanceIndex));
-			}
-			else {
-				request.model->Draw(commandList.Get(), request.textureIndex);
-			}
-		}
-
-		// 複数インスタンス対応時は、この index を Draw() に渡す必要がある
-		// 例:
-		//request.model->Draw(commandList.Get(), request.textureIndex, instanceIndex);
 		instanceIndex++;
 	}
 
-	// 既存と同じく、描画リクエストをクリア
+	// 2. 描画パイプラインの設定
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
+
+	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(1, heaps);
+
+	// 頂点バッファ・インスタンスバッファのセット
+	// VS: t2 に InstanceData が入っている前提
+	commandList->SetGraphicsRootShaderResourceView(1, m_instanceBuffer->GetGPUVirtualAddress());
+
+	// 3. 各モデルの描画
+	// 今は「1個ずつ描画」する形式で動作を優先します
+	int currentInstanceIndex = 0;
+	for (const auto& request : m_drawRequests) {
+		if (currentInstanceIndex >= m_maxDrawCount) break;
+
+		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
+
+		if (!request.isMesh) {
+			auto* triangle = static_cast<TriangleModel*>(request.model);
+			// 🌟 修正：インスタンス番号を渡して、GPUが正しい配列を参照できるようにする
+			triangle->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(currentInstanceIndex));
+		}
+		else {
+			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			request.model->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(currentInstanceIndex));
+		}
+
+		currentInstanceIndex++;
+	}
+
 	m_drawRequests.clear();
 }
-
 
 #pragma endregion
 

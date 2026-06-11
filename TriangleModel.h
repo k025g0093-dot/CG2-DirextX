@@ -21,8 +21,12 @@ public:
         const Vector3& normal,
         int index) override;
 
-    void Draw(ID3D12GraphicsCommandList* cmdList, int index) override;
-    void Draw(ID3D12GraphicsCommandList* cmdList, int drawIndex, int textureIndex, const Vector4& color = { 1,1,1,1 });
+    void Draw(ID3D12GraphicsCommandList* cmdList, int index);
+
+    void Draw(ID3D12GraphicsCommandList* cmdList,
+        int textureIndex,
+        UINT startInstanceLocation)override;
+
     void SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world);
 
 private:

@@ -233,8 +233,6 @@ private:
 	ComPtr<ID3D12Resource> m_instanceBuffer;
 	InstanceData* m_mappedInstanceData = nullptr;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE m_instanceSrvCpuHandle{};
-	D3D12_GPU_DESCRIPTOR_HANDLE m_instanceSrvGpuHandle{};
 
 
 private://描画物のリソース
