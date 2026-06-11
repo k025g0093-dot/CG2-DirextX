@@ -143,7 +143,19 @@ void DynamicMeshModel::UpdateHeights(const DynamicMesh& mesh) {
     }
 }
 
-void DynamicMeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
+void DynamicMeshModel::Draw(
+    ID3D12GraphicsCommandList* cmdList,
+    int textureIndex)
+{
+
+    Draw(cmdList, textureIndex, 0);
+}
+
+
+void DynamicMeshModel::Draw(
+    ID3D12GraphicsCommandList* cmdList,
+    int textureIndex,
+    UINT startInstanceLocation) {
     if (m_indexCount == 0 || !m_vertexBuffer || !m_indexBuffer) return;
 
     cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -162,5 +174,11 @@ void DynamicMeshModel::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex
 
     // インデックスバッファをセットして DrawIndexedInstanced で描画
     cmdList->IASetIndexBuffer(&m_indexBufferView);
-    cmdList->DrawIndexedInstanced(m_indexCount, 1, 0, 0, 0);
+    cmdList->DrawIndexedInstanced(
+        m_indexCount,          // インデックスの総数
+        1,                     // インスタンス数
+        0,                     // インデックスの開始位置
+        0,                     // 頂点のベース位置
+        startInstanceLocation  // インスタンスIDの開始位置
+    );
 }

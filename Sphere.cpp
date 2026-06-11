@@ -122,6 +122,10 @@ void Sphere::SetLightResource(ID3D12Resource* lightResource) {
 }
 
 void Sphere::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
+	Draw(cmdList, textureIndex, 0);
+}
+
+void Sphere::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex, UINT startInstanceLocation) {
 	cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 	cmdList->IASetIndexBuffer(&m_indexBufferView);
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -131,5 +135,5 @@ void Sphere::Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) {
 
 
 
-	cmdList->DrawIndexedInstanced(m_indexCount, 1, 0, 0, 0);
+	cmdList->DrawIndexedInstanced(m_indexCount, 1, 0, 0, startInstanceLocation);
 }

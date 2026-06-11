@@ -234,6 +234,15 @@ void MeshModel::Draw(
 	int textureIndex
 	) 
 {
+	Draw(cmdList, textureIndex, 0);
+}
+
+void MeshModel::Draw(
+	ID3D12GraphicsCommandList* cmdList,
+	int textureIndex,
+	UINT startInstanceLocation
+	)
+{
 	if (m_vertexCount == 0 || !m_vertexBuffer) return;
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -272,7 +281,7 @@ void MeshModel::Draw(
 	}
 
 	cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-	cmdList->DrawInstanced(static_cast<UINT>(m_vertexCount), 1, 0, 0);
+	cmdList->DrawInstanced(static_cast<UINT>(m_vertexCount), 1, 0, startInstanceLocation);
 }
 
 // ⭕ 重複を排除し、X反転を正しく行うように一本化した UpdateVertices

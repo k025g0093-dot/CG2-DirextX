@@ -34,6 +34,7 @@ public:
         const std::string& filename);
 
     void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
+    void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex, UINT startInstanceLocation);
 
     MaterialData LoadMaterialTemplateFile(
         const std::string& directoryPath,

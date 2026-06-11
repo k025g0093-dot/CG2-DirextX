@@ -101,6 +101,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 
 	pipelineState = CreatePipelineStateDesc(device.Get(), rootSignature, hr);
+	gpuDrivenPipelineState =
+		CreateGpuDrivenPipelineStateDesc(device.Get(), gpuDrivenRootSignature, hr);
 
 #ifdef USE_IMGUI
 	InitializeImGui(hwnd);
@@ -498,6 +500,48 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	// 最初に一度だけ Map して、書き込み先ポインタを保持する
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 
+
+	// InstanceData 配列用バッファ
+	m_instanceBuffer = CreateBufferResource(
+		device.Get(),
+		sizeof(InstanceData) * m_maxDrawCount
+	);
+
+	m_instanceBuffer->Map(
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&m_mappedInstanceData)
+	);
+
+
+	UINT descriptorSize =
+		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	// scene が 100 を使っているので、まずは 101 あたりを使う
+	UINT instanceSrvIndex = 101;
+
+	m_instanceSrvCpuHandle = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	m_instanceSrvCpuHandle.ptr += descriptorSize * instanceSrvIndex;
+
+	m_instanceSrvGpuHandle = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	m_instanceSrvGpuHandle.ptr += descriptorSize * instanceSrvIndex;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Buffer.FirstElement = 0;
+	srvDesc.Buffer.NumElements = m_maxDrawCount;
+	srvDesc.Buffer.StructureByteStride = sizeof(InstanceData);
+	srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+
+	device->CreateShaderResourceView(
+		m_instanceBuffer.Get(),
+		&srvDesc,
+		m_instanceSrvCpuHandle
+	);
+
+
 	m_fenceValue = 0;
 	hr = device->CreateFence(m_fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_fence.GetAddressOf()));
 	assert(SUCCEEDED(hr));
@@ -567,6 +611,7 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 
 void TUFEngine::PreDraw() {
 	m_triangleRequestCount = 0;
+	m_cbvIndex = 0;
 
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
@@ -633,7 +678,7 @@ void TUFEngine::PostDraw() {
 		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
 	}
 
-	RenderAllRequests();
+	RenderGpuDrivenALLRequests();
 
 	D3D12_RESOURCE_BARRIER offScreenBarrier{};
 	offScreenBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -822,6 +867,118 @@ void TUFEngine::RenderAllRequests() {
 
 	m_drawRequests.clear();
 }
+
+//GPU描画リクエスト
+void TUFEngine::RenderGpuDrivenALLRequests()
+{
+	// 描画リクエストがなければ何もしない
+	if (m_drawRequests.empty()) {
+		return;
+	}
+
+	// InstanceData バッファの最大数を超えそうなら、ここで拡張する
+	// まずは m_maxDrawCount と同じ数を確保しておけばOK
+	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
+		// GrowInstanceBuffer(); みたいな関数を後で作る
+		return;
+	}
+
+	assert(m_instanceBuffer);
+	assert(m_mappedInstanceData);
+	assert(m_instanceSrvGpuHandle.ptr != 0);
+	assert(gpuDrivenRootSignature);
+	assert(gpuDrivenPipelineState);
+
+	// GPU-driven 用の root signature / pipeline state を使う
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
+
+	// texture / normal texture / instance SRV が置いてある descriptor heap をセット
+	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(1, heaps);
+
+	// VS用 InstanceData StructuredBuffer を root[1] に渡す
+	// HLSL: StructuredBuffer<InstanceData> gInstances : register(t2);
+	// Root: root[1] = InstanceData SRV t2 VS
+	commandList->SetGraphicsRootDescriptorTable(1, m_instanceSrvGpuHandle);
+
+	// カメラ行列
+	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
+
+	int instanceIndex = 0;
+
+	for (auto& request : m_drawRequests) {
+
+		// InstanceData バッファの範囲外アクセス防止
+		if (instanceIndex >= m_maxDrawCount) {
+			break;
+		}
+
+		// 既存と同じように world / WVP を作る
+		Matrix4x4 world;
+
+		if (request.isSprite) {
+			// Sprite は2D用なので、最初は既存描画に任せてもいい
+			// GPU-driven の最初の対象から外すなら continue でOK
+			continue;
+		}
+		else {
+			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
+		}
+
+		Matrix4x4 wvp = Multiply(world, viewProjMatrix);
+
+		// VS が読む InstanceData[index] に書き込む
+		// HLSL 側:
+		//   InstanceData instance = gInstances[instanceId];
+		m_mappedInstanceData[instanceIndex].WVP = wvp;
+		m_mappedInstanceData[instanceIndex].World = world;
+
+		// PS側の Light をセット
+		// root[3] = Light CBV b1 PS
+		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
+
+		// ここから実際に描画
+		// 重要:
+		//   既存の Draw() は StartInstanceLocation = 0 の可能性が高い。
+		//   なので最初は instanceIndex == 0 の1個表示テスト向け。
+		if (!request.isMesh) {
+			if (!m_temporarySpheres) {
+				continue;
+			}
+
+			// Sphere::Draw() の中で
+			// root[0] material
+			// root[2] texture
+			// DrawIndexedInstanced(..., StartInstanceLocation=0)
+			// をやってくれる想定
+			m_temporarySpheres->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(instanceIndex));
+		}
+		else {
+			if (!request.model) {
+				continue;
+			}
+
+
+			if (auto* mesh = dynamic_cast<MeshModel*>(request.model)) {
+				mesh->Draw(commandList.Get(), request.textureIndex, static_cast<UINT>(instanceIndex));
+			}
+			else {
+				request.model->Draw(commandList.Get(), request.textureIndex);
+			}
+		}
+
+		// 複数インスタンス対応時は、この index を Draw() に渡す必要がある
+		// 例:
+		//request.model->Draw(commandList.Get(), request.textureIndex, instanceIndex);
+		instanceIndex++;
+	}
+
+	// 既存と同じく、描画リクエストをクリア
+	m_drawRequests.clear();
+}
+
+
 #pragma endregion
 
 // --- TUFEngine.cpp ---
