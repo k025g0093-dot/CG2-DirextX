@@ -15,7 +15,12 @@ public:
     void InitSphere(TUFEngine* engine);
     void Update();
     void SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& world) override;
-    void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex) override;
+    
+    void Draw(ID3D12GraphicsCommandList* cmdList,
+        int textureIndex,
+        UINT instanceCount,
+        UINT startInstanceLocation)override;
+
     void SetLightResource(ID3D12Resource* lightResource);
     void UpdateVertices(const Vector3& points, const Vector2& texcoord, const Vector3& normal, int index) override {}
 

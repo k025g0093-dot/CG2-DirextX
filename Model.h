@@ -40,5 +40,10 @@ public:
         int index) = 0;
 
     // 描画関数（引数にテクスチャインデックスを受け取れる形を維持）
-    virtual void Draw(ID3D12GraphicsCommandList* cmdList, int index) = 0;
+    virtual void Draw(
+        ID3D12GraphicsCommandList* cmdList,
+        int textureIndex,
+        UINT instanceCount,
+        UINT startInstanceLocation) = 0;
+
 };

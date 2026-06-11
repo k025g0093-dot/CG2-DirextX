@@ -2,6 +2,7 @@
 #include "AllIncludeHeder.h"
 #include "DynamicMeshModel.h"
 #include <wrl.h>
+#include  <algorithm>
 
 //ここから下はTUFEngineの中身を定義していきます。必要に応じて、構造体や関数を追加していきます。
 //現在ここの中身がくそほどごちゃついててマジでファックなので随時修正していきます
@@ -26,6 +27,11 @@ struct Material {
 };
 
 struct TransformationMatrix {
+	Matrix4x4 WVP;
+	Matrix4x4 World;
+};
+
+struct InstanceData {
 	Matrix4x4 WVP;
 	Matrix4x4 World;
 };
@@ -140,7 +146,7 @@ public:
 
 
 	void ResizeSceneRenderTexture(int newWidth, int newHeight);
-	void GetSceneRtv(int32_t width,int32_t height);
+	void GetSceneRtv(int32_t width, int32_t height);
 	void BeginSceneRender();
 	void EndSceneRender();
 
@@ -199,8 +205,16 @@ private:
 	D3D12_CPU_DESCRIPTOR_HANDLE  rtvHandles[2]{};
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 
+	//ルートシグネチャ
 	ComPtr<ID3D12RootSignature>  rootSignature;
 	ComPtr<ID3D12PipelineState>  pipelineState;
+
+	//GPU用のルートシグネチャ
+
+	ComPtr<ID3D12RootSignature> gpuDrivenRootSignature;
+	ComPtr<ID3D12PipelineState> gpuDrivenPipelineState;
+
+
 
 	ComPtr<ID3D12Resource> depthStencilResource;
 	ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
@@ -215,6 +229,14 @@ private:
 	void InitializeImGui(HWND hwnd);
 	ID3D12Resource* CreateDepthStencilTextureResource(int32_t width, int32_t height);
 	void RenderAllRequests();
+	void RenderGpuDrivenALLRequests();
+	
+	ComPtr<ID3D12Resource> m_instanceBuffer;
+	InstanceData* m_mappedInstanceData = nullptr;
+
+
+
+private://描画物のリソース
 
 	std::unique_ptr<DynamicMeshModel> m_dynamicMeshModel;
 	std::unique_ptr<Sprite>           sprite;

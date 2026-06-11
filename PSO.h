@@ -22,6 +22,16 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
     ID3D12Device* device,
     HRESULT& hr);
 
+ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
+    ID3D12Device* device,
+    HRESULT& hr
+);
+
+ComPtr<ID3D12PipelineState> CreateGpuDrivenPipelineStateDesc(
+    ID3D12Device* device,
+    ComPtr<ID3D12RootSignature>& rootSignature,
+    HRESULT& hr);
+
 D3D12_INPUT_LAYOUT_DESC CreateLayout();
 D3D12_BLEND_DESC CreateBlendState();
 D3D12_RASTERIZER_DESC CreateRasterizerState();

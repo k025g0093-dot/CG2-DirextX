@@ -101,6 +101,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 
 	pipelineState = CreatePipelineStateDesc(device.Get(), rootSignature, hr);
+	gpuDrivenPipelineState =
+		CreateGpuDrivenPipelineStateDesc(device.Get(), gpuDrivenRootSignature, hr);
 
 #ifdef USE_IMGUI
 	InitializeImGui(hwnd);
@@ -498,6 +500,26 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	// 最初に一度だけ Map して、書き込み先ポインタを保持する
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 
+
+	// InstanceData 配列用バッファ
+	m_instanceBuffer = CreateBufferResource(
+		device.Get(),
+		sizeof(InstanceData) * m_maxDrawCount
+	);
+
+	m_instanceBuffer->Map(
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&m_mappedInstanceData)
+	);
+
+
+	UINT descriptorSize =
+		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	
+
+
 	m_fenceValue = 0;
 	hr = device->CreateFence(m_fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_fence.GetAddressOf()));
 	assert(SUCCEEDED(hr));
@@ -567,6 +589,7 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 
 void TUFEngine::PreDraw() {
 	m_triangleRequestCount = 0;
+	m_cbvIndex = 0;
 
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
@@ -633,7 +656,7 @@ void TUFEngine::PostDraw() {
 		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
 	}
 
-	RenderAllRequests();
+	RenderGpuDrivenALLRequests();
 
 	D3D12_RESOURCE_BARRIER offScreenBarrier{};
 	offScreenBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -714,7 +737,7 @@ void TUFEngine::EnableDebugLayer() {
 	ID3D12Debug1* debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
 		debugController->EnableDebugLayer();
-		debugController->SetEnableGPUBasedValidation(TRUE);
+		debugController->SetEnableGPUBasedValidation(FALSE);
 	}
 }
 
@@ -743,85 +766,166 @@ void TUFEngine::SetupInfoQueue() {
 
 #pragma region RenderRequests
 
-void TUFEngine::RenderAllRequests() {
+//void TUFEngine::RenderAllRequests() {
+//
+//	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
+//		GrowConstantBuffer();
+//	}
+//
+//	// GPU に、このエンジンのシェーダー設定を使うように伝える
+//	commandList->SetGraphicsRootSignature(rootSignature.Get());
+//	commandList->SetPipelineState(pipelineState.Get());
+//
+//	// テクスチャ用などのディスクリプタヒープをセットする
+//	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
+//	commandList->SetDescriptorHeaps(1, heaps);
+//
+//	// 2. カメラ行列
+//	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
+//
+//
+//
+//	m_cbvIndex = 0;
+//	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
+//	for (auto& request : m_drawRequests) {
+//
+//
+//
+//		if (m_cbvIndex >= m_maxDrawCount) {
+//			break;
+//		}
+//
+//		if (!request.model) continue;
+//		if (request.isSprite) {
+//			request.model->SetUVTransform(GetSpriteUVTransformMatrix());
+//		}
+//
+//		// --- 3. WVP 行列を作成する ---
+//		Matrix4x4 world;
+//		Matrix4x4 wvp;
+//
+//
+//		if (request.isSprite) {
+//			world = MakeAffineMatrix(request.scale, request.rot, { request.posV2.x, request.posV2.y, 0.0f });
+//			Matrix4x4 ortho = MakeOrthographicMatrix(0.0f, 0.0f, (float)width, (float)height, 0.1f, 100.0f);
+//			wvp = Multiply(world, ortho); // スプライトは正射影行列を使う
+//		}
+//		else {
+//			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
+//			wvp = Multiply(world, viewProjMatrix);
+//		}
+//
+//		TransformationMatrix cbData{};
+//		cbData.WVP = wvp;
+//		cbData.World = world;
+//
+//		if (m_pCbvDataBegin && m_pConstantBuffer) {
+//			UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
+//			memcpy(pDest, &cbData, sizeof(TransformationMatrix));
+//
+//			D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
+//				m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
+//			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
+//		}
+//		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
+//
+//		// --- 6. 描画を実行する ---
+//		if (!request.isMesh) {
+//
+//			auto* triangle = static_cast<TriangleModel*>(request.model);
+//			triangle->Draw(commandList.Get(), 0, request.textureIndex, request.color);
+//		}
+//		else {
+//			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//			request.model->Draw(commandList.Get(), request.textureIndex);
+//		}
+//
+//		m_cbvIndex++;
+//	}
+//
+//	m_drawRequests.clear();
+//}
 
-	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
-		GrowConstantBuffer();
+void TUFEngine::RenderGpuDrivenALLRequests() {
+	if (m_drawRequests.empty()) return;
+
+	// RenderGpuDrivenALLRequests の先頭で
+	m_drawRequests.erase(
+		std::remove_if(m_drawRequests.begin(), m_drawRequests.end(),
+			[](const DrawRequest& r) { return !r.isMesh || r.isSprite; }),
+		m_drawRequests.end()
+	);
+
+	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
+
+	// 1. ソート: model と textureIndex が同じものを隣接させる
+	std::sort(m_drawRequests.begin(), m_drawRequests.end(),
+		[](const DrawRequest& a, const DrawRequest& b) {
+			if (a.model != b.model) return a.model < b.model;
+			return a.textureIndex < b.textureIndex;
+		});
+
+	// 2. InstanceData を全部先に書き込む
+	int totalCount = (int)m_drawRequests.size();
+	if (totalCount > m_maxDrawCount) totalCount = m_maxDrawCount-1;
+
+	for (int i = 0; i < totalCount; i++) {
+		const auto& request = m_drawRequests[i];
+		Matrix4x4 world = MakeAffineMatrix(request.scale, request.rot, request.pos);
+		m_mappedInstanceData[i].WVP = Multiply(world, viewProjMatrix);
+		m_mappedInstanceData[i].World = world;
 	}
 
-	// GPU に、このエンジンのシェーダー設定を使うように伝える
-	commandList->SetGraphicsRootSignature(rootSignature.Get());
-	commandList->SetPipelineState(pipelineState.Get());
+	// 3. パイプラインのセット
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 
-	// テクスチャ用などのディスクリプタヒープをセットする
 	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	// 2. カメラ行列
-	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
+	// InstanceData バッファを VS の t2 にバインド
+	commandList->SetGraphicsRootShaderResourceView(
+		1, m_instanceBuffer->GetGPUVirtualAddress());
 
+	// 4. バッチ化して描画
+	// 同じ model & textureIndex が連続している範囲をまとめて1回のDrawにする
+	int start = 0;
+	while (start < totalCount) {
 
+		const DrawRequest& head = m_drawRequests[start];
 
-	m_cbvIndex = 0;
-	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
-	for (auto& request : m_drawRequests) {
-
-
-
-		if (m_cbvIndex >= m_maxDrawCount) {
-			break;
+		// 同じグループが続く間カウント
+		int count = 1;
+		while (start + count < totalCount
+			&& m_drawRequests[start + count].model == head.model
+			&& m_drawRequests[start + count].textureIndex == head.textureIndex) {
+			count++;
 		}
 
-		if (!request.model) continue;
-		if (request.isSprite) {
-			request.model->SetUVTransform(GetSpriteUVTransformMatrix());
-		}
+		// ライトをバインド（グループ先頭のlightIdを使う）
+		LightManager::GetInstance()->Bind(commandList.Get(), head.lightId);
 
-		// --- 3. WVP 行列を作成する ---
-		Matrix4x4 world;
-		Matrix4x4 wvp;
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-
-		if (request.isSprite) {
-			world = MakeAffineMatrix(request.scale, request.rot, { request.posV2.x, request.posV2.y, 0.0f });
-			Matrix4x4 ortho = MakeOrthographicMatrix(0.0f, 0.0f, (float)width, (float)height, 0.1f, 100.0f);
-			wvp = Multiply(world, ortho); // スプライトは正射影行列を使う
+		// instanceCount と startInstanceLocation を渡してまとめて描画
+		if (!head.isMesh) {
+			// TriangleModel はスキップ（未対応）
 		}
 		else {
-			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
-			wvp = Multiply(world, viewProjMatrix);
+			head.model->Draw(
+				commandList.Get(),
+				head.textureIndex,
+				static_cast<UINT>(count),  // instanceCount: このグループの個数
+				static_cast<UINT>(start)   // startInstanceLocation: バッファ内の開始位置
+			);
 		}
 
-		TransformationMatrix cbData{};
-		cbData.WVP = wvp;
-		cbData.World = world;
-
-		if (m_pCbvDataBegin && m_pConstantBuffer) {
-			UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
-			memcpy(pDest, &cbData, sizeof(TransformationMatrix));
-
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
-				m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
-			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
-		}
-		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
-
-		// --- 6. 描画を実行する ---
-		if (!request.isMesh) {
-
-			auto* triangle = static_cast<TriangleModel*>(request.model);
-			triangle->Draw(commandList.Get(), 0, request.textureIndex, request.color);
-		}
-		else {
-			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			request.model->Draw(commandList.Get(), request.textureIndex);
-		}
-
-		m_cbvIndex++;
+		start += count;
 	}
 
 	m_drawRequests.clear();
 }
+
 #pragma endregion
 
 // --- TUFEngine.cpp ---
@@ -939,32 +1043,31 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 
 	m_dynamicMeshModel->UpdateHeights(mesh);
 
+	// GPU駆動パイプラインに切り替え
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 
-	commandList->SetGraphicsRootSignature(rootSignature.Get());
-	commandList->SetPipelineState(pipelineState.Get());
+	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(1, heaps);
+
+	UINT instanceSlot = static_cast<UINT>(m_maxDrawCount - 1);
 
 	Matrix4x4 world = MakeAffineMatrix({ 1,1,1 }, { 0,0,0 }, { 0,0,0 });
 	Matrix4x4 wvp = Multiply(world, viewProjectionMatrix);
 
-	TransformationMatrix cbData{};
-	cbData.WVP = wvp;
-	cbData.World = world;
+	m_mappedInstanceData[instanceSlot].WVP = wvp;
+	m_mappedInstanceData[instanceSlot].World = world;
 
-	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
-	if (m_cbvIndex >= m_maxDrawCount || !m_pCbvDataBegin || !m_pConstantBuffer) {
-		return;
-	}
+	// InstanceData バッファを t2 にバインド
+	commandList->SetGraphicsRootShaderResourceView(
+		1, m_instanceBuffer->GetGPUVirtualAddress());
 
-	UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
-	memcpy(pDest, &cbData, sizeof(TransformationMatrix));
-
-	D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
-		m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
-	commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
-	m_cbvIndex++;
-
-	m_dynamicMeshModel->Draw(commandList.Get(), index);
+	// 描画（instanceCount=1, startInstanceLocation=instanceSlot）
+	m_dynamicMeshModel->Draw(commandList.Get(), index, 1, instanceSlot);
 }
+
+
+
 #pragma endregion
 
 //windowだったりいろいろなものの拡張機能作成場所

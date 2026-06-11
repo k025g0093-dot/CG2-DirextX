@@ -14,8 +14,10 @@ class DynamicMeshModel {
 public:
     bool Init(TUFEngine* engine, int gridW, int gridH);
     void UpdateHeights(const DynamicMesh& mesh);
-    void Draw(ID3D12GraphicsCommandList* cmdList, int textureIndex);
-
+    void Draw(ID3D12GraphicsCommandList* cmdList,
+        int textureIndex,
+        UINT instanceCount,
+        UINT startInstanceLocation);
     // 🌟追加：外部からUVのタイリング・回転・移動量を指定して行列を更新する関数
     void UpdateUVTransform(const Vector3& uvScale, float uvRotation, const Vector3& uvTranslation);
 
