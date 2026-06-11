@@ -849,6 +849,13 @@ void TUFEngine::SetupInfoQueue() {
 void TUFEngine::RenderGpuDrivenALLRequests() {
 	if (m_drawRequests.empty()) return;
 
+	// RenderGpuDrivenALLRequests の先頭で
+	m_drawRequests.erase(
+		std::remove_if(m_drawRequests.begin(), m_drawRequests.end(),
+			[](const DrawRequest& r) { return !r.isMesh || r.isSprite; }),
+		m_drawRequests.end()
+	);
+
 	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
 
 	// 1. ソート: model と textureIndex が同じものを隣接させる

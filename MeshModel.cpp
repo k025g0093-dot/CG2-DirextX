@@ -23,8 +23,8 @@ bool MeshModel::LoadFromOBJ(
 	const std::string& filename
 ) {
 	ID3D12Device* device = m_pEngine->GetDevice();
-	std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-	assert(file.is_open()); // 開けない時はやめる
+	std::ifstream file(directoryPath + "/" + filename);
+	assert(file.is_open());
 
 	std::vector<VertexData> faceVertices;
 
@@ -32,7 +32,7 @@ bool MeshModel::LoadFromOBJ(
 	{
 		std::string identifier;
 		std::istringstream s(line);
-		s >> identifier; // 先頭の識別子を確認
+		s >> identifier;
 
 		if (identifier == "v")
 		{
@@ -56,14 +56,12 @@ bool MeshModel::LoadFromOBJ(
 		}
 		else if (identifier == "f")
 		{
-			// 頂点を格納する一時リスト
 			std::vector<VertexData> currentFaceVertices;
 			std::string vertexDefinition;
 
-			// 面の頂点（3つ以上）を読み込む
 			while (s >> vertexDefinition) {
 				std::istringstream vStream(vertexDefinition);
-				uint32_t indices[3] = { 0, 0, 0 }; // 0で初期化
+				uint32_t indices[3] = { 0, 0, 0 };
 
 				for (int32_t i = 0; i < 3; ++i) {
 					std::string indexStr;
@@ -73,11 +71,8 @@ bool MeshModel::LoadFromOBJ(
 					}
 				}
 
-				// --- ここで防御的にインデックスチェック ---
-				// 1. 位置(indices[0])が0ならエラーなのでスキップ
 				if (indices[0] == 0) continue;
 
-				// 2. 範囲外アクセスを防ぐ（安全装置）
 				uint32_t pIdx = indices[0] - 1;
 				uint32_t tIdx = (indices[1] > 0 && indices[1] <= texcoords.size()) ? indices[1] - 1 : 0;
 				uint32_t nIdx = (indices[2] > 0 && indices[2] <= normals.size()) ? indices[2] - 1 : 0;
@@ -86,14 +81,12 @@ bool MeshModel::LoadFromOBJ(
 				Vector2 uv = (texcoords.size() > 0) ? texcoords[tIdx] : Vector2{ 0,0 };
 				Vector3 norm = (normals.size() > 0) ? normals[nIdx] : Vector3{ 0,0,0 };
 
-				// 座標変換
 				pos.x *= -1.0f;
 				norm.x *= -1.0f;
 
 				currentFaceVertices.push_back({ pos, uv, norm });
 			}
 
-			// 三角形分割して追加
 			for (size_t i = 2; i < currentFaceVertices.size(); ++i) {
 				modelData.vertices.push_back(currentFaceVertices[i]);
 				modelData.vertices.push_back(currentFaceVertices[i - 1]);
@@ -106,13 +99,10 @@ bool MeshModel::LoadFromOBJ(
 			s >> materialFilename;
 
 			modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
-		
+
 			if (!modelData.material.textureFilPath.empty())
 			{
-				// TextureManagerにロードを依頼し、インデックスを受け取る
 				int textureIndex = TextureManager::GetInstance()->LoadTexture(modelData.material.textureFilPath);
-
-				// 読み込んだインデックスを自分自身に保存する
 				SetTextureIndex(textureIndex);
 			}
 
@@ -126,6 +116,7 @@ bool MeshModel::LoadFromOBJ(
 	m_vertexCount = static_cast<uint32_t>(modelData.vertices.size());
 	if (m_vertexCount > 0) {
 
+		// 頂点バッファ作成
 		m_vertexBuffer = CreateBufferResource(device, sizeof(VertexData) * m_vertexCount);
 
 		if (!m_vertexBuffer) {
@@ -147,6 +138,34 @@ bool MeshModel::LoadFromOBJ(
 		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
 		m_vertexBufferView.SizeInBytes = (UINT)sizeof(VertexData) * (UINT)m_vertexCount;
 		m_vertexBufferView.StrideInBytes = sizeof(VertexData);
+
+		// ★ インデックスバッファ作成
+		// OBJ は LoadFromOBJ 内で既に三角形分割済みなので
+		// シーケンシャルなインデックス (0, 1, 2, 3, ...) で十分
+		m_indexCount = (uint32_t)m_vertexCount;
+		m_indexBuffer = CreateBufferResource(device, sizeof(uint32_t) * m_indexCount);
+
+		if (!m_indexBuffer) {
+			OutputDebugStringA("Error: IndexBuffer CreateBufferResource failed!\n");
+			return false;
+		}
+
+		uint32_t* indexData = nullptr;
+		hr = m_indexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
+		if (SUCCEEDED(hr)) {
+			for (uint32_t i = 0; i < m_indexCount; i++) {
+				indexData[i] = i;
+			}
+			m_indexBuffer->Unmap(0, nullptr);
+		}
+		else {
+			OutputDebugStringA("Error: IndexBuffer Map failed!\n");
+			return false;
+		}
+
+		m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
+		m_indexBufferView.SizeInBytes = sizeof(uint32_t) * m_indexCount;
+		m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	}
 
 	return true;
@@ -157,11 +176,10 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 	const std::string& directoryPath,
 	const std::string& filename
 ) {
-
 	MaterialData materialData;
 	std::string line;
-	std::ifstream file(directoryPath + "/" + filename);//ファイルを開く
-	assert(file.is_open());//開けない場合はやめる
+	std::ifstream file(directoryPath + "/" + filename);
+	assert(file.is_open());
 
 	while (std::getline(file, line))
 	{
@@ -169,17 +187,14 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 		std::istringstream s(line);
 		s >> identifire;
 
-		// 修正後
 		if (identifire == "map_Kd")
 		{
 			std::string token;
 			std::string textureFilename;
 			while (s >> token) {
-				// -s, -bm などのオプションフラグはスキップ
 				if (token[0] == '-') {
-					// オプションの引数も読み飛ばす（-s は引数3つ、-bm は1つなど）
 					if (token == "-s" || token == "-o") {
-						float tmp; s >> tmp >> tmp >> tmp; // x y z
+						float tmp; s >> tmp >> tmp >> tmp;
 					}
 					else if (token == "-bm") {
 						float tmp; s >> tmp;
@@ -189,23 +204,19 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 				textureFilename = token;
 			}
 
-			// バックスラッシュをスラッシュに統一
 			std::replace(textureFilename.begin(), textureFilename.end(), '\\', '/');
 
 			if (!textureFilename.empty()) {
 				materialData.textureFilPath = directoryPath + "/" + textureFilename;
 			}
 		}
-		//法線マップ用のファイル読み込み
-		else if (identifire == "map_Bump"||identifire=="bump") {
+		else if (identifire == "map_Bump" || identifire == "bump") {
 			std::string token;
 			std::string textureFilename;
 			while (s >> token) {
-				// -s, -bm などのオプションフラグはスキップ
 				if (token[0] == '-') {
-					// オプションの引数も読み飛ばす（-s は引数3つ、-bm は1つなど）
 					if (token == "-s" || token == "-o") {
-						float tmp; s >> tmp >> tmp >> tmp; // x y z
+						float tmp; s >> tmp >> tmp >> tmp;
 					}
 					else if (token == "-bm") {
 						float tmp; s >> tmp;
@@ -215,20 +226,16 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 				textureFilename = token;
 			}
 
-			// バックスラッシュをスラッシュに統一
 			std::replace(textureFilename.begin(), textureFilename.end(), '\\', '/');
 
 			if (!textureFilename.empty()) {
 				materialData.normalTextureFilePath = directoryPath + "/" + textureFilename;
 			}
 		}
-
 	}
 
 	return materialData;
-
 }
-
 
 
 void MeshModel::Draw(
@@ -236,13 +243,13 @@ void MeshModel::Draw(
 	int textureIndex,
 	UINT instanceCount,
 	UINT startInstanceLocation
-	)
+)
 {
-	if (m_vertexCount == 0 || !m_vertexBuffer) return;
+	if (m_vertexCount == 0 || !m_vertexBuffer || !m_indexBuffer) return;
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
-	
+
 	bool hasNormalTexture = false;
 
 	if (textureIndex >= 0) {
@@ -259,7 +266,6 @@ void MeshModel::Draw(
 			}
 		}
 	}
-	// textureIndex < 0 の場合はenableLightingを-1にして色だけ返す
 	else {
 		Material* materialData = nullptr;
 		m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
@@ -276,13 +282,19 @@ void MeshModel::Draw(
 	}
 
 	cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	cmdList->IASetIndexBuffer(&m_indexBufferView);  // ★ 追加
 
-	UINT m_indexCount = static_cast<UINT>(m_vertexCount);
-
-	cmdList->DrawInstanced(static_cast<UINT>(m_vertexCount), instanceCount, 0, 0);
+	// ★ DrawInstanced → DrawIndexedInstanced に変更
+	// Sphere と描画命令を統一することでインスタンスバッファのズレをなくす
+	cmdList->DrawIndexedInstanced(
+		m_indexCount,
+		instanceCount,
+		0,
+		0,
+		startInstanceLocation
+	);
 }
 
-// ⭕ 重複を排除し、X反転を正しく行うように一本化した UpdateVertices
 void MeshModel::UpdateVertices(
 	const Vector3& points,
 	const Vector2& texcoord,
@@ -296,11 +308,10 @@ void MeshModel::UpdateVertices(
 
 	VertexData* vertices = static_cast<VertexData*>(pData);
 
-	// ⭕ LoadFromOBJと同じく、動的更新時もX軸を反転させて上書きする
 	vertices[index].position = { points.x * -1.0f, points.y, points.z, 1.0f };
 	vertices[index].texcoord = texcoord;
 	vertices[index].normal = { normal.x * -1.0f, normal.y, normal.z };
-	vertices[index].tangent = { 0.0f, 0.0f, 0.0f }; // タンジェントは必要に応じて計算して設定
+	vertices[index].tangent = { 0.0f, 0.0f, 0.0f };
 
 	m_vertexBuffer->Unmap(0, nullptr);
 }

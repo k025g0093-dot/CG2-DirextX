@@ -68,6 +68,11 @@ private:
     size_t                   m_vertexCount = 0;
     TUFEngine* m_pEngine = nullptr;
 
+
+    ComPtr<ID3D12Resource>  m_indexBuffer;
+    D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};
+    uint32_t m_indexCount = 0;  // 既存のm_vertexCountとは別に管理
+
     int m_textureIndex = -1;
     int m_normalTextureIndex = -1;
 
