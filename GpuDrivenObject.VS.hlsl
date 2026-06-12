@@ -8,6 +8,13 @@ struct InstanceData
 
 StructuredBuffer<InstanceData> gInstances : register(t2);
 
+struct DrawInfo
+{
+      uint baseInstance;
+};
+
+ConstantBuffer<DrawInfo> gDrawInfo : register(b2);
+
 struct VertexShaderInput
 {
     float4 position : POSITION;
@@ -19,8 +26,8 @@ struct VertexShaderInput
 
 VertexShaderOutput main(VertexShaderInput input, uint instanceId : SV_InstanceID)
 {
-      InstanceData instance = gInstances[instanceId];
-
+    InstanceData instance = gInstances[gDrawInfo.baseInstance + instanceId];
+    
     VertexShaderOutput output;
     output.position = mul(input.position, instance.WVP);
     output.normal = normalize(mul(input.normal, (float3x3) instance.World));

@@ -912,6 +912,12 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 			// TriangleModel はスキップ（未対応）
 		}
 		else {
+			commandList->SetGraphicsRoot32BitConstant(
+				5,
+				static_cast<UINT>(start),
+				0
+			);
+
 			head.model->Draw(
 				commandList.Get(),
 				head.textureIndex,

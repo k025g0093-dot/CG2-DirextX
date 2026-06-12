@@ -258,7 +258,7 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	descriptorRange[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 
-	D3D12_ROOT_PARAMETER rootParameter[5] = {};
+	D3D12_ROOT_PARAMETER rootParameter[6] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0; // b0 material
@@ -283,6 +283,14 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	rootParameter[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[4].DescriptorTable.pDescriptorRanges = &descriptorRange[1]; // t1 normal texture
 	rootParameter[4].DescriptorTable.NumDescriptorRanges = 1;
+
+
+	rootParameter[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameter[5].Constants.ShaderRegister = 2; // b2
+	rootParameter[5].Constants.RegisterSpace = 0;
+	rootParameter[5].Constants.Num32BitValues = 1;
+
 
 
 	descriptionRootSignature.pParameters = rootParameter;
