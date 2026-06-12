@@ -170,6 +170,7 @@ public:
 private:
 
 	void GrowConstantBuffer();
+	void GrowInstanceBuffer(int requiredCount);
 
 
 	static TUFEngine* s_instance;

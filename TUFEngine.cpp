@@ -852,9 +852,11 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	// RenderGpuDrivenALLRequests の先頭で
 	m_drawRequests.erase(
 		std::remove_if(m_drawRequests.begin(), m_drawRequests.end(),
-			[](const DrawRequest& r) { return !r.isMesh || r.isSprite; }),
+			[](const DrawRequest& r) { return r.model == nullptr; }),
 		m_drawRequests.end()
 	);
+
+	if (m_drawRequests.empty()) return;
 
 	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
 
@@ -862,6 +864,8 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	std::sort(m_drawRequests.begin(), m_drawRequests.end(),
 		[](const DrawRequest& a, const DrawRequest& b) {
 			if (a.model != b.model) return a.model < b.model;
+			if (a.textureIndex != b.textureIndex) return a.textureIndex < b.textureIndex;
+			if (a.lightId != b.lightId) return a.lightId < b.lightId;
 			return a.textureIndex < b.textureIndex;
 		});
 
