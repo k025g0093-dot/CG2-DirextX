@@ -84,6 +84,7 @@ void Sphere::InitSphere(TUFEngine* engine) {
 	Material* materialData = nullptr;
 	m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 	materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	materialData->enableNormalMap = 0;
 	materialData->enableLighting = true;//ここは要修正
 	materialData->uvTransform = MakeIdentity4x4();
 	m_pMaterialResource->Unmap(0, nullptr);

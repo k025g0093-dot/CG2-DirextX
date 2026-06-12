@@ -1064,11 +1064,14 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	m_mappedInstanceData[instanceSlot].WVP = wvp;
 	m_mappedInstanceData[instanceSlot].World = world;
 
-	// InstanceData バッファを t2 にバインド
 	commandList->SetGraphicsRootShaderResourceView(
 		1, m_instanceBuffer->GetGPUVirtualAddress());
 
-	// 描画（instanceCount=1, startInstanceLocation=instanceSlot）
+	commandList->SetGraphicsRoot32BitConstant(
+		5,
+		instanceSlot,
+		0);
+
 	m_dynamicMeshModel->Draw(commandList.Get(), index, 1, instanceSlot);
 }
 
