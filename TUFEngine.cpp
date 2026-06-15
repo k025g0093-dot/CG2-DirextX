@@ -234,7 +234,6 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
-	SaveSceneObjectsToFile();
 
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
@@ -853,10 +852,15 @@ void TUFEngine::SetupInfoQueue() {
 //}
 
 void TUFEngine::RenderGpuDrivenALLRequests() {
-
 	if (m_drawRequests.empty()) return;
 
-	// 安全対策：モデルが nullptr の不正なリクエストを排除
+	if ((int)m_drawRequests.size() > m_maxDrawCount) {
+		GrowInstanceBuffer(static_cast<int>(m_drawRequests.size()));
+	}
+
+	// =============================================================
+	// 【前処理】安全対策：モデルが nullptr の不正なリクエストを排除
+	// =============================================================
 	m_drawRequests.erase(
 		std::remove_if(m_drawRequests.begin(), m_drawRequests.end(),
 			[](const DrawRequest& r) { return r.model == nullptr; }),
@@ -864,8 +868,9 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	);
 	if (m_drawRequests.empty()) return;
 
-	// ★超重要：同じモデル・同じテクスチャ同士がバッファ内で「連続」して並ぶようにソートします。
-	// これを行わないと、後半のwhileループによる一括描画（インスタンシング）が正しく機能しません。
+	// =============================================================
+	// 【ステップ0】ソート：同じモデル・同じテクスチャ同士を連続させる
+	// =============================================================
 	std::sort(m_drawRequests.begin(), m_drawRequests.end(),
 		[](const DrawRequest& a, const DrawRequest& b) {
 			if (a.model != b.model) return a.model < b.model;
@@ -873,99 +878,89 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 			return a.lightId < b.lightId;
 		});
 
-
 	// =============================================================
-	// 【ステップ1】CPUからデータをバッファ（UPLOAD）に送る
+	// 【ステップ1】CPU→GPU データ転送
+	// m_drawRequests[i] → m_instanceBuffer[currentInstanceCount] のマッピングを記録
 	// =============================================================
-	int32_t currentInstanceCount = 0; //
-	for (const auto& request : m_drawRequests) { //
-		if (currentInstanceCount >= m_maxDrawCount) { //
-			break; //
-		} //
+	int32_t currentInstanceCount = 0;
+	std::vector<int> gpuInstanceIndex(m_drawRequests.size());
 
-		// --- 安全ガード処理の追加 ---
+	for (int i = 0; i < (int)m_drawRequests.size(); i++) {
+		if (currentInstanceCount >= m_maxDrawCount) break;
+
+		// このリクエストが GPU バッファ内のどのインデックスに入るか記録
+		gpuInstanceIndex[i] = currentInstanceCount;
+
+		const DrawRequest& request = m_drawRequests[i];
+
+		// --- 安全ガード処理 ---
 		Vector3 safePos = request.pos;
 		Vector3 safeRot = request.rot;
 		Vector3 safeScale = request.scale;
 
-		// 1. 位置の NaN チェック
-		if (std::isnan(safePos.x) || std::isnan(safePos.y) || std::isnan(safePos.z)) {
-			safePos = { 0.0f, 0.0f, 0.0f };
-		}
-		// 2. 回転の NaN チェック
-		if (std::isnan(safeRot.x) || std::isnan(safeRot.y) || std::isnan(safeRot.z)) {
-			safeRot = { 0.0f, 0.0f, 0.0f };
-		}
-		// 3. スケールの NaN チェック、および極端な 0 への接近を防ぐガード
-		if (std::isnan(safeScale.x) || std::isnan(safeScale.y) || std::isnan(safeScale.z)) {
-			safeScale = { 1.0f, 1.0f, 1.0f };
-		}
-		// スケールが 0 になると逆行列や法線計算で GPU が即死するため、最小値を設ける
+		if (std::isnan(safePos.x) || std::isnan(safePos.y) || std::isnan(safePos.z)) safePos = { 0.0f, 0.0f, 0.0f };
+		if (std::isnan(safeRot.x) || std::isnan(safeRot.y) || std::isnan(safeRot.z)) safeRot = { 0.0f, 0.0f, 0.0f };
+		if (std::isnan(safeScale.x) || std::isnan(safeScale.y) || std::isnan(safeScale.z)) safeScale = { 1.0f, 1.0f, 1.0f };
+
 		const float minScale = 0.0001f;
 		if (std::abs(safeScale.x) < minScale) safeScale.x = (safeScale.x >= 0.0f) ? minScale : -minScale;
 		if (std::abs(safeScale.y) < minScale) safeScale.y = (safeScale.y >= 0.0f) ? minScale : -minScale;
 		if (std::abs(safeScale.z) < minScale) safeScale.z = (safeScale.z >= 0.0f) ? minScale : -minScale;
 
-		// 安全なデータをバッファに書き込む
-		m_mappedTransformData[currentInstanceCount].pos = safePos; //
-		m_mappedTransformData[currentInstanceCount].rot = safeRot; //
-		m_mappedTransformData[currentInstanceCount].scale = safeScale; //
-		currentInstanceCount++; //
+		// バッファに書き込み
+		m_mappedTransformData[currentInstanceCount].pos = safePos;
+		m_mappedTransformData[currentInstanceCount].rot = safeRot;
+		m_mappedTransformData[currentInstanceCount].scale = safeScale;
+
+		currentInstanceCount++;
 	}
 
-
 	// =============================================================
-	// 【★クラッシュ解決の鍵】Computeを実行する前に、バッファを「書き込み許可」に戻す
+	// 【ステップ2】バリア：Compute Shader 実行前に UAV に転向
 	// =============================================================
 	D3D12_RESOURCE_BARRIER beforeComputeBarrier{};
 	beforeComputeBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	beforeComputeBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	beforeComputeBarrier.Transition.pResource = m_instanceBuffer.Get();
-	// 前のフレームの最後で「読み込み用(NON_PIXEL_SRV)」になっている状態から、
-	beforeComputeBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	// Compute Shaderが書き込める「書き込み用(UAV)」の状態へ引き戻す
+	beforeComputeBarrier.Transition.StateBefore = m_instanceBufferState;
 	beforeComputeBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 	beforeComputeBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
-	commandList->ResourceBarrier(1, &beforeComputeBarrier);
-
+	if (m_instanceBufferState != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
+		commandList->ResourceBarrier(1, &beforeComputeBarrier);
+		m_instanceBufferState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	}
 
 	// =============================================================
-	// 【ステップ2】Compute Shaderを実行して、GPUで行列計算
+	// 【ステップ3】Compute Shader 実行
 	// =============================================================
-
-	// 1. Compute（計算）用のルートシグネチャとPSOをセット
 	commandList->SetComputeRootSignature(m_computeRootSignature.Get());
 	commandList->SetPipelineState(m_computePipelineState.Get());
 
-	// 2. ディスクリプタヒープをセット
 	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	// 3. 0番スロットに「行列」と「個数」を直接送り届ける
 	struct ComputeParams {
 		Matrix4x4 viewProj;
 		int instanceCount;
 		float pad[3];
 	};
 	ComputeParams cParams{};
-	cParams.viewProj = viewProjectionMatrix; // エンジンのビュープロジェクション行列
+	cParams.viewProj = viewProjectionMatrix;
 	cParams.instanceCount = currentInstanceCount;
 
-	// 0番スロットに 17個の32bit値を送る
+	// [0]: b0 定数バッファ
 	commandList->SetComputeRoot32BitConstants(0, 17, &cParams, 0);
+	// [1]: t0 入力データ（SRVテーブル）
+	commandList->SetComputeRootDescriptorTable(1, m_transformSrvGpuHandle);
+	// [2]: u0 出力データ（UAVテーブル）
+	commandList->SetComputeRootDescriptorTable(2, m_instanceUavGpuHandle);
 
-	// 4. スロット番号を「1」と「2」に指定してバインド
-	commandList->SetComputeRootDescriptorTable(1, m_transformSrvGpuHandle); // [1]番スロット: t0 入力データ
-	commandList->SetComputeRootDescriptorTable(2, m_instanceUavGpuHandle);   // [2]番スロット: u0 出力先
-
-	// 5. 何スレッド動かすかを計算して、実行（Dispatch）！
 	UINT threadGroupsX = (currentInstanceCount + 63) / 64;
 	commandList->Dispatch(threadGroupsX, 1, 1);
 
-
 	// =============================================================
-	// 【ステップ3】リソースバリア（Computeの書き込み UAV ➔ 描画での読み込み SRV へ）
+	// 【ステップ4】バリア：Compute Shader 実行後に SRV に戻す
 	// =============================================================
 	D3D12_RESOURCE_BARRIER afterComputeBarrier{};
 	afterComputeBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -976,54 +971,53 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	afterComputeBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 	commandList->ResourceBarrier(1, &afterComputeBarrier);
-
+	m_instanceBufferState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
 	// =============================================================
-	// 【ステップ4】Vertex Shader（描画用）に切り替えて一気に描画！
+	// 【ステップ5】グラフィックス描画パイプラインに切り替え
 	// =============================================================
-
-	// 1. グラフィックス用のルートシグネチャとPSOに切り替える
 	commandList->SetGraphicsRootSignature(m_gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(m_gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	// 2. 作成しておいた gInstances用のSRVテーブル（103番）をバインド
-	commandList->SetGraphicsRootDescriptorTable(2, m_instanceSrvGpuHandle);
+	// 🌟【超重要修正】PSO.cpp の rootParameter[1] は DescriptorTable ではなく RootSRV になっています！
+	// そのため、register(t2) のバインドは以下の直接アドレス指定が正解です！
+	commandList->SetGraphicsRootShaderResourceView(1, m_instanceBuffer->GetGPUVirtualAddress());
 
-	// 3. 優秀なバッチ描画ロジックでまとめてDraw！
+	// =============================================================
+	// 【ステップ6】バッチ描画ループ
+	// =============================================================
 	int start = 0;
 	while (start < currentInstanceCount) {
 		const DrawRequest& head = m_drawRequests[start];
 
-		// 同じグループ（モデル＆テクスチャ）が続く間カウント
 		int count = 1;
 		while (start + count < currentInstanceCount
 			&& m_drawRequests[start + count].model == head.model
-			&& m_drawRequests[start + count].textureIndex == head.textureIndex) {
+			&& m_drawRequests[start + count].textureIndex == head.textureIndex
+			&& m_drawRequests[start + count].lightId == head.lightId) {
 			count++;
 		}
 
-		// ライトをバインド
 		LightManager::GetInstance()->Bind(commandList.Get(), head.lightId);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		if (head.isMesh) {
-			// シェーダー側に「このバッチの開始インデックス」を伝える（スロット5と仮定）
-			commandList->SetGraphicsRoot32BitConstant(5, static_cast<UINT>(start), 0);
+		if (head.model) {
+			// 🌟【超重要修正】シェーダー (register(b2)) に渡す「開始インデックス」も、
+			// m_drawRequests の番号ではなく「GPUバッファの実インデックス」を渡す必要があります！
+			commandList->SetGraphicsRoot32BitConstant(5, static_cast<UINT>(gpuInstanceIndex[start]), 0);
 
-			// モデルの描画命令（インスタンス数と開始位置を渡す）
 			head.model->Draw(
 				commandList.Get(),
 				head.textureIndex,
-				static_cast<UINT>(count), // このグループの個数
-				static_cast<UINT>(start)  // バッファ内の開始位置
+				static_cast<UINT>(count),              // インスタンス数
+				static_cast<UINT>(gpuInstanceIndex[start])  // GPU バッファ内の開始位置
 			);
 		}
 
 		start += count;
 	}
 
-	// すべての描画命令を投げ終わったので、リクエスト配列をクリア
 	m_drawRequests.clear();
 }
 
@@ -1151,23 +1145,25 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	UINT instanceSlot = static_cast<UINT>(m_maxDrawCount - 1);
-
 	Matrix4x4 world = MakeAffineMatrix({ 1,1,1 }, { 0,0,0 }, { 0,0,0 });
 	Matrix4x4 wvp = Multiply(world, viewProjectionMatrix);
 
-	m_mappedInstanceData[instanceSlot].WVP = wvp;
-	m_mappedInstanceData[instanceSlot].World = world;
+	if (!m_mappedDynamicMeshInstanceData || !m_dynamicMeshInstanceBuffer) {
+		return;
+	}
+
+	m_mappedDynamicMeshInstanceData[0].WVP = wvp;
+	m_mappedDynamicMeshInstanceData[0].World = world;
 
 	commandList->SetGraphicsRootShaderResourceView(
-		1, m_instanceBuffer->GetGPUVirtualAddress());
+		1, m_dynamicMeshInstanceBuffer->GetGPUVirtualAddress());
 
 	commandList->SetGraphicsRoot32BitConstant(
 		5,
-		instanceSlot,
+		0,
 		0);
 
-	m_dynamicMeshModel->Draw(commandList.Get(), index, 1, instanceSlot);
+	m_dynamicMeshModel->Draw(commandList.Get(), index, 1, 0);
 }
 
 
@@ -1191,6 +1187,73 @@ void TUFEngine::GrowConstantBuffer() {
 	m_pConstantBuffer->Unmap(0, nullptr);
 	m_pConstantBuffer = CreateBufferResource(device.Get(), cbSize * m_maxDrawCount);
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
+}
+
+void TUFEngine::GrowInstanceBuffer(int requiredCount) {
+	while (m_maxDrawCount < requiredCount) {
+		m_maxDrawCount *= 2;
+	}
+
+	m_fenceValue++;
+	commandQueue->Signal(m_fence.Get(), m_fenceValue);
+	if (m_fence->GetCompletedValue() < m_fenceValue) {
+		m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+	}
+
+	if (m_transformBuffer && m_mappedTransformData) {
+		m_transformBuffer->Unmap(0, nullptr);
+		m_mappedTransformData = nullptr;
+	}
+
+	m_transformBuffer = CreateBufferResource(
+		device.Get(),
+		sizeof(RawTransform) * m_maxDrawCount,
+		D3D12_HEAP_TYPE_UPLOAD,
+		D3D12_RESOURCE_FLAG_NONE
+	);
+	m_transformBuffer->Map(
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&m_mappedTransformData)
+	);
+
+	m_instanceBuffer = CreateBufferResource(
+		device.Get(),
+		sizeof(InstanceData) * m_maxDrawCount,
+		D3D12_HEAP_TYPE_DEFAULT,
+		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+	);
+	m_instanceBufferState = D3D12_RESOURCE_STATE_COMMON;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC transformSrvDesc{};
+	transformSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	transformSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	transformSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	transformSrvDesc.Buffer.FirstElement = 0;
+	transformSrvDesc.Buffer.NumElements = m_maxDrawCount;
+	transformSrvDesc.Buffer.StructureByteStride = sizeof(RawTransform);
+	transformSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	device->CreateShaderResourceView(m_transformBuffer.Get(), &transformSrvDesc, m_transformSrvCpuHandle);
+
+	D3D12_UNORDERED_ACCESS_VIEW_DESC instanceUavDesc{};
+	instanceUavDesc.Format = DXGI_FORMAT_UNKNOWN;
+	instanceUavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+	instanceUavDesc.Buffer.FirstElement = 0;
+	instanceUavDesc.Buffer.NumElements = m_maxDrawCount;
+	instanceUavDesc.Buffer.StructureByteStride = sizeof(InstanceData);
+	instanceUavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+	device->CreateUnorderedAccessView(m_instanceBuffer.Get(), nullptr, &instanceUavDesc, m_instanceUavCpuHandle);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC instanceSrvDesc{};
+	instanceSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	instanceSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	instanceSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	instanceSrvDesc.Buffer.FirstElement = 0;
+	instanceSrvDesc.Buffer.NumElements = m_maxDrawCount;
+	instanceSrvDesc.Buffer.StructureByteStride = sizeof(InstanceData);
+	instanceSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	device->CreateShaderResourceView(m_instanceBuffer.Get(), &instanceSrvDesc, m_instanceSrvCpuHandle);
 }
 
 void TUFEngine::ResizeWindow(int newWidth, int newHeight) {
@@ -1348,6 +1411,20 @@ void TUFEngine::InitGpuDrivenResource() {
 		D3D12_HEAP_TYPE_DEFAULT,
 		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 	);
+	m_instanceBufferState = D3D12_RESOURCE_STATE_COMMON;
+
+	m_dynamicMeshInstanceBuffer = CreateBufferResource(
+		device.Get(),
+		sizeof(InstanceData),
+		D3D12_HEAP_TYPE_UPLOAD,
+		D3D12_RESOURCE_FLAG_NONE
+	);
+
+	m_dynamicMeshInstanceBuffer->Map(
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&m_mappedDynamicMeshInstanceData)
+	);
 
 	// ============================================================
 	// 【後半】ディスクリプタ（ビュー）の作成
@@ -1420,7 +1497,7 @@ void TUFEngine::InitGpuDrivenPipeline() {
 	HRESULT hr = S_OK;
 
 	m_gpuDrivenRootSignature = CreateGpuDrivenRootSignature(device.Get(), hr);
-	assert(hr);
+	assert(SUCCEEDED(hr));
 
 	m_gpuDrivenPipelineState = CreateGpuDrivenPipelineStateDesc(device.Get(),m_gpuDrivenRootSignature, hr);
 	assert(SUCCEEDED(hr));

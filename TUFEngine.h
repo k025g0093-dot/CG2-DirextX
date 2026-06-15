@@ -59,6 +59,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 struct DrawRequest {
 	Model* model = nullptr;
+	//DynamicMesh* mesh = nullptr;
 	std::vector<Vector3> vertices;
 	Vector4            color = { 1, 1, 1, 1 };
 	std::vector<Vector2> uvs;
@@ -72,6 +73,10 @@ struct DrawRequest {
 	bool               isMesh = false;
 	bool               isSprite = false;
 	int lightId = -1;
+
+	//新規追加波を作るやつ
+	DynamicMeshModel* dynamicMeshPtr = nullptr;
+	bool isDynamicMesh = false;
 };
 
 struct SceneObject {
@@ -246,6 +251,9 @@ private:
 	ComPtr< ID3D12Resource>m_transformBuffer;
 	InstanceData* m_mappedInstanceData = nullptr;
 	RawTransform* m_mappedTransformData = nullptr;
+	ComPtr<ID3D12Resource> m_dynamicMeshInstanceBuffer;
+	InstanceData* m_mappedDynamicMeshInstanceData = nullptr;
+	D3D12_RESOURCE_STATES m_instanceBufferState = D3D12_RESOURCE_STATE_COMMON;
 
 	ComPtr<ID3D12RootSignature> m_gpuDrivenRootSignature;
 	ComPtr<ID3D12PipelineState> m_gpuDrivenPipelineState;
