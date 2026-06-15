@@ -107,6 +107,7 @@ float4x4 MakeAffineMatrix(float3 scale, float3 rot, float3 pos)
       return mul(S, mul(RX, mul(RY, mul(RZ, T))));
 }
 
+
 // ------- エントリーポイント -------
 
 [numthreads(64, 1, 1)]

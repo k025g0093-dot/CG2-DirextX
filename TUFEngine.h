@@ -1,6 +1,8 @@
 #pragma once
 #include "AllIncludeHeder.h"
 #include "DynamicMeshModel.h"
+#include "GpuDrivenRenderer.h"
+#include "GpuDrivenTypes.h"
 #include <wrl.h>
 #include  <algorithm>
 
@@ -19,18 +21,6 @@ struct VertexData {
 };
 
 
-struct RawTransform
-{
-	Vector3 pos;
-	float pad0;
-	Vector3 rot;
-	float pad1;
-	Vector3 scale;
-	float pad2;
-
-};
-
-
 struct Material {
 	Vector4 color;
 	int32_t enableLighting;
@@ -40,11 +30,6 @@ struct Material {
 };
 
 struct TransformationMatrix {
-	Matrix4x4 WVP;
-	Matrix4x4 World;
-};
-
-struct InstanceData {
 	Matrix4x4 WVP;
 	Matrix4x4 World;
 };
@@ -198,6 +183,7 @@ private:
 	UINT8* m_pCbvDataBegin = nullptr;
 
 	std::unique_ptr<ImGuiUIManager> m_imguiManager;
+	std::unique_ptr<GpuDrivenRenderer> m_gpuDrivenRenderer;
 
 	HWND    hwnd = nullptr;
 	int32_t width = 0;

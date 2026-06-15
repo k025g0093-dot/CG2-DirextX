@@ -97,6 +97,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 	InitGpuDrivenPipeline();
 
+	m_gpuDrivenRenderer = std::make_unique<GpuDrivenRenderer>();
+	m_gpuDrivenRenderer->Initialize(device.Get(), srvDescriptorHeap.Get(), m_maxDrawCount);
+
 	GetSceneRtv(width, height);
 
 #ifdef _DEBUG
