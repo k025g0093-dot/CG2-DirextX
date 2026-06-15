@@ -1,6 +1,8 @@
 #pragma once
 #include "AllIncludeHeder.h"
 #include "DynamicMeshModel.h"
+#include "GpuDrivenRenderer.h"
+#include "GpuDrivenTypes.h"
 #include <wrl.h>
 #include  <algorithm>
 
@@ -18,6 +20,7 @@ struct VertexData {
 	Vector3 tangent;
 };
 
+
 struct Material {
 	Vector4 color;
 	int32_t enableLighting;
@@ -27,11 +30,6 @@ struct Material {
 };
 
 struct TransformationMatrix {
-	Matrix4x4 WVP;
-	Matrix4x4 World;
-};
-
-struct InstanceData {
 	Matrix4x4 WVP;
 	Matrix4x4 World;
 };
@@ -46,6 +44,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 struct DrawRequest {
 	Model* model = nullptr;
+	//DynamicMesh* mesh = nullptr;
 	std::vector<Vector3> vertices;
 	Vector4            color = { 1, 1, 1, 1 };
 	std::vector<Vector2> uvs;
@@ -59,6 +58,10 @@ struct DrawRequest {
 	bool               isMesh = false;
 	bool               isSprite = false;
 	int lightId = -1;
+
+	//新規追加波を作るやつ
+	DynamicMeshModel* dynamicMeshPtr = nullptr;
+	bool isDynamicMesh = false;
 };
 
 struct SceneObject {
@@ -169,8 +172,7 @@ public:
 
 private:
 
-	void GrowConstantBuffer();
-	void GrowInstanceBuffer(int requiredCount);
+
 
 
 	static TUFEngine* s_instance;
@@ -181,6 +183,7 @@ private:
 	UINT8* m_pCbvDataBegin = nullptr;
 
 	std::unique_ptr<ImGuiUIManager> m_imguiManager;
+	std::unique_ptr<GpuDrivenRenderer> m_gpuDrivenRenderer;
 
 	HWND    hwnd = nullptr;
 	int32_t width = 0;
@@ -214,6 +217,10 @@ private:
 
 	ComPtr<ID3D12RootSignature> gpuDrivenRootSignature;
 	ComPtr<ID3D12PipelineState> gpuDrivenPipelineState;
+	
+	// --- CSに送るためのシグネチャ関係 ---
+	ComPtr<ID3D12RootSignature> m_computeRootSignature;
+	ComPtr<ID3D12PipelineState> m_computePipelineState;
 
 
 
@@ -225,16 +232,57 @@ private:
 	Vector2     m_spriteUVTranslate = { 0.0f, 0.0f };
 	float       m_spriteUVRotate = 0.0f;
 
+	
+	ComPtr<ID3D12Resource> m_instanceBuffer;
+	ComPtr< ID3D12Resource>m_transformBuffer;
+	InstanceData* m_mappedInstanceData = nullptr;
+	RawTransform* m_mappedTransformData = nullptr;
+	ComPtr<ID3D12Resource> m_dynamicMeshInstanceBuffer;
+	InstanceData* m_mappedDynamicMeshInstanceData = nullptr;
+	D3D12_RESOURCE_STATES m_instanceBufferState = D3D12_RESOURCE_STATE_COMMON;
+
+	ComPtr<ID3D12RootSignature> m_gpuDrivenRootSignature;
+	ComPtr<ID3D12PipelineState> m_gpuDrivenPipelineState;
+
+
+	UINT m_descriptorSize = 0;
+
+
+	// 2. CPU側のハンドル（「ここにビューを作ってね」とデバイスに教える用）
+	D3D12_CPU_DESCRIPTOR_HANDLE heapStartCPU;
+
+	// 3. GPU側のハンドル（「ここにあるビューを読んでね」とコマンドリストに教える用）
+	D3D12_GPU_DESCRIPTOR_HANDLE heapStartGPU;
+
+
+	// 1. 【CS用】gTransforms (register(t0)) のSRVハンドル
+	D3D12_CPU_DESCRIPTOR_HANDLE m_transformSrvCpuHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE m_transformSrvGpuHandle;
+
+	// 2. 【CS用】gInstances (register(u0)) のUAVハンドル
+	D3D12_CPU_DESCRIPTOR_HANDLE m_instanceUavCpuHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE m_instanceUavGpuHandle;
+
+	// 3. 【VS用】gInstances (register(t2)) のSRVハンドル
+	D3D12_CPU_DESCRIPTOR_HANDLE m_instanceSrvCpuHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE m_instanceSrvGpuHandle;
+
+private:
+
+	void GrowConstantBuffer();
+	void GrowInstanceBuffer(int requiredCount);
+
+
 	void InitWindow(std::wstring name);
 	void InitializeDXGI(HWND hwnd);
 	void InitializeImGui(HWND hwnd);
 	ID3D12Resource* CreateDepthStencilTextureResource(int32_t width, int32_t height);
 	void RenderAllRequests();
 	void RenderGpuDrivenALLRequests();
-	
-	ComPtr<ID3D12Resource> m_instanceBuffer;
-	InstanceData* m_mappedInstanceData = nullptr;
 
+
+	void InitGpuDrivenResource();
+	void InitGpuDrivenPipeline();
 
 
 private://描画物のリソース
