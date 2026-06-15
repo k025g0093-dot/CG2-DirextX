@@ -51,13 +51,16 @@ D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(
 
 ComPtr<ID3D12Resource> CreateBufferResource(
 	ID3D12Device* device,
-	size_t sizeInBytes
-) {
+	size_t sizeInBytes,
+	D3D12_HEAP_TYPE heapType,
+	D3D12_RESOURCE_FLAGS flags) {
 
 	size_t alignedSize = (sizeInBytes + 255) & ~255;
 
-	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	// 変数名を「upload...」から使い回せるように「heapProperties」に変更
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = heapType; // ★1. 固定をやめて引数を使う
+
 	D3D12_RESOURCE_DESC bufferResourceDesc{};
 	bufferResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	bufferResourceDesc.Width = alignedSize;
@@ -66,15 +69,23 @@ ComPtr<ID3D12Resource> CreateBufferResource(
 	bufferResourceDesc.MipLevels = 1;
 	bufferResourceDesc.SampleDesc.Count = 1;
 	bufferResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	bufferResourceDesc.Flags = flags; // ★2. 引数のフラグをセットする
+
+	// ★3. ヒープの種類によって初期状態（リソースステート）を自動で切り替える
+	D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+		initialState = D3D12_RESOURCE_STATE_COMMON; // DEFAULTヒープの安全な初期状態
+	}
+
 	ComPtr<ID3D12Resource> bufferResource;
 	HRESULT hr = device->CreateCommittedResource(
-		&uploadHeapProperties,
+		&heapProperties, // ★変数名変更を反映
 		D3D12_HEAP_FLAG_NONE,
 		&bufferResourceDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		initialState, // ★固定をやめて自動切り替えにした変数を使う
 		nullptr,
 		IID_PPV_ARGS(bufferResource.GetAddressOf()));
 	assert(SUCCEEDED(hr));
-	return bufferResource;
 
+	return bufferResource;
 }

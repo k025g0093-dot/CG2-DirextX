@@ -27,4 +27,7 @@ D3D12_VERTEX_BUFFER_VIEW CreateVertexBufferView(
 
 ComPtr<ID3D12Resource> CreateBufferResource(
     ID3D12Device* device,
-    size_t sizeInBytes);
+    size_t sizeInBytes,
+    D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_UPLOAD, // 省略したら今まで通りUPLOAD
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE
+);

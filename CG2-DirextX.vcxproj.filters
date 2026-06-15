@@ -201,6 +201,7 @@
     <FxCompile Include="Object3d.PS.hlsl" />
     <FxCompile Include="GpuDrivenObject.VS.hlsl" />
     <FxCompile Include="GpuDrivenObject.PS.hlsl" />
+    <FxCompile Include="GpuDrivenObject.CS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TUFEngine.h">
