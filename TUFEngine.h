@@ -1,8 +1,5 @@
 #pragma once
 #include "AllIncludeHeder.h"
-#include "DynamicMeshModel.h"
-#include "GpuDrivenRenderer.h"
-#include "GpuDrivenTypes.h"
 #include <wrl.h>
 #include  <algorithm>
 
@@ -214,10 +211,9 @@ private:
 	ComPtr<ID3D12PipelineState>  pipelineState;
 
 	//GPU用のルートシグネチャ
-
 	ComPtr<ID3D12RootSignature> gpuDrivenRootSignature;
 	ComPtr<ID3D12PipelineState> gpuDrivenPipelineState;
-	
+
 	// --- CSに送るためのシグネチャ関係 ---
 	ComPtr<ID3D12RootSignature> m_computeRootSignature;
 	ComPtr<ID3D12PipelineState> m_computePipelineState;
@@ -232,18 +228,8 @@ private:
 	Vector2     m_spriteUVTranslate = { 0.0f, 0.0f };
 	float       m_spriteUVRotate = 0.0f;
 
-	
-	ComPtr<ID3D12Resource> m_instanceBuffer;
-	ComPtr< ID3D12Resource>m_transformBuffer;
-	InstanceData* m_mappedInstanceData = nullptr;
-	RawTransform* m_mappedTransformData = nullptr;
 	ComPtr<ID3D12Resource> m_dynamicMeshInstanceBuffer;
 	InstanceData* m_mappedDynamicMeshInstanceData = nullptr;
-	D3D12_RESOURCE_STATES m_instanceBufferState = D3D12_RESOURCE_STATE_COMMON;
-
-	ComPtr<ID3D12RootSignature> m_gpuDrivenRootSignature;
-	ComPtr<ID3D12PipelineState> m_gpuDrivenPipelineState;
-
 
 	UINT m_descriptorSize = 0;
 
@@ -254,23 +240,9 @@ private:
 	// 3. GPU側のハンドル（「ここにあるビューを読んでね」とコマンドリストに教える用）
 	D3D12_GPU_DESCRIPTOR_HANDLE heapStartGPU;
 
-
-	// 1. 【CS用】gTransforms (register(t0)) のSRVハンドル
-	D3D12_CPU_DESCRIPTOR_HANDLE m_transformSrvCpuHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE m_transformSrvGpuHandle;
-
-	// 2. 【CS用】gInstances (register(u0)) のUAVハンドル
-	D3D12_CPU_DESCRIPTOR_HANDLE m_instanceUavCpuHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE m_instanceUavGpuHandle;
-
-	// 3. 【VS用】gInstances (register(t2)) のSRVハンドル
-	D3D12_CPU_DESCRIPTOR_HANDLE m_instanceSrvCpuHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE m_instanceSrvGpuHandle;
-
 private:
 
 	void GrowConstantBuffer();
-	void GrowInstanceBuffer(int requiredCount);
 
 
 	void InitWindow(std::wstring name);
