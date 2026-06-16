@@ -9,8 +9,14 @@ using Microsoft::WRL::ComPtr;
 Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(
 	ID3D12Device* device,
 	size_t size,
-	D3D12_HEAP_TYPE heapType ,
-	D3D12_RESOURCE_FLAGS flags );
+	D3D12_HEAP_TYPE heapType,
+	D3D12_RESOURCE_FLAGS flags);
+
+// ExecuteIndirect用のコマンド構造体（メモリの並び順が命！）
+struct IndirectCommand {
+	UINT baseInstance; // ① RootConstantで渡していた「開始インデックス」
+	D3D12_DRAW_INDEXED_ARGUMENTS drawArgs; // ② Draw用の引数5点セット（IndexCount, InstanceCountなど）
+};
 
 class GpuDrivenRenderer
 {
@@ -23,6 +29,15 @@ public:
 	bool IsInitialized() const { return m_device != nullptr; }
 	int GetMaxDrawCount() const { return m_maxDrawCount; }
 	void SetMaxDrawCount(int count) { m_maxDrawCount = count; }
+
+	// ============================================================
+	// 【CommandSignature の初期化】
+	// CommandSignature の作成と m_commandSignature への格納を行う
+	// ============================================================
+	void CreateCommandSignature(
+		ID3D12Device* device,
+		ID3D12RootSignature* rootSignature
+	);
 
 	// ============================================================
 	// 【バッファアクセス用 Getter】
@@ -64,7 +79,27 @@ public:
 	void TransitionToUAV(ID3D12GraphicsCommandList* cmdList);
 	void TransitionToSRV(ID3D12GraphicsCommandList* cmdList);
 
+	// ============================================================
+	// 【IndirectCommand バッファ関係】
+	// ============================================================
+	IndirectCommand* GetMappedIndirectCommandData() const { return m_mappedIndirectCommandData; }
+	ID3D12CommandSignature* GetCommandSignature() const { return m_commandSignature.Get(); }
+	ID3D12Resource* GetIndirectCommandBuffer() const { return m_indirectCommandBuffer.Get(); }
+	D3D12_RESOURCE_STATES GetIndirectCommandBufferState() const { return m_indirectCommandBufferState; }
+	void SetIndirectCommandBufferState(D3D12_RESOURCE_STATES state) { m_indirectCommandBufferState = state; }
+
+	// ============================================================
+	// 【IndirectCommandBuffer バリア処理】
+	// ============================================================
+	void TransitionIndirectCommandBufferToGenericRead(ID3D12GraphicsCommandList* cmdList);
+
 private:
+	ComPtr<ID3D12Resource> m_indirectCommandBuffer;
+	IndirectCommand* m_mappedIndirectCommandData = nullptr;
+	D3D12_RESOURCE_STATES m_indirectCommandBufferState = D3D12_RESOURCE_STATE_COMMON;
+	ComPtr<ID3D12CommandSignature> m_commandSignature;
+
+
 	Microsoft::WRL::ComPtr<ID3D12Device> m_device;
 	ID3D12DescriptorHeap* m_srvDescriptorHeap = nullptr;
 	int m_maxDrawCount = 0;

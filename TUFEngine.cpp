@@ -98,7 +98,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	InitGpuDrivenPipeline();
 
 	m_gpuDrivenRenderer = std::make_unique<GpuDrivenRenderer>();
+
 	m_gpuDrivenRenderer->Initialize(device.Get(), srvDescriptorHeap.Get(), m_maxDrawCount);
+	m_gpuDrivenRenderer->CreateCommandSignature(device.Get(), gpuDrivenRootSignature.Get());
 
 	GetSceneRtv(width, height);
 
@@ -671,6 +673,9 @@ void TUFEngine::PostDraw() {
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 #endif // USE_IMGUI
 
+	if (m_dynamicMeshModel) {
+		m_dynamicMeshModel->SwapBuffers();
+	}
 
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -765,6 +770,9 @@ void TUFEngine::SetupInfoQueue() {
 void TUFEngine::RenderGpuDrivenALLRequests() {
 	if (m_drawRequests.empty()) return;
 
+	// =============================================================
+	// 【バッファ拡張チェック】
+	// =============================================================
 	if ((int)m_drawRequests.size() > m_gpuDrivenRenderer->GetMaxDrawCount()) {
 		m_gpuDrivenRenderer->GrowBuffers(
 			commandQueue.Get(),
@@ -776,7 +784,7 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	}
 
 	// =============================================================
-	// 【前処理】安全対策：モデルが nullptr の不正なリクエストを排除
+	// 【前処理】nullptr チェック - 不正なリクエストを削除
 	// =============================================================
 	m_drawRequests.erase(
 		std::remove_if(m_drawRequests.begin(), m_drawRequests.end(),
@@ -796,15 +804,19 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		});
 
 	// =============================================================
-	// 【ステップ1】CPU→GPU データ転送
-	// m_drawRequests[i] → m_instanceBuffer[currentInstanceCount] のマッピングを記録
+	// 【ステップ1】CPU→GPU データ転送の準備
+	// ソート後に gpuInstanceIndex を初期化（重要！）
 	// =============================================================
 	int32_t currentInstanceCount = 0;
 	std::vector<int> gpuInstanceIndex(m_drawRequests.size());
 	RawTransform* mappedTransformData = m_gpuDrivenRenderer->GetMappedTransformData();
 
 	for (int i = 0; i < (int)m_drawRequests.size(); i++) {
-		if (currentInstanceCount >= m_gpuDrivenRenderer->GetMaxDrawCount()) break;
+		if (currentInstanceCount >= m_gpuDrivenRenderer->GetMaxDrawCount()) {
+			// GPU バッファが満杯 - 残りは処理できない
+			// （フレーム内では OK、次フレームでリセットされる）
+			break;
+		}
 
 		// このリクエストが GPU バッファ内のどのインデックスに入るか記録
 		gpuInstanceIndex[i] = currentInstanceCount;
@@ -816,21 +828,35 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		Vector3 safeRot = request.rot;
 		Vector3 safeScale = request.scale;
 
-		if (std::isnan(safePos.x) || std::isnan(safePos.y) || std::isnan(safePos.z)) safePos = { 0.0f, 0.0f, 0.0f };
-		if (std::isnan(safeRot.x) || std::isnan(safeRot.y) || std::isnan(safeRot.z)) safeRot = { 0.0f, 0.0f, 0.0f };
-		if (std::isnan(safeScale.x) || std::isnan(safeScale.y) || std::isnan(safeScale.z)) safeScale = { 1.0f, 1.0f, 1.0f };
+		// NaN チェック
+		if (std::isnan(safePos.x) || std::isnan(safePos.y) || std::isnan(safePos.z)) {
+			safePos = { 0.0f, 0.0f, 0.0f };
+		}
+		if (std::isnan(safeRot.x) || std::isnan(safeRot.y) || std::isnan(safeRot.z)) {
+			safeRot = { 0.0f, 0.0f, 0.0f };
+		}
+		if (std::isnan(safeScale.x) || std::isnan(safeScale.y) || std::isnan(safeScale.z)) {
+			safeScale = { 1.0f, 1.0f, 1.0f };
+		}
 
+		// スケール 0 チェック（ゼロスケールはシェーダーで問題になる可能性）
 		const float minScale = 0.0001f;
 		if (std::abs(safeScale.x) < minScale) safeScale.x = (safeScale.x >= 0.0f) ? minScale : -minScale;
 		if (std::abs(safeScale.y) < minScale) safeScale.y = (safeScale.y >= 0.0f) ? minScale : -minScale;
 		if (std::abs(safeScale.z) < minScale) safeScale.z = (safeScale.z >= 0.0f) ? minScale : -minScale;
 
-		// バッファに書き込み
+		// GPU バッファに書き込み
 		mappedTransformData[currentInstanceCount].pos = safePos;
 		mappedTransformData[currentInstanceCount].rot = safeRot;
 		mappedTransformData[currentInstanceCount].scale = safeScale;
 
 		currentInstanceCount++;
+	}
+
+	// 処理するインスタンスが 0 ならここで終了
+	if (currentInstanceCount == 0) {
+		m_drawRequests.clear();
+		return;
 	}
 
 	// =============================================================
@@ -840,6 +866,7 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 
 	// =============================================================
 	// 【ステップ3】Compute Shader 実行
+	// Transform バッファを読み、Instance バッファに書き込み
 	// =============================================================
 	commandList->SetComputeRootSignature(m_computeRootSignature.Get());
 	commandList->SetPipelineState(m_computePipelineState.Get());
@@ -856,13 +883,15 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	cParams.viewProj = viewProjectionMatrix;
 	cParams.instanceCount = currentInstanceCount;
 
-	// [0]: b0 定数バッファ
+	// [0]: b0 定数バッファ（ViewProj と instanceCount）
 	commandList->SetComputeRoot32BitConstants(0, 17, &cParams, 0);
-	// [1]: t0 入力データ（SRVテーブル）
+	// [1]: t0 入力データ（Transform SRV）
 	commandList->SetComputeRootDescriptorTable(1, m_gpuDrivenRenderer->GetTransformSrvGpuHandle());
-	// [2]: u0 出力データ（UAVテーブル）
+	// [2]: u0 出力データ（Instance UAV）
 	commandList->SetComputeRootDescriptorTable(2, m_gpuDrivenRenderer->GetInstanceUavGpuHandle());
 
+	// 各スレッドグループが 64 スレッド
+	// 各スレッドが 1 インスタンスを処理
 	UINT threadGroupsX = (currentInstanceCount + 63) / 64;
 	commandList->Dispatch(threadGroupsX, 1, 1);
 
@@ -878,8 +907,7 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	// 🌟【超重要修正】PSO.cpp の rootParameter[1] は DescriptorTable ではなく RootSRV になっています！
-	// そのため、register(t2) のバインドは以下の直接アドレス指定が正解です！
+	// Instance バッファを直接指定（ルートパラメータ[1] は RootSRV）
 	commandList->SetGraphicsRootShaderResourceView(
 		1,
 		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress()
@@ -887,11 +915,13 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 
 	// =============================================================
 	// 【ステップ6】バッチ描画ループ
+	// 同じモデル・テクスチャ・ライトで分類し、バッチ実行
 	// =============================================================
 	int start = 0;
 	while (start < currentInstanceCount) {
 		const DrawRequest& head = m_drawRequests[start];
 
+		// 同じ条件の連続したリクエストをバッチ化
 		int count = 1;
 		while (start + count < currentInstanceCount
 			&& m_drawRequests[start + count].model == head.model
@@ -900,27 +930,35 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 			count++;
 		}
 
+		// ライト設定
 		LightManager::GetInstance()->Bind(commandList.Get(), head.lightId);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		if (head.model) {
-			// 🌟【超重要修正】シェーダー (register(b2)) に渡す「開始インデックス」も、
-			// m_drawRequests の番号ではなく「GPUバッファの実インデックス」を渡す必要があります！
-			commandList->SetGraphicsRoot32BitConstant(5, static_cast<UINT>(gpuInstanceIndex[start]), 0);
+			//シェーダーに「GPU バッファ内の開始インデックス」を渡す
+			// （DrawRequest の配列上の番号ではなく、GPU 実メモリのインデックス）
+			UINT gpuStartIndex = static_cast<UINT>(gpuInstanceIndex[start]);
+			commandList->SetGraphicsRoot32BitConstant(5, gpuStartIndex, 0);
 
+			//描画実行
 			head.model->Draw(
 				commandList.Get(),
 				head.textureIndex,
-				static_cast<UINT>(count),              // インスタンス数
-				static_cast<UINT>(gpuInstanceIndex[start])  // GPU バッファ内の開始位置
+				static_cast<UINT>(count),        // このバッチのインスタンス数
+				gpuStartIndex                    // GPU バッファ内の開始位置
 			);
 		}
 
 		start += count;
 	}
 
+	// =============================================================
+	// 【クリーンアップ】次フレームのためにリセット
+	// =============================================================
 	m_drawRequests.clear();
 }
+
+
 #pragma endregion
 
 // --- TUFEngine.cpp ---

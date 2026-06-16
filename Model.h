@@ -18,8 +18,12 @@ protected:
     Vector3 m_scale = { 1, 1, 1 };
 
     Vertex* m_pVertexData = nullptr; // 頂点バッファへのマップポインタ
-
+    UINT m_indexCount = 0;
 public:
+    // Model.h など
+public:
+    // 中身は書かず、「= 0」にして子クラスに実装を強制する
+    virtual UINT GetIndexCount() const { return m_indexCount; }
     virtual ~Model() {}
 
     // 変換パラメータの設定

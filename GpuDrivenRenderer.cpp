@@ -37,6 +37,11 @@ void GpuDrivenRenderer::GrowBuffers(
 		m_mappedTransformData = nullptr;
 	}
 
+	if (m_indirectCommandBuffer && m_mappedIndirectCommandData) {
+		m_indirectCommandBuffer->Unmap(0, nullptr);
+		m_mappedIndirectCommandData = nullptr;
+	}
+
 	CreateBuffersAndViews(m_maxDrawCount);
 	CreateDescriptorViews();
 }
@@ -54,6 +59,23 @@ void GpuDrivenRenderer::CreateBuffersAndViews(int newMaxDrawCount)
 		nullptr,
 		reinterpret_cast<void**>(&m_mappedTransformData)
 	);
+
+
+	m_indirectCommandBuffer = CreateBufferResource(
+		m_device.Get(),
+		sizeof(IndirectCommand) * newMaxDrawCount,
+		D3D12_HEAP_TYPE_UPLOAD, // CPUからコマンドを書き込むのでUPLOAD
+		D3D12_RESOURCE_FLAG_NONE
+	);
+	m_indirectCommandBufferState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+	// マッピングしておく
+	m_indirectCommandBuffer->Map(
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&m_mappedIndirectCommandData)
+	);
+
 
 	m_instanceBuffer = CreateBufferResource(
 		m_device.Get(),
@@ -154,4 +176,50 @@ void GpuDrivenRenderer::TransitionToSRV(ID3D12GraphicsCommandList* cmdList)
 
 	cmdList->ResourceBarrier(1, &afterComputeBarrier);
 	m_instanceBufferState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+}
+
+void GpuDrivenRenderer::TransitionIndirectCommandBufferToGenericRead(ID3D12GraphicsCommandList* cmdList)
+{
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = m_indirectCommandBuffer.Get();
+	barrier.Transition.StateBefore = m_indirectCommandBufferState;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	if (m_indirectCommandBufferState != D3D12_RESOURCE_STATE_GENERIC_READ) {
+		cmdList->ResourceBarrier(1, &barrier);
+		m_indirectCommandBufferState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	}
+}
+
+
+void GpuDrivenRenderer::CreateCommandSignature(ID3D12Device* device, ID3D12RootSignature* rootSignature) {
+	// ① GPUに「構造体の中身をどう解釈するか」を教える配列
+	D3D12_INDIRECT_ARGUMENT_DESC argumentDescs[2] = {};
+
+	// 1つ目：RootConstant（開始インデックスを スロット5 にセットする）
+	argumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
+	argumentDescs[0].Constant.RootParameterIndex = 5; // ★TUFEngineのルートシグネチャのスロット5
+	argumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
+	argumentDescs[0].Constant.Num32BitValuesToSet = 1;
+
+	// 2つ目：DrawIndexedInstanced（実際の描画命令）
+	argumentDescs[1].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+
+	// ② コマンドシグネチャ全体の設定
+	D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+	commandSignatureDesc.pArgumentDescs = argumentDescs;
+	commandSignatureDesc.NumArgumentDescs = _countof(argumentDescs);
+	// 構造体1つ分のサイズ（24バイト）を教える
+	commandSignatureDesc.ByteStride = sizeof(IndirectCommand);
+
+	// ③ 生成し、メンバーに格納！
+	HRESULT hr = device->CreateCommandSignature(
+		&commandSignatureDesc,
+		rootSignature, // 定数をバインドするため、使っているルートシグネチャが必要
+		IID_PPV_ARGS(m_commandSignature.GetAddressOf())
+	);
+	assert(SUCCEEDED(hr));
 }

@@ -214,9 +214,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			//for (int gx = 1; gx < cubeCountX - 1; gx++) {
 			//	waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
 			//}
-			waveGrid.update();
+			
+			//waveGrid.update();
 
-			waveGrid.setObjectWall(engine->GetDroppedMeshes());
+			//waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
 			//if (frameIndex % 60 == 0) {
 			//	waveLog << frameIndex;
