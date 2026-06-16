@@ -85,7 +85,7 @@
     <Filter Include="ソース ファイル\TUFengine\ライティングの設定を行うクラス">
       <UniqueIdentifier>{c1e7bbb4-7929-4348-b8e3-1e6782a46439}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\GpuDriven">
+    <Filter Include="ソース ファイル\TUFengine\GPU駆動のための者たち">
       <UniqueIdentifier>{7a3ef0db-0f35-4bf4-a621-32f765ac06f4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -199,7 +199,7 @@
       <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
     </ClCompile>
     <ClCompile Include="GpuDrivenRenderer.cpp">
-      <Filter>ソース ファイル\TUFengine\GpuDriven</Filter>
+      <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -345,10 +345,10 @@
       <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
     </ClInclude>
     <ClInclude Include="GpuDrivenRenderer.h">
-      <Filter>ソース ファイル\TUFengine\GpuDriven</Filter>
+      <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
     </ClInclude>
     <ClInclude Include="GpuDrivenTypes.h">
-      <Filter>ソース ファイル\TUFengine\GpuDriven</Filter>
+      <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

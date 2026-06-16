@@ -507,20 +507,6 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 
 
-	// InstanceData 配列用バッファ
-	m_instanceBuffer = CreateBufferResource(
-		device.Get(),
-		sizeof(InstanceData) * m_maxDrawCount
-	);
-
-
-
-	m_instanceBuffer->Map(
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&m_mappedInstanceData)
-	);
-
 
 	UINT descriptorSize =
 		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -774,91 +760,19 @@ void TUFEngine::SetupInfoQueue() {
 
 #pragma region RenderRequests
 
-//void TUFEngine::RenderAllRequests() {
-//
-//	if ((int)m_drawRequests.size() >= m_maxDrawCount) {
-//		GrowConstantBuffer();
-//	}
-//
-//	// GPU に、このエンジンのシェーダー設定を使うように伝える
-//	commandList->SetGraphicsRootSignature(rootSignature.Get());
-//	commandList->SetPipelineState(pipelineState.Get());
-//
-//	// テクスチャ用などのディスクリプタヒープをセットする
-//	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
-//	commandList->SetDescriptorHeaps(1, heaps);
-//
-//	// 2. カメラ行列
-//	Matrix4x4 viewProjMatrix = viewProjectionMatrix;
-//
-//
-//
-//	m_cbvIndex = 0;
-//	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
-//	for (auto& request : m_drawRequests) {
-//
-//
-//
-//		if (m_cbvIndex >= m_maxDrawCount) {
-//			break;
-//		}
-//
-//		if (!request.model) continue;
-//		if (request.isSprite) {
-//			request.model->SetUVTransform(GetSpriteUVTransformMatrix());
-//		}
-//
-//		// --- 3. WVP 行列を作成する ---
-//		Matrix4x4 world;
-//		Matrix4x4 wvp;
-//
-//
-//		if (request.isSprite) {
-//			world = MakeAffineMatrix(request.scale, request.rot, { request.posV2.x, request.posV2.y, 0.0f });
-//			Matrix4x4 ortho = MakeOrthographicMatrix(0.0f, 0.0f, (float)width, (float)height, 0.1f, 100.0f);
-//			wvp = Multiply(world, ortho); // スプライトは正射影行列を使う
-//		}
-//		else {
-//			world = MakeAffineMatrix(request.scale, request.rot, request.pos);
-//			wvp = Multiply(world, viewProjMatrix);
-//		}
-//
-//		TransformationMatrix cbData{};
-//		cbData.WVP = wvp;
-//		cbData.World = world;
-//
-//		if (m_pCbvDataBegin && m_pConstantBuffer) {
-//			UINT8* pDest = m_pCbvDataBegin + (cbSize * m_cbvIndex);
-//			memcpy(pDest, &cbData, sizeof(TransformationMatrix));
-//
-//			D3D12_GPU_VIRTUAL_ADDRESS cbAddr =
-//				m_pConstantBuffer->GetGPUVirtualAddress() + (cbSize * m_cbvIndex);
-//			commandList->SetGraphicsRootConstantBufferView(1, cbAddr);
-//		}
-//		LightManager::GetInstance()->Bind(commandList.Get(), request.lightId);
-//
-//		// --- 6. 描画を実行する ---
-//		if (!request.isMesh) {
-//
-//			auto* triangle = static_cast<TriangleModel*>(request.model);
-//			triangle->Draw(commandList.Get(), 0, request.textureIndex, request.color);
-//		}
-//		else {
-//			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-//			request.model->Draw(commandList.Get(), request.textureIndex);
-//		}
-//
-//		m_cbvIndex++;
-//	}
-//
-//	m_drawRequests.clear();
-//}
+
 
 void TUFEngine::RenderGpuDrivenALLRequests() {
 	if (m_drawRequests.empty()) return;
 
-	if ((int)m_drawRequests.size() > m_maxDrawCount) {
-		GrowInstanceBuffer(static_cast<int>(m_drawRequests.size()));
+	if ((int)m_drawRequests.size() > m_gpuDrivenRenderer->GetMaxDrawCount()) {
+		m_gpuDrivenRenderer->GrowBuffers(
+			commandQueue.Get(),
+			m_fence.Get(),
+			m_fenceEvent,
+			m_fenceValue,
+			static_cast<int>(m_drawRequests.size())
+		);
 	}
 
 	// =============================================================
@@ -887,9 +801,10 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	// =============================================================
 	int32_t currentInstanceCount = 0;
 	std::vector<int> gpuInstanceIndex(m_drawRequests.size());
+	RawTransform* mappedTransformData = m_gpuDrivenRenderer->GetMappedTransformData();
 
 	for (int i = 0; i < (int)m_drawRequests.size(); i++) {
-		if (currentInstanceCount >= m_maxDrawCount) break;
+		if (currentInstanceCount >= m_gpuDrivenRenderer->GetMaxDrawCount()) break;
 
 		// このリクエストが GPU バッファ内のどのインデックスに入るか記録
 		gpuInstanceIndex[i] = currentInstanceCount;
@@ -911,9 +826,9 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		if (std::abs(safeScale.z) < minScale) safeScale.z = (safeScale.z >= 0.0f) ? minScale : -minScale;
 
 		// バッファに書き込み
-		m_mappedTransformData[currentInstanceCount].pos = safePos;
-		m_mappedTransformData[currentInstanceCount].rot = safeRot;
-		m_mappedTransformData[currentInstanceCount].scale = safeScale;
+		mappedTransformData[currentInstanceCount].pos = safePos;
+		mappedTransformData[currentInstanceCount].rot = safeRot;
+		mappedTransformData[currentInstanceCount].scale = safeScale;
 
 		currentInstanceCount++;
 	}
@@ -921,18 +836,7 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	// =============================================================
 	// 【ステップ2】バリア：Compute Shader 実行前に UAV に転向
 	// =============================================================
-	D3D12_RESOURCE_BARRIER beforeComputeBarrier{};
-	beforeComputeBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	beforeComputeBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	beforeComputeBarrier.Transition.pResource = m_instanceBuffer.Get();
-	beforeComputeBarrier.Transition.StateBefore = m_instanceBufferState;
-	beforeComputeBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	beforeComputeBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-	if (m_instanceBufferState != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
-		commandList->ResourceBarrier(1, &beforeComputeBarrier);
-		m_instanceBufferState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	}
+	m_gpuDrivenRenderer->TransitionToUAV(commandList.Get());
 
 	// =============================================================
 	// 【ステップ3】Compute Shader 実行
@@ -955,9 +859,9 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	// [0]: b0 定数バッファ
 	commandList->SetComputeRoot32BitConstants(0, 17, &cParams, 0);
 	// [1]: t0 入力データ（SRVテーブル）
-	commandList->SetComputeRootDescriptorTable(1, m_transformSrvGpuHandle);
+	commandList->SetComputeRootDescriptorTable(1, m_gpuDrivenRenderer->GetTransformSrvGpuHandle());
 	// [2]: u0 出力データ（UAVテーブル）
-	commandList->SetComputeRootDescriptorTable(2, m_instanceUavGpuHandle);
+	commandList->SetComputeRootDescriptorTable(2, m_gpuDrivenRenderer->GetInstanceUavGpuHandle());
 
 	UINT threadGroupsX = (currentInstanceCount + 63) / 64;
 	commandList->Dispatch(threadGroupsX, 1, 1);
@@ -965,27 +869,21 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	// =============================================================
 	// 【ステップ4】バリア：Compute Shader 実行後に SRV に戻す
 	// =============================================================
-	D3D12_RESOURCE_BARRIER afterComputeBarrier{};
-	afterComputeBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	afterComputeBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	afterComputeBarrier.Transition.pResource = m_instanceBuffer.Get();
-	afterComputeBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	afterComputeBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	afterComputeBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-	commandList->ResourceBarrier(1, &afterComputeBarrier);
-	m_instanceBufferState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+	m_gpuDrivenRenderer->TransitionToSRV(commandList.Get());
 
 	// =============================================================
 	// 【ステップ5】グラフィックス描画パイプラインに切り替え
 	// =============================================================
-	commandList->SetGraphicsRootSignature(m_gpuDrivenRootSignature.Get());
-	commandList->SetPipelineState(m_gpuDrivenPipelineState.Get());
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
 
 	// 🌟【超重要修正】PSO.cpp の rootParameter[1] は DescriptorTable ではなく RootSRV になっています！
 	// そのため、register(t2) のバインドは以下の直接アドレス指定が正解です！
-	commandList->SetGraphicsRootShaderResourceView(1, m_instanceBuffer->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootShaderResourceView(
+		1,
+		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress()
+	);
 
 	// =============================================================
 	// 【ステップ6】バッチ描画ループ
@@ -1023,7 +921,6 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 
 	m_drawRequests.clear();
 }
-
 #pragma endregion
 
 // --- TUFEngine.cpp ---
@@ -1192,72 +1089,7 @@ void TUFEngine::GrowConstantBuffer() {
 	m_pConstantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin));
 }
 
-void TUFEngine::GrowInstanceBuffer(int requiredCount) {
-	while (m_maxDrawCount < requiredCount) {
-		m_maxDrawCount *= 2;
-	}
 
-	m_fenceValue++;
-	commandQueue->Signal(m_fence.Get(), m_fenceValue);
-	if (m_fence->GetCompletedValue() < m_fenceValue) {
-		m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
-		WaitForSingleObject(m_fenceEvent, INFINITE);
-	}
-
-	if (m_transformBuffer && m_mappedTransformData) {
-		m_transformBuffer->Unmap(0, nullptr);
-		m_mappedTransformData = nullptr;
-	}
-
-	m_transformBuffer = CreateBufferResource(
-		device.Get(),
-		sizeof(RawTransform) * m_maxDrawCount,
-		D3D12_HEAP_TYPE_UPLOAD,
-		D3D12_RESOURCE_FLAG_NONE
-	);
-	m_transformBuffer->Map(
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&m_mappedTransformData)
-	);
-
-	m_instanceBuffer = CreateBufferResource(
-		device.Get(),
-		sizeof(InstanceData) * m_maxDrawCount,
-		D3D12_HEAP_TYPE_DEFAULT,
-		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-	);
-	m_instanceBufferState = D3D12_RESOURCE_STATE_COMMON;
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC transformSrvDesc{};
-	transformSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
-	transformSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	transformSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	transformSrvDesc.Buffer.FirstElement = 0;
-	transformSrvDesc.Buffer.NumElements = m_maxDrawCount;
-	transformSrvDesc.Buffer.StructureByteStride = sizeof(RawTransform);
-	transformSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	device->CreateShaderResourceView(m_transformBuffer.Get(), &transformSrvDesc, m_transformSrvCpuHandle);
-
-	D3D12_UNORDERED_ACCESS_VIEW_DESC instanceUavDesc{};
-	instanceUavDesc.Format = DXGI_FORMAT_UNKNOWN;
-	instanceUavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-	instanceUavDesc.Buffer.FirstElement = 0;
-	instanceUavDesc.Buffer.NumElements = m_maxDrawCount;
-	instanceUavDesc.Buffer.StructureByteStride = sizeof(InstanceData);
-	instanceUavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-	device->CreateUnorderedAccessView(m_instanceBuffer.Get(), nullptr, &instanceUavDesc, m_instanceUavCpuHandle);
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC instanceSrvDesc{};
-	instanceSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
-	instanceSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	instanceSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	instanceSrvDesc.Buffer.FirstElement = 0;
-	instanceSrvDesc.Buffer.NumElements = m_maxDrawCount;
-	instanceSrvDesc.Buffer.StructureByteStride = sizeof(InstanceData);
-	instanceSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	device->CreateShaderResourceView(m_instanceBuffer.Get(), &instanceSrvDesc, m_instanceSrvCpuHandle);
-}
 
 void TUFEngine::ResizeWindow(int newWidth, int newHeight) {
 	if (newWidth <= 0 || newHeight <= 0) {
@@ -1393,29 +1225,7 @@ void TUFEngine::GetSceneRtv(int32_t width,
 
 void TUFEngine::InitGpuDrivenResource() {
 
-	// ① 入力用：トランスフォームバッファ（UPLOADヒープ）の作成とMap
-	m_transformBuffer = CreateBufferResource(
-		device.Get(),
-		sizeof(RawTransform) * m_maxDrawCount,
-		D3D12_HEAP_TYPE_UPLOAD,
-		D3D12_RESOURCE_FLAG_NONE
-	);
-
-	m_transformBuffer->Map(
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&m_mappedTransformData)
-	);
-
-	// ② 出力用：インスタンスデータバッファ（DEFAULTヒープ ＋ UAVフラグ）の作成
-	m_instanceBuffer = CreateBufferResource(
-		device.Get(),
-		sizeof(InstanceData) * m_maxDrawCount,
-		D3D12_HEAP_TYPE_DEFAULT,
-		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-	);
-	m_instanceBufferState = D3D12_RESOURCE_STATE_COMMON;
-
+	// 動的メッシュ用バッファのみ
 	m_dynamicMeshInstanceBuffer = CreateBufferResource(
 		device.Get(),
 		sizeof(InstanceData),
@@ -1428,83 +1238,15 @@ void TUFEngine::InitGpuDrivenResource() {
 		nullptr,
 		reinterpret_cast<void**>(&m_mappedDynamicMeshInstanceData)
 	);
-
-	// ============================================================
-	// 【後半】ディスクリプタ（ビュー）の作成
-	// ============================================================
-
-	// 各種ハンドルの取得とサイズ計算（重複を排除して1回だけに統一）
-	UINT descriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	D3D12_CPU_DESCRIPTOR_HANDLE heapStartCPU = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	D3D12_GPU_DESCRIPTOR_HANDLE heapStartGPU = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-
-	// 空いているインデックス（100番はm_sceneSrvが使用中のため、101番から連番）
-	UINT srvTransformIndex = 101;
-	UINT uavInstanceIndex = 102;
-	UINT srvInstanceIndex = 103;
-
-	// -------------------------------------------------------------
-	// ① gTransforms用のSRV作成 (Compute Shaderが読む用: register(t0))
-	// -------------------------------------------------------------
-	m_transformSrvCpuHandle.ptr = heapStartCPU.ptr + descriptorSize * srvTransformIndex;
-	m_transformSrvGpuHandle.ptr = heapStartGPU.ptr + descriptorSize * srvTransformIndex;
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Buffer.FirstElement = 0;
-	srvDesc.Buffer.NumElements = m_maxDrawCount;
-	srvDesc.Buffer.StructureByteStride = sizeof(RawTransform);
-	srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-
-	device->CreateShaderResourceView(m_transformBuffer.Get(), &srvDesc, m_transformSrvCpuHandle);
-
-	// -------------------------------------------------------------
-	// ② gInstances用のUAV作成 (Compute Shaderが書く用: register(u0))
-	// -------------------------------------------------------------
-	m_instanceUavCpuHandle.ptr = heapStartCPU.ptr + descriptorSize * uavInstanceIndex;
-	m_instanceUavGpuHandle.ptr = heapStartGPU.ptr + descriptorSize * uavInstanceIndex;
-
-	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
-	uavDesc.Format = DXGI_FORMAT_UNKNOWN;
-	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-	uavDesc.Buffer.FirstElement = 0;
-	uavDesc.Buffer.NumElements = m_maxDrawCount;
-	uavDesc.Buffer.StructureByteStride = sizeof(InstanceData);
-	uavDesc.Buffer.CounterOffsetInBytes = 0;
-	uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-
-	device->CreateUnorderedAccessView(m_instanceBuffer.Get(), nullptr, &uavDesc, m_instanceUavCpuHandle);
-
-	// -------------------------------------------------------------
-	// ③ gInstances用のSRV作成 (Vertex Shaderが読む用: register(t2))
-	// -------------------------------------------------------------
-	m_instanceSrvCpuHandle.ptr = heapStartCPU.ptr + descriptorSize * srvInstanceIndex;
-	m_instanceSrvGpuHandle.ptr = heapStartGPU.ptr + descriptorSize * srvInstanceIndex;
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2{};
-	srvDesc2.Format = DXGI_FORMAT_UNKNOWN;
-	srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc2.Buffer.FirstElement = 0;
-	srvDesc2.Buffer.NumElements = m_maxDrawCount;
-	srvDesc2.Buffer.StructureByteStride = sizeof(InstanceData);
-	srvDesc2.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-
-	device->CreateShaderResourceView(m_instanceBuffer.Get(), &srvDesc2, m_instanceSrvCpuHandle);
 }
 
 void TUFEngine::InitGpuDrivenPipeline() {
 
 	HRESULT hr = S_OK;
-
-	m_gpuDrivenRootSignature = CreateGpuDrivenRootSignature(device.Get(), hr);
+	gpuDrivenRootSignature = CreateGpuDrivenRootSignature(device.Get(), hr);
 	assert(SUCCEEDED(hr));
-
-	m_gpuDrivenPipelineState = CreateGpuDrivenPipelineStateDesc(device.Get(),m_gpuDrivenRootSignature, hr);
+	gpuDrivenPipelineState = CreateGpuDrivenPipelineStateDesc(device.Get(),gpuDrivenRootSignature, hr);
 	assert(SUCCEEDED(hr));
-
 	m_computePipelineState = CreateComputePipelineState(device.Get(), m_computeRootSignature, hr);
 	assert(SUCCEEDED(hr));
 
