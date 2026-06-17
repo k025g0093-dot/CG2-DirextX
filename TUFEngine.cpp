@@ -583,17 +583,18 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 
 #pragma region 描画コマンド
 
+
+
+
 void TUFEngine::PreDraw() {
 	m_triangleRequestCount = 0;
 	m_cbvIndex = 0;
 
-	// 🌟 シーンテクスチャのサイズを基準にする（最初に計算）
 	float renderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
 	float renderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
 
-	// 🌟 VP 行列を同じサイズで計算
 	Matrix4x4 view = m_camera.GetViewMatrix();
-	Matrix4x4 proj = m_camera.GetProjectionMatrix(m_currentRenderWidth,m_currentRenderHeight);
+	Matrix4x4 proj = m_camera.GetProjectionMatrix(m_currentRenderWidth, m_currentRenderHeight);
 	viewProjectionMatrix = Multiply(view, proj);
 
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
@@ -604,31 +605,39 @@ void TUFEngine::PreDraw() {
 	barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
-	//オフシーン用のバリア
-	D3D12_RESOURCE_BARRIER offScreenbarrier{};
-	offScreenbarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	offScreenbarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	offScreenbarrier.Transition.pResource = m_sceneColorResource.Get();
-	offScreenbarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	offScreenbarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
 	commandList->ResourceBarrier(1, &barrier);
-	commandList->ResourceBarrier(1, &offScreenbarrier);
 
 	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
-		dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+#ifdef USE_IMGUI
+	// デバッグ時：オフスクリーン（ImGuiのビューポート用）に描画
+	D3D12_RESOURCE_BARRIER offScreenbarrier{};
+	offScreenbarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	offScreenbarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	offScreenbarrier.Transition.pResource = m_sceneColorResource.Get();
+	offScreenbarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	offScreenbarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	commandList->ResourceBarrier(1, &offScreenbarrier);
 
 	commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &dsvHandle);
 	commandList->ClearRenderTargetView(m_sceneRtvHandle, clearColor, 0, nullptr);
+#else
+	// リリース時：直接バックバッファ（画面）に描画
+	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+
+	// バックバッファ描画用にビューポートをウィンドウサイズに合わせる
+	renderWidth = static_cast<float>(width);
+	renderHeight = static_cast<float>(height);
+#endif
+
 	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	// 🌟 修正：renderWidth/Height を使う（統一済み）
 	D3D12_VIEWPORT viewport{};
 	viewport.Width = renderWidth;
 	viewport.Height = renderHeight;
@@ -647,17 +656,22 @@ void TUFEngine::PreDraw() {
 }
 
 
+
 void TUFEngine::PostDraw() {
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-
-
+	// =============================================================
+	// 【GPU描画の完了】 (デバッグ・リリース共通で1回だけ実行)
+	// =============================================================
 	for (auto& obj : m_droppedMeshes) {
 		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
 	}
-
 	RenderGpuDrivenALLRequests();
 
+#ifdef USE_IMGUI
+	// =============================================================
+	// デバッグ時のみ：シーンテクスチャ → スワップチェーンへの切り替えと ImGui 描画
+	// =============================================================
 	D3D12_RESOURCE_BARRIER offScreenBarrier{};
 	offScreenBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	offScreenBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -668,19 +682,22 @@ void TUFEngine::PostDraw() {
 
 	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
 
-	// ★ここにクリア処理を追加した方が安全です
-	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f }; // 背景を黒でクリア
+	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 
-
-#ifdef USE_IMGUI
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
-#endif // USE_IMGUI
+#endif
 
+	// =============================================================
+	// 【動的メッシュのバッファ スワップ】
+	// =============================================================
 	if (m_dynamicMeshModel) {
 		m_dynamicMeshModel->SwapBuffers();
 	}
 
+	// =============================================================
+	// 【スワップチェーンを PRESENT 状態に遷移】
+	// =============================================================
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -689,15 +706,17 @@ void TUFEngine::PostDraw() {
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	commandList->ResourceBarrier(1, &barrier);
 
-	
-
+	// =============================================================
+	// 【コマンドリスト実行 & フレーム同期】
+	// =============================================================
 	hr = commandList->Close();
 	assert(SUCCEEDED(hr));
+
 	ID3D12CommandList* commandLists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(1, commandLists);
+
 	swapChain->Present(1, 0);
 
-	// フレームごとにフェンスを進め、GPU の完了を待つ
 	m_fenceValue++;
 	commandQueue->Signal(m_fence.Get(), m_fenceValue);
 
@@ -711,6 +730,8 @@ void TUFEngine::PostDraw() {
 	hr = commandList->Reset(commandAllocator.Get(), nullptr);
 	assert(SUCCEEDED(hr));
 }
+
+
 
 #pragma endregion
 

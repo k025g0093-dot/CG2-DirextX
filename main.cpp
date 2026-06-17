@@ -215,7 +215,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			//	waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
 			//}
 			
-			//waveGrid.update();
+			waveGrid.update();
 
 			//waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
@@ -270,13 +270,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					uvChecker);
 			}
 
-			//engine->DrawSprite(
-			//	spritePos,
-			//	720 * spriteScale.x, 360 * spriteScale.y,
-			//	spriteRot,
-			//	{ 1, 1, 1 },
-			//	{ 1, 1, 1, 1 },
-			//	uvChecker);
+			engine->DrawSprite(
+				spritePos,
+				720 * spriteScale.x, 360 * spriteScale.y,
+				spriteRot,
+				{ 1, 1, 1 },
+				{ 1, 1, 1, 1 },
+				uvChecker);
 
 			for (int iz = 0; iz < cubeCountZ; iz++) {
 				for (int ix = 0; ix < cubeCountX; ix++) {
@@ -295,7 +295,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			engine->PostDraw();
 

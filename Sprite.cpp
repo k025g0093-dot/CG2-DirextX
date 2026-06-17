@@ -44,8 +44,8 @@ void Sprite::InitSprite(TUFEngine* engine, int textureIndex, float w, float h) {
     TransformationMatrix* wvpData = nullptr;
     m_pWvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
     // 正射影行列をセット、ワールドはIdentity
-    MakeOrthographicMatrix(w, 0.0f, 0.0f, h, 0.1f, 100.0f);
-    wvpData->World = MakeIdentity4x4();
+wvpData->WVP = MakeOrthographicMatrix(w, 0.0f, 0.0f, h, 0.1f, 100.0f);
+wvpData->World = MakeIdentity4x4();
     m_pWvpResource->Unmap(0, nullptr);
 }
 
