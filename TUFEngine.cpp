@@ -1001,6 +1001,7 @@ void TUFEngine::RenderSprites2D(const std::vector<DrawRequest>& requests2D) {
 			0.1f, 100.0f
 		);
 
+
 		Matrix4x4 world = MakeAffineMatrix(
 			req.scale,
 			req.rot,
@@ -1011,6 +1012,8 @@ void TUFEngine::RenderSprites2D(const std::vector<DrawRequest>& requests2D) {
 
 		sprite->SetWorldTransform(wvp, world);
 
+		Matrix4x4 uvTransform = GetSpriteUVTransformMatrix();
+		sprite->SetUVTransform(uvTransform);
 
 		// ===== テクスチャを設定 =====
 		commandList->SetGraphicsRootDescriptorTable(
@@ -1029,6 +1032,9 @@ void TUFEngine::RenderSprites2D(const std::vector<DrawRequest>& requests2D) {
 		);
 	}
 }
+
+
+
 #pragma endregion
 
 // --- TUFEngine.cpp ---

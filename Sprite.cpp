@@ -43,9 +43,9 @@ void Sprite::InitSprite(TUFEngine* engine, int textureIndex, float w, float h) {
     m_pWvpResource = CreateBufferResource(device, Align256(sizeof(TransformationMatrix)));
     TransformationMatrix* wvpData = nullptr;
     m_pWvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
-    // 正射影行列をセット、ワールドはIdentity
-// 左を 0.0f、右を w にする
-    wvpData->WVP = MakeOrthographicMatrix(0.0f, w, 0.0f, h, 0.1f, 100.0f); 
+    // 正射影行列をセット（左上が原点の画面座標系）
+    // y の範囲を h → 0 にすることでy反転（左上が(0,0)になる）
+    wvpData->WVP = MakeOrthographicMatrix(0.0f, w, h, 0.0f, 0.1f, 100.0f);
     wvpData->World = MakeIdentity4x4();
     m_pWvpResource->Unmap(0, nullptr);
 }
@@ -111,7 +111,7 @@ void Sprite::Draw(ID3D12GraphicsCommandList* cmdList,
         m_pMaterialResource->GetGPUVirtualAddress()
     );
 
-    cmdList->SetGraphicsRootConstantBufferView(1,  
+    cmdList->SetGraphicsRootConstantBufferView(1,
         m_pWvpResource->GetGPUVirtualAddress()
     );
 
