@@ -184,6 +184,8 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		// --- ① シーン（ゲーム画面）の描画 ---
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
 
+		engine->SetCurrentRenderSize(viewportSize.x, viewportSize.y);
+
 		// 🌟重要：タイトルバーを排除した、画像が描画される正確なスクリーン左上座標を取得
 		ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
 
@@ -203,10 +205,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		auto& objects = engine->GetDroppedMeshes();
 		if (!objects.empty()) {
 			ImGuizmo::BeginFrame();
-			// 現在のViewportウィンドウに対して描画を指示
 			ImGuizmo::SetDrawlist();
 
-			// 🌟修正：windowPosの代わりに、上で取得した画像用の正確な座標（imageScreenPos）を渡す
+			// 領域の設定（これは imageScreenPos で正しい）
 			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
 
 			constexpr float kDegToRad = 3.1415926535f / 180.0f;
@@ -216,10 +217,10 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 				Matrix4x4 transform = MakeAffineMatrix(objects[i].scale, objects[i].rot, objects[i].pos);
 
-				// ZmoWindow側で変更された変数をそのまま使う
+				// 修正：プロジェクション行列の引数を imageScreenPos から viewportSize に変更
 				if (ImGuizmo::Manipulate(
 					&engine->GetViewMatrix().m[0][0],
-					&engine->GetProjectionMatrix().m[0][0],
+					&engine->GetProjectionMatrix().m[0][0], // ✨ここを修正
 					mCurrentGizmoOperation,
 					mCurrentGizmoMode,
 					&transform.m[0][0]

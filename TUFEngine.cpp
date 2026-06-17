@@ -587,6 +587,15 @@ void TUFEngine::PreDraw() {
 	m_triangleRequestCount = 0;
 	m_cbvIndex = 0;
 
+	// 🌟 シーンテクスチャのサイズを基準にする（最初に計算）
+	float renderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
+	float renderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
+
+	// 🌟 VP 行列を同じサイズで計算
+	Matrix4x4 view = m_camera.GetViewMatrix();
+	Matrix4x4 proj = m_camera.GetProjectionMatrix(m_currentRenderWidth,m_currentRenderHeight);
+	viewProjectionMatrix = Multiply(view, proj);
+
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
 	D3D12_RESOURCE_BARRIER barrier{};
@@ -604,7 +613,6 @@ void TUFEngine::PreDraw() {
 	offScreenbarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	offScreenbarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-
 	commandList->ResourceBarrier(1, &barrier);
 	commandList->ResourceBarrier(1, &offScreenbarrier);
 
@@ -620,14 +628,10 @@ void TUFEngine::PreDraw() {
 	commandList->ClearRenderTargetView(m_sceneRtvHandle, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	// 🌟ここから修正：描画する幅と高さを「シーンテクスチャのサイズ」基準にする
-	// まだリサイズされていなければ初期値（width/height）を使う
-	float vpWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
-	float vpHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
-
+	// 🌟 修正：renderWidth/Height を使う（統一済み）
 	D3D12_VIEWPORT viewport{};
-	viewport.Width = vpWidth;       // 🌟修正
-	viewport.Height = vpHeight;     // 🌟修正
+	viewport.Width = renderWidth;
+	viewport.Height = renderHeight;
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
 	viewport.MinDepth = 0.0f;
@@ -636,9 +640,9 @@ void TUFEngine::PreDraw() {
 
 	D3D12_RECT scissorRect{};
 	scissorRect.left = 0;
-	scissorRect.right = static_cast<LONG>(vpWidth);   // 🌟修正
+	scissorRect.right = static_cast<LONG>(renderWidth);
 	scissorRect.top = 0;
-	scissorRect.bottom = static_cast<LONG>(vpHeight); // 🌟修正
+	scissorRect.bottom = static_cast<LONG>(renderHeight);
 	commandList->RSSetScissorRects(1, &scissorRect);
 }
 

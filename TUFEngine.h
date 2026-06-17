@@ -143,7 +143,10 @@ public:
 	};
 	ComPtr<ID3D12DescriptorHeap> m_sceneRtvDescriptorHeap;
 
-
+	void SetCurrentRenderSize(float w, float h) {
+		m_currentRenderWidth = w;
+		m_currentRenderHeight = h;
+	}
 
 	void ResizeSceneRenderTexture(int newWidth, int newHeight);
 	void GetSceneRtv(int32_t width, int32_t height);
@@ -293,5 +296,8 @@ private://描画物のリソース
 	bool m_needsImGuiRebuild = false;
 
 
+	//ビューポートの値を保持するため
+	float m_currentRenderWidth = (float)width;
+	float m_currentRenderHeight = (float)height;
 
 };
