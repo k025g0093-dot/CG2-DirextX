@@ -793,67 +793,78 @@ void TUFEngine::SetupInfoQueue() {
 
 
 void TUFEngine::RenderGpuDrivenALLRequests() {
-	if (m_drawRequests.empty()) return;
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	// 【前処理】3Dリクエストと2Dリクエストを分離
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	std::vector<DrawRequest> requests3D;
+	std::vector<DrawRequest> requests2D;
 
-	// =============================================================
-	// 【バッファ拡張チェック】
-	// =============================================================
-	if ((int)m_drawRequests.size() > m_gpuDrivenRenderer->GetMaxDrawCount()) {
+	for (const auto& req : m_drawRequests) {
+		if (req.isSprite) {
+			requests2D.push_back(req);
+		}
+		else {
+			requests3D.push_back(req);
+		}
+	}
+
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	// 【3D オブジェクト描画】（GPU駆動）
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	if (!requests3D.empty()) {
+		RenderGpuDriven3D(requests3D);
+	}
+
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	// 【2D スプライト描画】（旧パイプライン）
+	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	if (!requests2D.empty()) {
+		RenderSprites2D(requests2D);
+	}
+
+	m_drawRequests.clear();
+}
+
+
+void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
+	if (requests3D.empty()) return;
+
+	// バッファ拡張チェック
+	if ((int)requests3D.size() > m_gpuDrivenRenderer->GetMaxDrawCount()) {
 		m_gpuDrivenRenderer->GrowBuffers(
 			commandQueue.Get(),
 			m_fence.Get(),
 			m_fenceEvent,
 			m_fenceValue,
-			static_cast<int>(m_drawRequests.size())
+			static_cast<int>(requests3D.size())
 		);
 	}
 
-	// =============================================================
-	// 【前処理】nullptr チェック - 不正なリクエストを削除
-	// =============================================================
-	m_drawRequests.erase(
-		std::remove_if(m_drawRequests.begin(), m_drawRequests.end(),
-			[](const DrawRequest& r) { return r.model == nullptr; }),
-		m_drawRequests.end()
-	);
-	if (m_drawRequests.empty()) return;
-
-	// =============================================================
-	// 【ステップ0】ソート：同じモデル・同じテクスチャ同士を連続させる
-	// =============================================================
-	std::sort(m_drawRequests.begin(), m_drawRequests.end(),
+	// ソートと Compute Shader 実行（既存のロジック）
+	std::vector<DrawRequest> sortedRequests = requests3D;
+	std::sort(sortedRequests.begin(), sortedRequests.end(),
 		[](const DrawRequest& a, const DrawRequest& b) {
 			if (a.model != b.model) return a.model < b.model;
 			if (a.textureIndex != b.textureIndex) return a.textureIndex < b.textureIndex;
 			return a.lightId < b.lightId;
 		});
 
-	// =============================================================
-	// 【ステップ1】CPU→GPU データ転送の準備
-	// ソート後に gpuInstanceIndex を初期化（重要！）
-	// =============================================================
+	// CPU→GPU データ転送
 	int32_t currentInstanceCount = 0;
-	std::vector<int> gpuInstanceIndex(m_drawRequests.size());
+	std::vector<int> gpuInstanceIndex(sortedRequests.size());
 	RawTransform* mappedTransformData = m_gpuDrivenRenderer->GetMappedTransformData();
 
-	for (int i = 0; i < (int)m_drawRequests.size(); i++) {
-		if (currentInstanceCount >= m_gpuDrivenRenderer->GetMaxDrawCount()) {
-			// GPU バッファが満杯 - 残りは処理できない
-			// （フレーム内では OK、次フレームでリセットされる）
-			break;
-		}
+	for (int i = 0; i < (int)sortedRequests.size(); i++) {
+		if (currentInstanceCount >= m_gpuDrivenRenderer->GetMaxDrawCount()) break;
 
-		// このリクエストが GPU バッファ内のどのインデックスに入るか記録
 		gpuInstanceIndex[i] = currentInstanceCount;
+		const DrawRequest& request = sortedRequests[i];
 
-		const DrawRequest& request = m_drawRequests[i];
-
-		// --- 安全ガード処理 ---
+		// 安全ガード処理（既存コード）
 		Vector3 safePos = request.pos;
 		Vector3 safeRot = request.rot;
 		Vector3 safeScale = request.scale;
 
-		// NaN チェック
 		if (std::isnan(safePos.x) || std::isnan(safePos.y) || std::isnan(safePos.z)) {
 			safePos = { 0.0f, 0.0f, 0.0f };
 		}
@@ -864,13 +875,11 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 			safeScale = { 1.0f, 1.0f, 1.0f };
 		}
 
-		// スケール 0 チェック（ゼロスケールはシェーダーで問題になる可能性）
 		const float minScale = 0.0001f;
 		if (std::abs(safeScale.x) < minScale) safeScale.x = (safeScale.x >= 0.0f) ? minScale : -minScale;
 		if (std::abs(safeScale.y) < minScale) safeScale.y = (safeScale.y >= 0.0f) ? minScale : -minScale;
 		if (std::abs(safeScale.z) < minScale) safeScale.z = (safeScale.z >= 0.0f) ? minScale : -minScale;
 
-		// GPU バッファに書き込み
 		mappedTransformData[currentInstanceCount].pos = safePos;
 		mappedTransformData[currentInstanceCount].rot = safeRot;
 		mappedTransformData[currentInstanceCount].scale = safeScale;
@@ -878,21 +887,11 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		currentInstanceCount++;
 	}
 
-	// 処理するインスタンスが 0 ならここで終了
-	if (currentInstanceCount == 0) {
-		m_drawRequests.clear();
-		return;
-	}
+	if (currentInstanceCount == 0) return;
 
-	// =============================================================
-	// 【ステップ2】バリア：Compute Shader 実行前に UAV に転向
-	// =============================================================
+	// Compute Shader 実行（既存のロジック）
 	m_gpuDrivenRenderer->TransitionToUAV(commandList.Get());
 
-	// =============================================================
-	// 【ステップ3】Compute Shader 実行
-	// Transform バッファを読み、Instance バッファに書き込み
-	// =============================================================
 	commandList->SetComputeRootSignature(m_computeRootSignature.Get());
 	commandList->SetPipelineState(m_computePipelineState.Get());
 
@@ -908,82 +907,128 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	cParams.viewProj = viewProjectionMatrix;
 	cParams.instanceCount = currentInstanceCount;
 
-	// [0]: b0 定数バッファ（ViewProj と instanceCount）
 	commandList->SetComputeRoot32BitConstants(0, 17, &cParams, 0);
-	// [1]: t0 入力データ（Transform SRV）
 	commandList->SetComputeRootDescriptorTable(1, m_gpuDrivenRenderer->GetTransformSrvGpuHandle());
-	// [2]: u0 出力データ（Instance UAV）
 	commandList->SetComputeRootDescriptorTable(2, m_gpuDrivenRenderer->GetInstanceUavGpuHandle());
 
-	// 各スレッドグループが 64 スレッド
-	// 各スレッドが 1 インスタンスを処理
 	UINT threadGroupsX = (currentInstanceCount + 63) / 64;
 	commandList->Dispatch(threadGroupsX, 1, 1);
 
-	// =============================================================
-	// 【ステップ4】バリア：Compute Shader 実行後に SRV に戻す
-	// =============================================================
 	m_gpuDrivenRenderer->TransitionToSRV(commandList.Get());
 
-	// =============================================================
-	// 【ステップ5】グラフィックス描画パイプラインに切り替え
-	// =============================================================
+	// グラフィックス描画
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
 
-	// Instance バッファを直接指定（ルートパラメータ[1] は RootSRV）
 	commandList->SetGraphicsRootShaderResourceView(
 		1,
 		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress()
 	);
 
-	// =============================================================
-	// 【ステップ6】バッチ描画ループ
-	// 同じモデル・テクスチャ・ライトで分類し、バッチ実行
-	// =============================================================
+	// 3D描画ループ（既存と同じ）
 	int start = 0;
-	while (start < currentInstanceCount) {
-		const DrawRequest& head = m_drawRequests[start];
+	while (start < (int)sortedRequests.size()) {
+		const DrawRequest& head = sortedRequests[start];
 
-		// 同じ条件の連続したリクエストをバッチ化
 		int count = 1;
-		while (start + count < currentInstanceCount
-			&& m_drawRequests[start + count].model == head.model
-			&& m_drawRequests[start + count].textureIndex == head.textureIndex
-			&& m_drawRequests[start + count].lightId == head.lightId) {
+		while (start + count < (int)sortedRequests.size()) {
+			const DrawRequest& next = sortedRequests[start + count];
+			if (next.model != head.model ||
+				next.textureIndex != head.textureIndex ||
+				next.lightId != head.lightId) {
+				break;
+			}
 			count++;
 		}
 
-		// ライト設定
 		LightManager::GetInstance()->Bind(commandList.Get(), head.lightId);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		if (head.model) {
-			//シェーダーに「GPU バッファ内の開始インデックス」を渡す
-			// （DrawRequest の配列上の番号ではなく、GPU 実メモリのインデックス）
 			UINT gpuStartIndex = static_cast<UINT>(gpuInstanceIndex[start]);
 			commandList->SetGraphicsRoot32BitConstant(5, gpuStartIndex, 0);
-
-			//描画実行
 			head.model->Draw(
 				commandList.Get(),
 				head.textureIndex,
-				static_cast<UINT>(count),        // このバッチのインスタンス数
-				gpuStartIndex                    // GPU バッファ内の開始位置
+				static_cast<UINT>(count),
+				gpuStartIndex
 			);
 		}
 
 		start += count;
 	}
-
-	// =============================================================
-	// 【クリーンアップ】次フレームのためにリセット
-	// =============================================================
-	m_drawRequests.clear();
 }
 
+void TUFEngine::RenderSprites2D(const std::vector<DrawRequest>& requests2D) {
+	if (requests2D.empty()) return;
 
+	// 旧パイプラインに切り替え
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	commandList->SetPipelineState(pipelineState.Get());
+
+	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(1, heaps);
+
+	// 2D描画用にビューポートを設定（ウィンドウサイズ）
+	D3D12_VIEWPORT viewport{};
+	viewport.Width = static_cast<float>(width);
+	viewport.Height = static_cast<float>(height);
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+	commandList->RSSetViewports(1, &viewport);
+
+
+	D3D12_RECT scissorRect{};
+	scissorRect.left = 0;
+	scissorRect.right = width;
+	scissorRect.top = 0;
+	scissorRect.bottom = height;
+	commandList->RSSetScissorRects(1, &scissorRect);
+
+	for (const auto& req : requests2D) {
+		if (!req.model || !sprite) continue;
+
+		// スプライトをサイズ変更
+		sprite->Resize(req.width, req.height);
+
+		// 正射影行列を構築（画面座標系）
+		Matrix4x4 ortho = MakeOrthographicMatrix(
+			0.0f, static_cast<float>(width),
+			static_cast<float>(height), 0.0f,  // ← Y反転（上が0）
+			0.1f, 100.0f
+		);
+
+		Matrix4x4 world = MakeAffineMatrix(
+			req.scale,
+			req.rot,
+			{ req.posV2.x, req.posV2.y, 0.0f }
+		);
+
+		Matrix4x4 wvp = Multiply(world, ortho);
+
+		sprite->SetWorldTransform(wvp, world);
+
+
+		// ===== テクスチャを設定 =====
+		commandList->SetGraphicsRootDescriptorTable(
+			2,
+			TextureManager::GetInstance()->GetGPUHandle(req.textureIndex)
+		);
+
+		// ===== 描画 =====
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+		sprite->Draw(
+			commandList.Get(),
+			req.textureIndex,
+			1,      // instanceCount
+			0       // startInstanceLocation
+		);
+	}
+}
 #pragma endregion
 
 // --- TUFEngine.cpp ---

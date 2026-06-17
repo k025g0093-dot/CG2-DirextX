@@ -44,8 +44,9 @@ void Sprite::InitSprite(TUFEngine* engine, int textureIndex, float w, float h) {
     TransformationMatrix* wvpData = nullptr;
     m_pWvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
     // 正射影行列をセット、ワールドはIdentity
-wvpData->WVP = MakeOrthographicMatrix(w, 0.0f, 0.0f, h, 0.1f, 100.0f);
-wvpData->World = MakeIdentity4x4();
+// 左を 0.0f、右を w にする
+    wvpData->WVP = MakeOrthographicMatrix(0.0f, w, 0.0f, h, 0.1f, 100.0f); 
+    wvpData->World = MakeIdentity4x4();
     m_pWvpResource->Unmap(0, nullptr);
 }
 
@@ -87,27 +88,37 @@ void Sprite::Resize(float w, float h) {
     Vertex* data = nullptr;
     m_pVertexResource->Map(0, nullptr, reinterpret_cast<void**>(&data));
 
-    data[0].position = { 0.0f, 0.0f, 0.0f, 1.0f }; data[0].texcoord = { 0.0f, 0.0f }; data[0].normal = { 0.0f, 0.0f, -1.0f }; data[0].tangent = { 1.0f, 0.0f, 0.0f };
-    data[1].position = { w,    0.0f, 0.0f, 1.0f }; data[1].texcoord = { 1.0f, 0.0f }; data[1].normal = { 0.0f, 0.0f, -1.0f }; data[1].tangent = { 1.0f, 0.0f, 0.0f };
-    data[2].position = { 0.0f, h,    0.0f, 1.0f }; data[2].texcoord = { 0.0f, 1.0f }; data[2].normal = { 0.0f, 0.0f, -1.0f }; data[2].tangent = { 1.0f, 0.0f, 0.0f };
-    data[3].position = { w,    h,    0.0f, 1.0f }; data[3].texcoord = { 1.0f, 1.0f }; data[3].normal = { 0.0f, 0.0f, -1.0f }; data[3].tangent = { 1.0f, 0.0f, 0.0f };
+    // InitSprite と完全に同じ並び順にする！
+    data[0].position = { 0.0f, h,    0.0f, 1.0f }; data[0].texcoord = { 0.0f, 0.0f }; data[0].normal = { 0.0f, 0.0f, -1.0f }; data[0].tangent = { 1.0f, 0.0f, 0.0f };
+    data[1].position = { w,    h,    0.0f, 1.0f }; data[1].texcoord = { 1.0f, 0.0f }; data[1].normal = { 0.0f, 0.0f, -1.0f }; data[1].tangent = { 1.0f, 0.0f, 0.0f };
+    data[2].position = { 0.0f, 0.0f, 0.0f, 1.0f }; data[2].texcoord = { 0.0f, 1.0f }; data[2].normal = { 0.0f, 0.0f, -1.0f }; data[2].tangent = { 1.0f, 0.0f, 0.0f };
+    data[3].position = { w,    0.0f, 0.0f, 1.0f }; data[3].texcoord = { 1.0f, 1.0f }; data[3].normal = { 0.0f, 0.0f, -1.0f }; data[3].tangent = { 1.0f, 0.0f, 0.0f };
 
     m_pVertexResource->Unmap(0, nullptr);
 }
 
 
-void Sprite::Draw(
-    ID3D12GraphicsCommandList* cmdList,
-    int textureIndex, 
+void Sprite::Draw(ID3D12GraphicsCommandList* cmdList,
+    int textureIndex,
     UINT instanceCount,
     UINT startInstanceLocation
-) 
+)
 {
     cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
     cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-    cmdList->SetGraphicsRootConstantBufferView(0, m_pMaterialResource->GetGPUVirtualAddress());
-    cmdList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetGPUHandle(textureIndex));
+    cmdList->SetGraphicsRootConstantBufferView(0,
+        m_pMaterialResource->GetGPUVirtualAddress()
+    );
 
-    cmdList->DrawInstanced(4, instanceCount, 0, startInstanceLocation);  // ← 修正
+    cmdList->SetGraphicsRootConstantBufferView(1,  
+        m_pWvpResource->GetGPUVirtualAddress()
+    );
+
+    cmdList->SetGraphicsRootDescriptorTable(
+        2,
+        TextureManager::GetInstance()->GetGPUHandle(textureIndex)
+    );
+
+    cmdList->DrawInstanced(4, instanceCount, 0, startInstanceLocation);
 }

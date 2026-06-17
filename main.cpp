@@ -217,7 +217,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			
 			waveGrid.update();
 
-			//waveGrid.setObjectWall(engine->GetDroppedMeshes());
+			waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
 			//if (frameIndex % 60 == 0) {
 			//	waveLog << frameIndex;
@@ -312,9 +312,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		//デバック時のみEscキーで終了できるようにするここはあとで変更しても全然ダイジョブ
-#ifdef _DEBUG
+//#ifdef _DEBUG
 		if (Input::GetKeyDown(VK_ESCAPE)) break;
-#endif
+//#endif
 	}
 
 	sound->SoundUnLoad(&soundData1);

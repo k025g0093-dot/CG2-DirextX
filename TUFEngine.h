@@ -54,6 +54,8 @@ struct DrawRequest {
 	int                textureIndex = 0;
 	bool               isMesh = false;
 	bool               isSprite = false;
+	bool               is2D = false;
+
 	int lightId = -1;
 
 	//新規追加波を作るやつ
@@ -255,6 +257,8 @@ private:
 	void RenderAllRequests();
 	void RenderGpuDrivenALLRequests();
 
+	void RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D);
+	void RenderSprites2D(const std::vector<DrawRequest>& requests2D);
 
 	void InitGpuDrivenResource();
 	void InitGpuDrivenPipeline();
