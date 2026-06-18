@@ -513,7 +513,7 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 	UINT descriptorSize =
 		device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	
+
 
 
 	m_fenceValue = 0;
@@ -1152,32 +1152,15 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 
 	m_dynamicMeshModel->UpdateHeights(mesh);
 
-	// GPU駆動パイプラインに切り替え
-	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
-	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
-
-	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
-	commandList->SetDescriptorHeaps(1, heaps);
-
-	Matrix4x4 world = MakeAffineMatrix({ 1,1,1 }, { 0,0,0 }, { 0,0,0 });
-	Matrix4x4 wvp = Multiply(world, viewProjectionMatrix);
-
-	if (!m_mappedDynamicMeshInstanceData || !m_dynamicMeshInstanceBuffer) {
-		return;
-	}
-
-	m_mappedDynamicMeshInstanceData[0].WVP = wvp;
-	m_mappedDynamicMeshInstanceData[0].World = world;
-
-	commandList->SetGraphicsRootShaderResourceView(
-		1, m_dynamicMeshInstanceBuffer->GetGPUVirtualAddress());
-
-	commandList->SetGraphicsRoot32BitConstant(
-		5,
-		0,
-		0);
-
-	m_dynamicMeshModel->Draw(commandList.Get(), index, 1, 0);
+	DrawRequest req;
+	req.model = m_dynamicMeshModel.get();
+	req.pos = { 0.0f, 0.0f, 0.0f };
+	req.rot = { 0.0f, 0.0f, 0.0f };
+	req.scale = { 1.0f, 1.0f, 1.0f };
+	req.textureIndex = index;
+	req.lightId = -1;
+	req.isMesh = true;
+	m_drawRequests.push_back(req);
 }
 
 
@@ -1359,7 +1342,7 @@ void TUFEngine::InitGpuDrivenPipeline() {
 	HRESULT hr = S_OK;
 	gpuDrivenRootSignature = CreateGpuDrivenRootSignature(device.Get(), hr);
 	assert(SUCCEEDED(hr));
-	gpuDrivenPipelineState = CreateGpuDrivenPipelineStateDesc(device.Get(),gpuDrivenRootSignature, hr);
+	gpuDrivenPipelineState = CreateGpuDrivenPipelineStateDesc(device.Get(), gpuDrivenRootSignature, hr);
 	assert(SUCCEEDED(hr));
 	m_computePipelineState = CreateComputePipelineState(device.Get(), m_computeRootSignature, hr);
 	assert(SUCCEEDED(hr));

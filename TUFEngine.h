@@ -41,7 +41,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 struct DrawRequest {
 	Model* model = nullptr;
-	//DynamicMesh* mesh = nullptr;
 	std::vector<Vector3> vertices;
 	Vector4            color = { 1, 1, 1, 1 };
 	std::vector<Vector2> uvs;

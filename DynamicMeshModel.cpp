@@ -157,23 +157,18 @@ void DynamicMeshModel::Draw(
 
     cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+    // テクスチャだけセット（material/light は呼び出し側で済み）
     auto handle = TextureManager::GetInstance()->GetGPUHandle(textureIndex);
     if (handle.ptr == 0) handle = TextureManager::GetInstance()->GetGPUHandle(0);
     if (handle.ptr == 0) return;
 
-    if (m_materialBuffer)
-        cmdList->SetGraphicsRootConstantBufferView(0, m_materialBuffer->GetGPUVirtualAddress());
-    if (m_lightBuffer)
-        cmdList->SetGraphicsRootConstantBufferView(3, m_lightBuffer->GetGPUVirtualAddress());
-
     cmdList->SetGraphicsRootDescriptorTable(2, handle);
 
-    //描画に使用するバッファは「次」のバッファ
-    // （CPU は「現在」のバッファに書き込み中）
+    // ダブルバッファから描画用を選択
     int drawIndex = (m_currentBufferIndex + 1) % 2;
     cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferViews[drawIndex]);
-
     cmdList->IASetIndexBuffer(&m_indexBufferView);
+
     cmdList->DrawIndexedInstanced(
         m_indexCount,
         instanceCount,
