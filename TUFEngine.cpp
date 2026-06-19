@@ -594,7 +594,7 @@ void TUFEngine::PreDraw() {
 	float renderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
 
 	Matrix4x4 view = m_camera.GetViewMatrix();
-	Matrix4x4 proj = m_camera.GetProjectionMatrix(m_currentRenderWidth, m_currentRenderHeight);
+	Matrix4x4 proj = m_camera.GetProjectionMatrix(renderWidth, renderHeight);
 	viewProjectionMatrix = Multiply(view, proj);
 
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
@@ -663,11 +663,14 @@ void TUFEngine::PostDraw() {
 	// =============================================================
 	// 【GPU描画の完了】 (デバッグ・リリース共通で1回だけ実行)
 	// =============================================================
-	for (auto& obj : m_droppedMeshes) {
-		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
-	}
-	RenderGpuDrivenALLRequests();
 
+	RenderGpuDrivenALLRequests();
+	for (auto& obj : m_droppedMeshes) {
+		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale, obj.lightId);
+	}
+
+	// 2回目の描画実行
+	RenderGpuDrivenALLRequests();
 #ifdef USE_IMGUI
 	// =============================================================
 	// デバッグ時のみ：シーンテクスチャ → スワップチェーンへの切り替えと ImGui 描画
@@ -1123,7 +1126,7 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	m_drawRequests.push_back(req);
 }
 
-void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale) {
+void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale, int lightId) {
 	if (!mesh) return;
 	DrawRequest req;
 	req.model = mesh;
@@ -1132,6 +1135,7 @@ void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const V
 	req.scale = scale;
 	req.textureIndex = mesh->GetTextureIndex();
 	req.isMesh = true;
+	req.lightId = -1;
 	m_drawRequests.push_back(req);
 }
 

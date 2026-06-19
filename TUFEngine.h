@@ -68,6 +68,7 @@ struct SceneObject {
 	Vector3 pos = { 0.0f, 0.0f, 0.0f };
 	Vector3 rot = { 0.0f, 0.0f, 0.0f };
 	Vector3 scale = { 1.0f, 1.0f, 1.0f };
+	int lightId{};
 	bool isSelected = false;
 };
 
@@ -95,7 +96,7 @@ public:
 	void DrawDynamicMeshWithNormal(DynamicMesh& mesh, std::vector<Vector4>& colors, int index);
 
 
-	void RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale);
+	void RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale, int lightId);
 
 
 	void PreDraw();

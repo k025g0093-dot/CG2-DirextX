@@ -39,8 +39,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	debugCamer_->Initialize((float)kClineWidth, (float)kClineHeight);
 
 
-	const int cubeCountX = 300;
-	const int cubeCountZ = 300;
+	const int cubeCountX = 200;
+	const int cubeCountZ = 200;
 
 	WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
 
@@ -215,9 +215,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			//	waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
 			//}
 			
-			//waveGrid.update();
+			waveGrid.update();
 
-			//waveGrid.setObjectWall(engine->GetDroppedMeshes());
+			waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
 			//if (frameIndex % 60 == 0) {
 			//	waveLog << frameIndex;
@@ -246,6 +246,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			////================================================================================================================
 
 			engine->PreDraw();
+
+			for (int iz = 0; iz < cubeCountZ; iz++) {
+				for (int ix = 0; ix < cubeCountX; ix++) {
+					float h = waveGrid.getHeight(ix, iz);
+					mesh.updateHeight(ix, iz, h);
+					auto  n = waveGrid.getNormal(ix, iz);
+					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
+					int idx = iz * cubeCountX + ix;
+					normalColors[idx] = {
+						(n.x + 1.0f) / 2.0f,
+						(n.y + 1.0f) / 2.0f,
+						(n.z + 1.0f) / 2.0f,
+						1.0f
+					};
+				}
+			}
+
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(
@@ -278,25 +297,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			//	{ 1, 1, 1, 1 },
 			//	uvChecker);
 
-			for (int iz = 0; iz < cubeCountZ; iz++) {
-				for (int ix = 0; ix < cubeCountX; ix++) {
-					float h = waveGrid.getHeight(ix, iz);
-					mesh.updateHeight(ix, iz, h);
-					auto  n = waveGrid.getNormal(ix, iz);
-					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
-					int idx = iz * cubeCountX + ix;
-					normalColors[idx] = {
-						(n.x + 1.0f) / 2.0f,
-						(n.y + 1.0f) / 2.0f,
-						(n.z + 1.0f) / 2.0f,
-						1.0f
-					};
-				}
-			}
+			
 
 
-			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
-
+	
 			engine->PostDraw();
 
 			////================================================================================================================
