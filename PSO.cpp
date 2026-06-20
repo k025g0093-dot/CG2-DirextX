@@ -358,12 +358,17 @@ ComPtr<ID3D12PipelineState> CreateGpuDrivenPipelineStateDesc(
 		L"GpuDrivenObject.PS.hlsl", L"ps_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
-
-
 	// 各設定の生成
 	D3D12_INPUT_LAYOUT_DESC inputLayout = CreateLayout();
 	D3D12_BLEND_DESC blendDesc = CreateBlendState();
 	D3D12_RASTERIZER_DESC rasterizerDesc = CreateRasterizerState();
+
+	// ★ 深度ステート設定（統一）
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	depthStencilDesc.StencilEnable = FALSE;  // ★ 念のため明示的に
 
 	// PSOの設定をまとめる
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
@@ -374,7 +379,6 @@ ComPtr<ID3D12PipelineState> CreateGpuDrivenPipelineStateDesc(
 
 	// インプットレイアウトの設定
 	graphicsPipelineStateDesc.InputLayout = inputLayout;
-
 
 	// シェーダーの設定
 	graphicsPipelineStateDesc.VS = {
@@ -390,16 +394,7 @@ ComPtr<ID3D12PipelineState> CreateGpuDrivenPipelineStateDesc(
 	graphicsPipelineStateDesc.BlendState = blendDesc;
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 
-	//ステートの設定
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-	//depth機能を有効にする
-	depthStencilDesc.DepthEnable = true;
-	//書き込みをするところ
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	//比較関数はlessEqual。つまり近いと描画される
-	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-
-	//DepthStencilの設定
+	// ★ 深度ステート設定（ここに統一）
 	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
@@ -407,7 +402,7 @@ ComPtr<ID3D12PipelineState> CreateGpuDrivenPipelineStateDesc(
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
 	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
-	// プリミティブトポロジーの設定（三角形として描画）
+	// プリミティブトポロジーの設定
 	graphicsPipelineStateDesc.PrimitiveTopologyType =
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
@@ -423,7 +418,6 @@ ComPtr<ID3D12PipelineState> CreateGpuDrivenPipelineStateDesc(
 	assert(SUCCEEDED(hr));
 
 	return graphicsPipelineState;
-
 }
 
 

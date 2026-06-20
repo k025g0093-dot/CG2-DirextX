@@ -148,6 +148,18 @@ void DynamicMeshModel::UpdateHeights(const DynamicMesh& mesh) {
     }
 }
 
+
+void DynamicMeshModel::UpdateVertexColors(const std::vector<Vector4>& colors) {
+    if (colors.empty() || !m_mappedDatas[m_currentBufferIndex]) return;
+
+    VertexData* mappedData = m_mappedDatas[m_currentBufferIndex];
+
+    for (size_t i = 0; i < colors.size() && i < (size_t)(m_gridW * m_gridH); ++i) {
+        // tangent（Vector3）に色を格納
+        mappedData[i].tangent = { colors[i].x, colors[i].y, colors[i].z };
+    }
+}
+
 void DynamicMeshModel::Draw(
     ID3D12GraphicsCommandList* cmdList,
     int textureIndex,

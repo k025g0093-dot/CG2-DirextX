@@ -33,7 +33,7 @@ public:
     void SwapBuffers() {
         m_currentBufferIndex = (m_currentBufferIndex + 1) % 2;
     }
-
+    void UpdateVertexColors(const std::vector<Vector4>& colors);
 private:
     ComPtr<ID3D12Resource>   m_vertexBuffers[2];
     ComPtr<ID3D12Resource>   m_indexBuffer;

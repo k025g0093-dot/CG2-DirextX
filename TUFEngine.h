@@ -43,6 +43,7 @@ struct DrawRequest {
 	Model* model = nullptr;
 	std::vector<Vector3> vertices;
 	Vector4            color = { 1, 1, 1, 1 };
+	std::vector<Vector4> colors ;
 	std::vector<Vector2> uvs;
 	Vector3            rot = { 0, 0, 0 };
 	Vector3            scale = { 1, 1, 1 };
@@ -56,7 +57,7 @@ struct DrawRequest {
 	bool               is2D = false;
 
 	int lightId = -1;
-
+	int renderOrder = -1;
 	//新規追加波を作るやつ
 	DynamicMeshModel* dynamicMeshPtr = nullptr;
 	bool isDynamicMesh = false;
@@ -96,7 +97,7 @@ public:
 	void DrawDynamicMeshWithNormal(DynamicMesh& mesh, std::vector<Vector4>& colors, int index);
 
 
-	void RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale, int lightId);
+	void RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale);
 
 
 	void PreDraw();

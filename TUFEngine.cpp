@@ -589,6 +589,7 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 void TUFEngine::PreDraw() {
 	m_triangleRequestCount = 0;
 	m_cbvIndex = 0;
+	m_drawRequests.clear();
 
 	float renderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
 	float renderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
@@ -653,6 +654,8 @@ void TUFEngine::PreDraw() {
 	scissorRect.top = 0;
 	scissorRect.bottom = static_cast<LONG>(renderHeight);
 	commandList->RSSetScissorRects(1, &scissorRect);
+	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
 }
 
 
@@ -665,12 +668,7 @@ void TUFEngine::PostDraw() {
 	// =============================================================
 
 	RenderGpuDrivenALLRequests();
-	for (auto& obj : m_droppedMeshes) {
-		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale, obj.lightId);
-	}
 
-	// 2回目の描画実行
-	RenderGpuDrivenALLRequests();
 #ifdef USE_IMGUI
 	// =============================================================
 	// デバッグ時のみ：シーンテクスチャ → スワップチェーンへの切り替えと ImGui 描画
@@ -796,6 +794,11 @@ void TUFEngine::SetupInfoQueue() {
 
 
 void TUFEngine::RenderGpuDrivenALLRequests() {
+
+	for (auto& obj : m_droppedMeshes) {
+		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
+	}
+
 	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 	// 【前処理】3Dリクエストと2Dリクエストを分離
 	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -818,12 +821,15 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		RenderGpuDriven3D(requests3D);
 	}
 
+
 	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 	// 【2D スプライト描画】（旧パイプライン）
 	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 	if (!requests2D.empty()) {
 		RenderSprites2D(requests2D);
 	}
+
+
 
 	m_drawRequests.clear();
 }
@@ -843,13 +849,19 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 		);
 	}
 
-	// ソートと Compute Shader 実行（既存のロジック）
 	std::vector<DrawRequest> sortedRequests = requests3D;
 	std::sort(sortedRequests.begin(), sortedRequests.end(),
 		[](const DrawRequest& a, const DrawRequest& b) {
+			// renderOrder を最優先（小さい方が先に描画）
+			if (a.renderOrder != b.renderOrder) return a.renderOrder < b.renderOrder;
+
+			// ← lightId チェックを戻す
+			if (a.lightId != b.lightId) return a.lightId < b.lightId;
+
+			// 次点：バッチ化
 			if (a.model != b.model) return a.model < b.model;
 			if (a.textureIndex != b.textureIndex) return a.textureIndex < b.textureIndex;
-			return a.lightId < b.lightId;
+			return false;
 		});
 
 	// CPU→GPU データ転送
@@ -1126,8 +1138,11 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	m_drawRequests.push_back(req);
 }
 
-void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale, int lightId) {
+void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale) {
 	if (!mesh) return;
+
+
+
 	DrawRequest req;
 	req.model = mesh;
 	req.pos = pos;
@@ -1136,6 +1151,7 @@ void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const V
 	req.textureIndex = mesh->GetTextureIndex();
 	req.isMesh = true;
 	req.lightId = -1;
+	req.renderOrder = 1;
 	m_drawRequests.push_back(req);
 }
 
@@ -1155,6 +1171,7 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	}
 
 	m_dynamicMeshModel->UpdateHeights(mesh);
+	m_dynamicMeshModel->UpdateVertexColors(colors);
 
 	DrawRequest req;
 	req.model = m_dynamicMeshModel.get();
@@ -1163,6 +1180,7 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	req.scale = { 1.0f, 1.0f, 1.0f };
 	req.textureIndex = index;
 	req.lightId = -1;
+	req.renderOrder = -1;  // ← -1 から 999 に変更（最後に描画）
 	req.isMesh = true;
 	m_drawRequests.push_back(req);
 }

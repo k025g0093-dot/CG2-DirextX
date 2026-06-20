@@ -5,7 +5,7 @@ DynamicMesh::DynamicMesh(int gridW, int gridH) : mGridW(gridW), mGridH(gridH) {
     mNormals.resize(gridW * gridH * 3, 0.0f);
     mIndices.reserve((gridW - 1) * (gridH - 1) * 6);
 
-    float width = 1.0f;
+    float width =1.0f;
 
     // XZ座標を初期化（Yは0.0fのまま）
     for (int y = 0; y < gridH; y++) {
@@ -17,23 +17,23 @@ DynamicMesh::DynamicMesh(int gridW, int gridH) : mGridW(gridW), mGridH(gridH) {
         }
     }
 
-    // 四角形をインデックスで三角形2枚に分割
+    // 四角形を2つの三角形に分割
     for (int y = 0; y < gridH - 1; y++) {
         for (int x = 0; x < gridW - 1; x++) {
             int tl = vertexIndex(x, y);      // 左上
-            int tr = vertexIndex(x + 1, y);      // 右上
-            int bl = vertexIndex(x, y + 1);  // 左下
-            int br = vertexIndex(x + 1, y + 1);  // 右下
+            int tr = vertexIndex(x + 1, y);    // 右上
+            int bl = vertexIndex(x, y + 1);    // 左下
+            int br = vertexIndex(x + 1, y + 1); // 右下
 
-            // 三角形①
+            // 三角形①（左下三角）
             mIndices.push_back(tl);  // 左上
-            mIndices.push_back(bl);  // 左下  ← trとblを入れ替え
             mIndices.push_back(tr);  // 右上
+            mIndices.push_back(bl);  // 左下
 
-            // 三角形②
+            // 三角形②（右上三角）
             mIndices.push_back(tr);  // 右上
-            mIndices.push_back(bl);  // 左下  ← brとblを入れ替え
             mIndices.push_back(br);  // 右下
+            mIndices.push_back(bl);  // 左下
         }
     }
 }

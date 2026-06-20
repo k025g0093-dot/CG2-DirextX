@@ -68,7 +68,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	engine->m_camera.transform.rotate.x = 0.6f;
 
 	bool  useMonsterBall = true;
-	float cameraRotateSpeed = 0.01f;
+	float cameraRotateSpeed = 0.016f;
 
 	Vector3 spherePos[2] = { {0.0f, 0.0f, 5.0f}, {5.0f, 0.0f, 5.0f} };
 	Vector3 sphereRot[2] = { {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
@@ -197,7 +197,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-			t += 0.016f;
+			t += 0.01f;
 			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
 				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 30.0f) * waveStrength;
 			}
