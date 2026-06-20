@@ -14,8 +14,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	SetUnhandledExceptionFilter(ExportDump);
 
+#ifdef _DEBUG
+
+	const int32_t kClineWidth = 1920;
+	const int32_t kClineHeight = 1080;
+
+#else
+
 	const int32_t kClineWidth = 1280;
 	const int32_t kClineHeight = 720;
+
+#endif // _DEBUG
+
+
+
 
 	TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, L"CG2_TUFEngine_LE2B_29_ヤマト_ユウヤ");
 	assert(engine->GetDevice() != nullptr);
