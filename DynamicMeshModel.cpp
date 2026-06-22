@@ -176,6 +176,9 @@ void DynamicMeshModel::Draw(
 
     cmdList->SetGraphicsRootDescriptorTable(2, handle);
 
+    cmdList->SetGraphicsRootConstantBufferView(0, m_materialBuffer->GetGPUVirtualAddress());
+
+
     // ダブルバッファから描画用を選択
     int drawIndex = (m_currentBufferIndex + 1) % 2;
     cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferViews[drawIndex]);
