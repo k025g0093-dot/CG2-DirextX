@@ -20,7 +20,7 @@ void ImGuiDebug::update(TUFEngine* engine) {
     float memoryMB = pmc.WorkingSetSize / (1024.0f * 1024.0f);
 
     if (begin("Debug")) {
-        ImGui::Text("FPS        : %.1f", m_fps);
+        ImGui::Text("FPS        : %.2f", m_fps);
         ImGui::Text("FrameTime  : %.3f ms", m_frameTime * 1000.0f);
         ImGui::Separator();
         ImGui::Text("Memory     : %.1f MB", memoryMB);
