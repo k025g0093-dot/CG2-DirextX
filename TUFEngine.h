@@ -57,7 +57,7 @@ struct DrawRequest {
 	bool               is2D = false;
 
 	int lightId = -1;
-	int renderOrder = -1;
+	int renderOrder = 1;
 	//新規追加波を作るやつ
 	DynamicMeshModel* dynamicMeshPtr = nullptr;
 	bool isDynamicMesh = false;

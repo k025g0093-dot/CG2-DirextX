@@ -951,7 +951,8 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 			const DrawRequest& next = sortedRequests[start + count];
 			if (next.model != head.model ||
 				next.textureIndex != head.textureIndex ||
-				next.lightId != head.lightId) {
+				next.lightId != head.lightId ||
+				next.renderOrder != head.renderOrder) {  // ← これを追加
 				break;
 			}
 			count++;

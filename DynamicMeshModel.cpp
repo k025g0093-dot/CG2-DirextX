@@ -60,13 +60,14 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
             uint32_t bl = (y + 1) * gridW + x;
             uint32_t br = (y + 1) * gridW + (x + 1);
 
+            // 修正後（CCW）
             m_mappedIndex[ii++] = tl;
-            m_mappedIndex[ii++] = bl;
             m_mappedIndex[ii++] = tr;
+            m_mappedIndex[ii++] = bl;
 
             m_mappedIndex[ii++] = tr;
-            m_mappedIndex[ii++] = bl;
             m_mappedIndex[ii++] = br;
+            m_mappedIndex[ii++] = bl;
         }
     }
 

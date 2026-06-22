@@ -16,7 +16,7 @@ public:
     }
 
     Matrix4x4 GetProjectionMatrix(float width, float height) {
-        return MakePerspectiveFovMatrix(0.45f, width / height, 0.1f, 100.0f);
+        return MakePerspectiveFovMatrix(0.45f, width / height, 0.1f, 100000.0f);
     }
 
     Matrix4x4 GetViewProjectionMatrix(float width, float height) {
