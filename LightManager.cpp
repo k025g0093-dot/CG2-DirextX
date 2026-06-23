@@ -46,14 +46,16 @@ bool LightManager::HasPerObjectLight(int id) const {
 void LightManager::Bind(ID3D12GraphicsCommandList* cmdList, int id) {
     ID3D12Resource* cb = nullptr;
 
-    if (id >= 0) {
+    if (id == 0) {
+        cb = m_globalCB.Get();
+    }
+    else if (id > 0) {
         auto it = m_perObjectCBs.find(id);
         if (it != m_perObjectCBs.end()) {
             cb = it->second.Get();
         }
     }
 
-    // id=-1 か 個別登録なし → グローバル
     if (!cb) {
         cb = m_globalCB.Get();
     }

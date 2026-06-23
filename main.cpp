@@ -41,7 +41,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int normal = engine->LoadTexture("resources/top normal.png");
 
 
-	MeshModel* modelData = engine->LoadModel("resources", "axis.obj");
+	MeshModel* modelData = engine->LoadModel("resources/skyDome", "sky_sphere.obj");
+	if (modelData) modelData->SetEnableLighting(0);
 
 	Sound* sound = new Sound;
 	SoundData soundData1 = sound->SoundLoad("resources/fanfare.wav");
@@ -111,8 +112,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int observeX = wallX + 40;
 
 
-	LightManager::GetInstance()->SetPerObjectLight(0, { {1,1,1,1}, {0,-1,0}, 1.0f });
 	LightManager::GetInstance()->SetPerObjectLight(1, { {1,1,1,1}, {0,-1,0}, 1.0f });
+	LightManager::GetInstance()->SetPerObjectLight(2, { {1,1,1,1}, {0,-1,0}, 1.0f });
 
 
 	MSG msg{};
@@ -141,6 +142,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 					if (ImGui::CollapsingHeader("Sphere Settings")) {
 						for (int i = 0; i < 2; ++i) {
+							int lightId = i + 1;
 							ImGui::PushID(i);
 							ImGui::Text("Sphere %d", i);
 							ImGui::DragFloat3("Position", &spherePos[i].x, 0.1f);
@@ -149,13 +151,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 							ImGui::Checkbox("MonsterBall", &sphereUseMonsterBall[i]);
 
 							ImGui::SeparatorText("Light");
-							DirectionalLight light = LightManager::GetInstance()->GetPerObjectLight(i);
+							DirectionalLight light = LightManager::GetInstance()->GetPerObjectLight(lightId);
 							bool changed = false;
 							changed |= ImGui::ColorEdit4("##Color", &light.color.x);
 							changed |= ImGui::DragFloat3("##Direction", &light.direction.x, 0.01f, -1.0f, 1.0f);
 							changed |= ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
 
-							if (changed) LightManager::GetInstance()->SetPerObjectLight(i, light);
+							if (changed) LightManager::GetInstance()->SetPerObjectLight(lightId, light);
 
 							ImGui::Separator();
 							ImGui::PopID();
@@ -284,11 +286,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					sphereRot[i],
 					sphereScale[i],
 					sphereUseMonsterBall[i] ? monsterBall : uvChecker,
-					i
+					i + 1
 					);
 			}
 
-			engine->DrawMesh(modelData, meshPos, meshRot, meshScale);
+			engine->DrawMesh(modelData, meshPos, meshRot, meshScale, -1);
 
 
 

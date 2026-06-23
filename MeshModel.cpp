@@ -295,6 +295,14 @@ void MeshModel::Draw(
 	);
 }
 
+void MeshModel::SetEnableLighting(int val) {
+    if (!m_pMaterialResource) return;
+    Material* materialData = nullptr;
+    m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+    materialData->enableLighting = val;
+    m_pMaterialResource->Unmap(0, nullptr);
+}
+
 void MeshModel::UpdateVertices(
 	const Vector3& points,
 	const Vector2& texcoord,

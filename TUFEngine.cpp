@@ -1151,7 +1151,7 @@ void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const V
 	req.scale = scale;
 	req.textureIndex = mesh->GetTextureIndex();
 	req.isMesh = true;
-	req.lightId = -1;
+	req.lightId = 0;
 	req.renderOrder = 1;
 	m_drawRequests.push_back(req);
 }
@@ -1180,7 +1180,7 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 	req.rot = { 0.0f, 0.0f, 0.0f };
 	req.scale = { 1.0f, 1.0f, 1.0f };
 	req.textureIndex = index;
-	req.lightId = -1;
+	req.lightId = 0;
 	req.renderOrder = -1;  // ← -1 から 999 に変更（最後に描画）
 	req.isMesh = true;
 	m_drawRequests.push_back(req);

@@ -50,6 +50,8 @@ public:
     void SetNormalMapIndex(int idx) { m_normalTextureIndex = idx; }
     int  GetNormalMapIndex() const { return m_normalTextureIndex; }
 
+    void SetEnableLighting(int val);
+
     void UpdateVertices(
         const Vector3& points,
         const Vector2& texcoord,
