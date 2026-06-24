@@ -41,7 +41,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int normal = engine->LoadTexture("resources/top normal.png");
 
 
-	MeshModel* modelData = engine->LoadModel("resources/Sky_Dome", "SkyDome.obj");
+	MeshModel* modelData = engine->LoadModel("resources/skyDome", "sky_sphere.obj");
 	if (modelData) modelData->SetEnableLighting(0);
 
 	Sound* sound = new Sound;

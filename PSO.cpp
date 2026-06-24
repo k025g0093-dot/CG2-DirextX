@@ -139,7 +139,7 @@ D3D12_BLEND_DESC CreateBlendState() {
 D3D12_RASTERIZER_DESC CreateRasterizerState() {
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;  // 裏面を描画しない
-	rasterizerDesc.FrontCounterClockwise = TRUE;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴンを塗りつぶして描画
 	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	return rasterizerDesc;

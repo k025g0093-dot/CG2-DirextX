@@ -88,9 +88,9 @@ bool MeshModel::LoadFromOBJ(
 			}
 
 			for (size_t i = 2; i < currentFaceVertices.size(); ++i) {
-				modelData.vertices.push_back(currentFaceVertices[0]);
-				modelData.vertices.push_back(currentFaceVertices[i - 1]);
 				modelData.vertices.push_back(currentFaceVertices[i]);
+				modelData.vertices.push_back(currentFaceVertices[i - 1]);
+				modelData.vertices.push_back(currentFaceVertices[0]);
 			}
 		}
 		else if (identifier == "mtllib")
