@@ -144,7 +144,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	sprite = std::move(sprite_);
 
 
-	std::ifstream f("scene.json");
+	std::ifstream f("sceneObject.json");
 	if (f.is_open()) {
 		json modelData = json::parse(f);
 		{
@@ -258,7 +258,7 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
-	SaveSceneObjectsToFile();
+	//SaveSceneObjectsToFile();
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
 		m_imguiManager->update(this);
@@ -420,7 +420,7 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 				data["objects"].push_back(obj);
 			}
 
-			std::ofstream file("scene.json");
+			std::ofstream file("sceneObject.json");
 			file << data.dump(4);
 		}
 	}
@@ -456,7 +456,7 @@ void TUFEngine::SaveSceneObjectsToFile() {
 		data["objects"].push_back(obj);
 	}
 
-	std::ofstream file("scene.json");
+	std::ofstream file("sceneObject.json");
 	file << data.dump(4);
 
 }

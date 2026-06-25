@@ -3,8 +3,6 @@
 #include <cmath>
 struct SceneObject;
 
-
-
 class WaveGrid {
 public:
 

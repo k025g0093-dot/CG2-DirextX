@@ -88,6 +88,9 @@
     <Filter Include="ソース ファイル\TUFengine\GPU駆動のための者たち">
       <UniqueIdentifier>{7a3ef0db-0f35-4bf4-a621-32f765ac06f4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分">
+      <UniqueIdentifier>{0b299a22-f924-491a-9e93-534f7da908ee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -202,7 +205,7 @@
       <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
     </ClCompile>
     <ClCompile Include="Create3DObjectOBB.cpp">
-      <Filter>外部から持ってきた関数やファイル</Filter>
+      <Filter>ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -354,7 +357,7 @@
       <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
     </ClInclude>
     <ClInclude Include="Create3DObjectOBB.h">
-      <Filter>外部から持ってきた関数やファイル</Filter>
+      <Filter>ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
