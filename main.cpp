@@ -233,9 +233,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			//}
 			
 
-			//waveGrid.update();
-			//waveGrid.setObjectWall(engine->GetDroppedMeshes());
-			//
+			waveGrid.update();
+			waveGrid.setObjectWall(engine->GetDroppedMeshes());
+			
 
 			//if (frameIndex % 60 == 0) {
 			//	waveLog << frameIndex;
@@ -265,23 +265,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->PreDraw();
 
-			//for (int iz = 0; iz < cubeCountZ; iz++) {
-			//	for (int ix = 0; ix < cubeCountX; ix++) {
-			//		float h = waveGrid.getHeight(ix, iz);
-			//		mesh.updateHeight(ix, iz, h);
-			//		auto  n = waveGrid.getNormal(ix, iz);
-			//		mesh.updateNormal(ix, iz, n.x, n.y, n.z);
-			//		int idx = iz * cubeCountX + ix;
-			//		normalColors[idx] = {
-			//			(n.x + 1.0f) / 2.0f,
-			//			(n.y + 1.0f) / 2.0f,
-			//			(n.z + 1.0f) / 2.0f,
-			//			1.0f
-			//		};
-			//	}
-			//}
+			for (int iz = 0; iz < cubeCountZ; iz++) {
+				for (int ix = 0; ix < cubeCountX; ix++) {
+					float h = waveGrid.getHeight(ix, iz);
+					mesh.updateHeight(ix, iz, h);
+					auto  n = waveGrid.getNormal(ix, iz);
+					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
+					int idx = iz * cubeCountX + ix;
+					normalColors[idx] = {
+						(n.x + 1.0f) / 2.0f,
+						(n.y + 1.0f) / 2.0f,
+						(n.z + 1.0f) / 2.0f,
+						1.0f
+					};
+				}
+			}
 
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 		
 
 			for (int i = 0; i < 2; ++i) {

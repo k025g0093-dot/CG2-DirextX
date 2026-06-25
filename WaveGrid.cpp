@@ -80,27 +80,47 @@ void WaveGrid::setObjectWall(const std::vector<SceneObject>& objects) {
     std::fill(mWall.begin(), mWall.end(), false);
     for (const auto& object : objects) {
 
-        // ===== Y軸チェック追加 =====
-        // 波のシミュレーション平面（Y=0）とオブジェクトが交差しているか
-        float halfY = object.scale.y ;
-        if (object.pos.y - halfY > 0.0f || object.pos.y + halfY < 0.0f) {
-            continue; // 波の平面と交差していないのでスキップ
+        // ---- Y軸交差判定: localAABB + scale を使って正確に ----
+        float worldMinY = object.pos.y + object.localAABB.min.y * object.scale.y;
+        float worldMaxY = object.pos.y + object.localAABB.max.y * object.scale.y;
+        if (worldMinY > 0.0f || worldMaxY < 0.0f) {
+            continue;
         }
-        // ===========================
 
-        int centerX = static_cast<int>(object.pos.x / mDeltaX + mWidth * 0.5f);
-        int centerZ = static_cast<int>(object.pos.z / mDeltaX + mHeight * 0.5f);
-        int halfX = static_cast<int>(object.scale.x / mDeltaX);
-        int halfZ = static_cast<int>(object.scale.z / mDeltaX);
+        // ---- XZ OBB判定: 回転に対応 ----
+        // OBB中心をグリッド座標に変換
+        float cx = object.obb.center.x / mDeltaX + mWidth * 0.5f;
+        float cz = object.obb.center.z / mDeltaX + mHeight * 0.5f;
 
-        int minX = centerX - halfX;
-        int maxX = centerX + halfX;
-        int minZ = centerZ - halfZ;
-        int maxZ = centerZ + halfZ;
+        // OBBのX軸・Z軸（XZ平面に投影、すでに正規化済み）
+        float axx = object.obb.orientations[0].x;
+        float axz = object.obb.orientations[0].z;
+        float azx = object.obb.orientations[2].x;
+        float azz = object.obb.orientations[2].z;
+
+        // 半サイズ（グリッド単位、既にscale適用済み）
+        float hx = object.obb.size.x / mDeltaX;
+        float hz = object.obb.size.z / mDeltaX;
+
+        // OBBを囲むワールドAABB（グリッド座標）を計算して走査範囲を絞る
+        float extentX = fabsf(axx * hx) + fabsf(azx * hz);
+        float extentZ = fabsf(axz * hx) + fabsf(azz * hz);
+
+        int minX = (std::max)(0, (int)floorf(cx - extentX));
+        int maxX = (std::min)(mWidth - 1, (int)ceilf(cx + extentX));
+        int minZ = (std::max)(0, (int)floorf(cz - extentZ));
+        int maxZ = (std::min)(mHeight - 1, (int)ceilf(cz + extentZ));
 
         for (int z = minZ; z <= maxZ; z++) {
             for (int x = minX; x <= maxX; x++) {
-                if (x >= 0 && x < mWidth && z >= 0 && z < mHeight) {
+                float gx = (float)x - cx;
+                float gz = (float)z - cz;
+
+                // グリッド中心をOBBの各軸に射影 → 半サイズ内なら壁
+                float projX = fabsf(gx * axx + gz * axz);
+                float projZ = fabsf(gx * azx + gz * azz);
+
+                if (projX <= hx && projZ <= hz) {
                     setWall(x, z, true);
                 }
             }
