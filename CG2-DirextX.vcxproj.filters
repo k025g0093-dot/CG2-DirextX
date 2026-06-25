@@ -201,6 +201,9 @@
     <ClCompile Include="GpuDrivenRenderer.cpp">
       <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
     </ClCompile>
+    <ClCompile Include="Create3DObjectOBB.cpp">
+      <Filter>外部から持ってきた関数やファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -349,6 +352,9 @@
     </ClInclude>
     <ClInclude Include="GpuDrivenTypes.h">
       <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
+    </ClInclude>
+    <ClInclude Include="Create3DObjectOBB.h">
+      <Filter>外部から持ってきた関数やファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

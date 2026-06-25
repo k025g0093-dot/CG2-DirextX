@@ -69,6 +69,7 @@ struct SceneObject {
 	Vector3 pos = { 0.0f, 0.0f, 0.0f };
 	Vector3 rot = { 0.0f, 0.0f, 0.0f };
 	Vector3 scale = { 1.0f, 1.0f, 1.0f };
+	OBB obb;
 	int lightId{};
 	bool isSelected = false;
 };
@@ -172,6 +173,10 @@ public:
 	float GetViewportWidth() const { return static_cast<float>(width); }
 	float GetViewportHeight() const { return static_cast<float>(height); }
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSceneSrvGpuHandle() const { return m_sceneSrvGpuHandle; }
+
+
+
+	void DrawDebugOBB(const OBB& obb, const Vector4& color = { 1, 1, 1, 1 });
 
 private:
 

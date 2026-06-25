@@ -20,6 +20,11 @@ protected:
     UINT m_indexCount = 0;
 
 public:
+
+    // Model.h の public: セクション内に追加
+    const Vertex* GetVertexData() const { return m_pVertexData; }
+    UINT GetVertexCount() const { return m_indexCount; }
+
     virtual ~Model() {}
 
     UINT GetIndexCount() const { return m_indexCount; }

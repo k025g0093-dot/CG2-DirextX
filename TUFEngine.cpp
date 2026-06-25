@@ -158,17 +158,23 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 				MeshModel* mesh = LoadModel(directory, filename);
 
+
+
 				if (mesh) {
 					Vector3	pos = { object["position"][0], object["position"][1], object["position"][2] };
 					Vector3	rot = { object["rotation"][0], object["rotation"][1], object["rotation"][2] };
 					Vector3	scale = { object["scale"][0], object["scale"][1], object["scale"][2] };
+
+					Create3DObjectOBB obbCreator;
+					OBB obb = obbCreator.CreateBBForModel(*mesh, pos);
 
 					m_droppedMeshes.push_back({
 							modelPath ,
 							mesh,
 							pos,
 							rot,
-							scale
+							scale,
+							obb
 
 						});
 
@@ -355,13 +361,17 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 		MeshModel* mesh = LoadModel("resources/" + dir, filename);
 		if (mesh) {
 			std::string modelPath = "resources/" + dir + "/" + filename;
+			Create3DObjectOBB obbCreator;
+			OBB obb = obbCreator.CreateBBForModel(*mesh, { 0.0f, 0.0f, 0.0f });
+
 
 			m_droppedMeshes.push_back({
 				modelPath,
 				mesh,
 				{ 0.0f, 0.0f, 0.0f },
 				{ 0.0f, 0.0f, 0.0f },
-				{ 1.0f, 1.0f, 1.0f }
+				{ 1.0f, 1.0f, 1.0f },
+				 obb//OBBの追加
 				});
 
 			json data;
@@ -1378,6 +1388,50 @@ void TUFEngine::BeginSceneRender() {
 
 void TUFEngine::EndSceneRender() {
 	PostDraw();
+}
+
+
+
+void TUFEngine::DrawDebugOBB(const OBB& obb, const Vector4& color) {
+	// OBBの8頂点を計算
+	Vector3 extents[8];
+	Vector3 offset[8] = {
+		{-1, -1, -1}, {1, -1, -1}, {-1, 1, -1}, {1, 1, -1},
+		{-1, -1, 1}, {1, -1, 1}, {-1, 1, 1}, {1, 1, 1}
+	};
+
+	for (int i = 0; i < 8; i++) {
+		Vector3 local = {
+			offset[i].x * obb.size.x,
+			offset[i].y * obb.size.y,
+			offset[i].z * obb.size.z
+		};
+
+		// ローカル座標 → ワールド座標
+		extents[i] = obb.center;
+		extents[i] += obb.orientations[0] * local.x;
+		extents[i] += obb.orientations[1] * local.y;
+		extents[i] += obb.orientations[2] * local.z;
+	}
+
+	// 8つの頂点に球を配置（OBBの頂点を可視化）
+	if (!m_temporarySpheres) {
+		m_temporarySpheres = std::make_unique<Sphere>();
+		m_temporarySpheres->InitSphere(this);
+	}
+
+	for (int i = 0; i < 8; i++) {
+		DrawRequest req;
+		req.pos = extents[i];
+		req.rot = { 0, 0, 0 };
+		req.scale = { 2.0f, 2.0f, 2.0f };
+		req.model = m_temporarySpheres.get();
+		req.textureIndex = 0;
+		req.lightId = -1;
+		req.renderOrder = 100;
+		req.isMesh = true;
+		m_drawRequests.push_back(req);
+	}
 }
 
 #pragma endregion

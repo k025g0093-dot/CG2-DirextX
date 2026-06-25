@@ -90,6 +90,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ConvertString.cpp" />
+    <ClCompile Include="Create3DObjectOBB.cpp" />
     <ClCompile Include="DebugCamer.cpp" />
     <ClCompile Include="DXC.cpp" />
     <ClCompile Include="DynamicMesh.cpp" />
@@ -182,6 +183,7 @@
     <ClInclude Include="allVector.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ConvertString.h" />
+    <ClInclude Include="Create3DObjectOBB.h" />
     <ClInclude Include="DebugCamer.h" />
     <ClInclude Include="DXC.h" />
     <ClInclude Include="DynamicMesh.h" />
