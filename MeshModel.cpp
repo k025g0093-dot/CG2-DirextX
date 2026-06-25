@@ -139,6 +139,8 @@ bool MeshModel::LoadFromOBJ(
 		m_vertexBufferView.SizeInBytes = (UINT)sizeof(VertexData) * (UINT)m_vertexCount;
 		m_vertexBufferView.StrideInBytes = sizeof(VertexData);
 
+		m_pVertexData = reinterpret_cast<Vertex*>(modelData.vertices.data());
+		Model::m_indexCount = (UINT)m_vertexCount;
 		// ★ インデックスバッファ作成
 		// OBJ は LoadFromOBJ 内で既に三角形分割済みなので
 		// シーケンシャルなインデックス (0, 1, 2, 3, ...) で十分

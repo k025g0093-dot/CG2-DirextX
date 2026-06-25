@@ -1,7 +1,7 @@
 #include "Create3DObjectOBB.h"
 #include "Model.h"
 
-OBB Create3DObjectOBB::CreateBBForModel(
+OBB Create3DObjectOBB::CreateOBBForModel(
 	const Model& model,
 	const Vector3 position
 ) {

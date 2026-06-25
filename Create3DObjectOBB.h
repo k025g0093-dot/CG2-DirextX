@@ -25,7 +25,7 @@ class Create3DObjectOBB
 
 public:
 
-	OBB CreateBBForModel(
+	OBB CreateOBBForModel(
 		const Model& model,
 		const Vector3 position
 	);

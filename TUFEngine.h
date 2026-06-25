@@ -70,6 +70,7 @@ struct SceneObject {
 	Vector3 rot = { 0.0f, 0.0f, 0.0f };
 	Vector3 scale = { 1.0f, 1.0f, 1.0f };
 	OBB obb;
+	AABB localAABB;
 	int lightId{};
 	bool isSelected = false;
 };

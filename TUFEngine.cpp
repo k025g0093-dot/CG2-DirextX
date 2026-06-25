@@ -166,16 +166,29 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 					Vector3	scale = { object["scale"][0], object["scale"][1], object["scale"][2] };
 
 					Create3DObjectOBB obbCreator;
-					OBB obb = obbCreator.CreateBBForModel(*mesh, pos);
+					OBB obb = obbCreator.CreateOBBForModel(*mesh, pos);
+
+					// ローカルAABBをキャッシュ
+					const Vertex* verts = mesh->GetVertexData();
+					UINT vCount = mesh->GetVertexCount();
+					Vector3 lMin = { FLT_MAX, FLT_MAX, FLT_MAX }, lMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+					for (UINT j = 0; j < vCount; j++) {
+						if (verts[j].position.x < lMin.x) lMin.x = verts[j].position.x;
+						if (verts[j].position.x > lMax.x) lMax.x = verts[j].position.x;
+						if (verts[j].position.y < lMin.y) lMin.y = verts[j].position.y;
+						if (verts[j].position.y > lMax.y) lMax.y = verts[j].position.y;
+						if (verts[j].position.z < lMin.z) lMin.z = verts[j].position.z;
+						if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
+					}
 
 					m_droppedMeshes.push_back({
-							modelPath ,
+							modelPath,
 							mesh,
 							pos,
 							rot,
 							scale,
-							obb
-
+							obb,
+							{ lMin, lMax }
 						});
 
 				}
@@ -245,7 +258,7 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
-
+	SaveSceneObjectsToFile();
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
 		m_imguiManager->update(this);
@@ -362,8 +375,20 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 		if (mesh) {
 			std::string modelPath = "resources/" + dir + "/" + filename;
 			Create3DObjectOBB obbCreator;
-			OBB obb = obbCreator.CreateBBForModel(*mesh, { 0.0f, 0.0f, 0.0f });
+			OBB obb = obbCreator.CreateOBBForModel(*mesh, { 0.0f, 0.0f, 0.0f });
 
+			// ローカルAABBをキャッシュ
+			const Vertex* verts = mesh->GetVertexData();
+			UINT vCount = mesh->GetVertexCount();
+			Vector3 lMin = { FLT_MAX, FLT_MAX, FLT_MAX }, lMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+			for (UINT j = 0; j < vCount; j++) {
+				if (verts[j].position.x < lMin.x) lMin.x = verts[j].position.x;
+				if (verts[j].position.x > lMax.x) lMax.x = verts[j].position.x;
+				if (verts[j].position.y < lMin.y) lMin.y = verts[j].position.y;
+				if (verts[j].position.y > lMax.y) lMax.y = verts[j].position.y;
+				if (verts[j].position.z < lMin.z) lMin.z = verts[j].position.z;
+				if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
+			}
 
 			m_droppedMeshes.push_back({
 				modelPath,
@@ -371,7 +396,8 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 				{ 0.0f, 0.0f, 0.0f },
 				{ 0.0f, 0.0f, 0.0f },
 				{ 1.0f, 1.0f, 1.0f },
-				 obb//OBBの追加
+				obb,
+				{ lMin, lMax }
 				});
 
 			json data;
@@ -384,6 +410,12 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 				obj["position"] = { object.pos.x, object.pos.y, object.pos.z };
 				obj["rotation"] = { object.rot.x, object.rot.y, object.rot.z };
 				obj["scale"] = { object.scale.x, object.scale.y, object.scale.z };
+
+				obj["obb"]["center"] = { object.obb.center.x, object.obb.center.y, object.obb.center.z };
+				obj["obb"]["size"] = { object.obb.size.x, object.obb.size.y, object.obb.size.z };
+				obj["obb"]["orientationX"] = { object.obb.orientations[0].x, object.obb.orientations[0].y, object.obb.orientations[0].z };
+				obj["obb"]["orientationY"] = { object.obb.orientations[1].x, object.obb.orientations[1].y, object.obb.orientations[1].z };
+				obj["obb"]["orientationZ"] = { object.obb.orientations[2].x, object.obb.orientations[2].y, object.obb.orientations[2].z };
 
 				data["objects"].push_back(obj);
 			}
@@ -414,6 +446,12 @@ void TUFEngine::SaveSceneObjectsToFile() {
 		obj["position"] = { object.pos.x, object.pos.y, object.pos.z };
 		obj["rotation"] = { object.rot.x, object.rot.y, object.rot.z };
 		obj["scale"] = { object.scale.x, object.scale.y, object.scale.z };
+
+		obj["obb"]["center"] = { object.obb.center.x, object.obb.center.y, object.obb.center.z };
+		obj["obb"]["size"] = { object.obb.size.x, object.obb.size.y, object.obb.size.z };
+		obj["obb"]["orientationX"] = { object.obb.orientations[0].x, object.obb.orientations[0].y, object.obb.orientations[0].z };
+		obj["obb"]["orientationY"] = { object.obb.orientations[1].x, object.obb.orientations[1].y, object.obb.orientations[1].z };
+		obj["obb"]["orientationZ"] = { object.obb.orientations[2].x, object.obb.orientations[2].y, object.obb.orientations[2].z };
 
 		data["objects"].push_back(obj);
 	}
@@ -806,6 +844,24 @@ void TUFEngine::SetupInfoQueue() {
 void TUFEngine::RenderGpuDrivenALLRequests() {
 
 	for (auto& obj : m_droppedMeshes) {
+		// 現在のtransformでOBBを更新
+		Vector3 localCenter = (obj.localAABB.min + obj.localAABB.max) * 0.5f;
+		Vector3 localHalf = (obj.localAABB.max - obj.localAABB.min) * 0.5f;
+
+		Matrix4x4 rotMat = Multiply(Multiply(MakeRotateXMatrix(obj.rot.x), MakeRotateYMatrix(obj.rot.y)), MakeRotateZMatrix(obj.rot.z));
+
+		Vector3 rotatedCenter = {
+			localCenter.x * rotMat.m[0][0] + localCenter.y * rotMat.m[1][0] + localCenter.z * rotMat.m[2][0],
+			localCenter.x * rotMat.m[0][1] + localCenter.y * rotMat.m[1][1] + localCenter.z * rotMat.m[2][1],
+			localCenter.x * rotMat.m[0][2] + localCenter.y * rotMat.m[1][2] + localCenter.z * rotMat.m[2][2]
+		};
+
+		obj.obb.center = obj.pos + rotatedCenter;
+		obj.obb.orientations[0] = { rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2] };
+		obj.obb.orientations[1] = { rotMat.m[1][0], rotMat.m[1][1], rotMat.m[1][2] };
+		obj.obb.orientations[2] = { rotMat.m[2][0], rotMat.m[2][1], rotMat.m[2][2] };
+		obj.obb.size = { localHalf.x * obj.scale.x, localHalf.y * obj.scale.y, localHalf.z * obj.scale.z };
+
 		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
 	}
 
