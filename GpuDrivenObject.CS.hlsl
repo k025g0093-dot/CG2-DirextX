@@ -54,8 +54,8 @@ float4x4 MakeRotateXMatrix(float r)
       float s = sin(r);
       return float4x4(
         1, 0, 0, 0,
-        0, c, -s, 0,
-        0, s, c, 0,
+        0, c, s, 0,
+        0, -s, c, 0,
         0, 0, 0, 1
     );
 }
@@ -65,10 +65,10 @@ float4x4 MakeRotateYMatrix(float r)
       float c = cos(r);
       float s = sin(r);
       return float4x4(
-         c, 0, s, 0,
-         0, 1, 0, 0,
-        -s, 0, c, 0,
-         0, 0, 0, 1
+        c, 0, -s, 0,
+        0, 1, 0, 0,
+        s, 0, c, 0,
+        0, 0, 0, 1
     );
 }
 
@@ -77,8 +77,8 @@ float4x4 MakeRotateZMatrix(float r)
       float c = cos(r);
       float s = sin(r);
       return float4x4(
-        c, -s, 0, 0,
-        s, c, 0, 0,
+        c, s, 0, 0,
+        -s, c, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
     );

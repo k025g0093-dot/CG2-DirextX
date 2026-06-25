@@ -181,7 +181,7 @@ MaterialData MeshModel::LoadMaterialTemplateFile(
 	MaterialData materialData;
 	std::string line;
 	std::ifstream file(directoryPath + "/" + filename);
-	assert(file.is_open());
+	//assert(file.is_open());
 
 	while (std::getline(file, line))
 	{
