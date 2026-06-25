@@ -176,7 +176,8 @@ public:
 
 
 
-	void DrawDebugOBB(const OBB& obb, const Vector4& color = { 1, 1, 1, 1 });
+	void DrawDebugOBB(const OBB& obb, const Vector4& color);
+
 
 private:
 

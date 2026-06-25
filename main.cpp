@@ -281,12 +281,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
-			// main.cpp の描画部分を修正
-			for (const auto& mesh : engine->GetDroppedMeshes()) {
-				// メッシュごとに OBB を再計算してから描画
-				OBB tempOBB = Create3DObjectOBB().CreateBBForModel(*mesh.mesh, mesh.pos);
-				engine->DrawDebugOBB(tempOBB, { 0, 1, 0, 1 });
-			}
+		
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(
