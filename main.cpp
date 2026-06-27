@@ -248,10 +248,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			//}
 			frameIndex++;
 
-			engine->SetSpriteUVScale({ uvTransformSprite.scale.x, uvTransformSprite.scale.y });
-			engine->SetSpriteUVTranslate({ uvTransformSprite.translate.x, uvTransformSprite.translate.y });
+			//engine->SetSpriteUVScale({ uvTransformSprite.scale.x, uvTransformSprite.scale.y });
+			//engine->SetSpriteUVTranslate({ uvTransformSprite.translate.x, uvTransformSprite.translate.y });
 
-			engine->SetSpriteUVRotate(uvTransformSprite.rotate.z);
+			//engine->SetSpriteUVRotate(uvTransformSprite.rotate.z);
 
 			////================================================================================================================
 			////更新処理ここまで

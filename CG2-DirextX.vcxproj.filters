@@ -207,6 +207,9 @@
     <ClCompile Include="Create3DObjectOBB.cpp">
       <Filter>ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分</Filter>
     </ClCompile>
+    <ClCompile Include="WaveGridPSO.cpp">
+      <Filter>外部から持ってきた関数やファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -216,6 +219,7 @@
     <FxCompile Include="GpuDrivenObject.CS.hlsl" />
     <FxCompile Include="GpuDrivenIndirectArgs.CS.hlsl" />
     <FxCompile Include="GpuDrivenIndirectArgsNonIndexed.CS.hlsl" />
+    <FxCompile Include="WaveGrid.CS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TUFEngine.h">
@@ -358,6 +362,9 @@
     </ClInclude>
     <ClInclude Include="Create3DObjectOBB.h">
       <Filter>ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveGridPSO.h">
+      <Filter>外部から持ってきた関数やファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

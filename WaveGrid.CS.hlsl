@@ -2,12 +2,15 @@
 
 cbuffer WaveParams : register(b0)
 {
+      float gTime; // CPU: t += 0.01f
+      float gWaveFreq; // 30.0f (from ImGui)
+      float gWaveStrength; // 10.0f (from ImGui)
       float gDamping; // 0.993f
-      float gMul; // deltaT^2 * c^2 / deltaX^2
-      float gPad[2]; // 16バイト境界合わせ
+    
+      float gMul;
       uint gWidth;
       uint gHeight;
-      uint gPad2[3];
+      uint gPad;
 };
 
 StructuredBuffer<uint> gWall : register(t0); // SRV: 読み専用
@@ -22,6 +25,13 @@ void main(uint3 id : SV_DispatchThreadID)
             return;
       int index = id.y * gWidth + id.x;
 
+      int idx = id.y * gWidth + id.x;
+      
+      if (id.x == 1)  // 左端
+      {
+            gCurr[idx] = sin(gTime * gWaveFreq) * gWaveStrength;
+      }
+      
     // 壁 or 端 → 波をゼロに
       if (gWall[index] != 0 ||
         id.x == 0 || id.x == gWidth - 1 ||
@@ -31,6 +41,8 @@ void main(uint3 id : SV_DispatchThreadID)
             return;
       }
 
+
+      
       float u = gCurr[index];
       float uPre = gPrev[index];
       float uL = gCurr[index - 1];

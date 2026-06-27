@@ -1,48 +1,127 @@
 #pragma once
-#include <vector>  // ← vectorを使うなら必要
+#include <vector>
 #include <cmath>
-struct SceneObject;
+#include <wrl/client.h>
 
+// 前方宣言
+struct SceneObject;
+struct ID3D12Device;
+struct ID3D12GraphicsCommandList;
+struct ID3D12Resource;
+struct ID3D12PipelineState;
+struct ID3D12RootSignature;
+class TUFEngine;
+
+using Microsoft::WRL::ComPtr;
+
+// ========================
+// WaveParams: HLSL cbuffer と同じレイアウト
+// ========================
+struct WaveParams {
+    float gTime;
+    float gWaveFreq;
+    float gWaveStrength;
+    float gDamping;
+    float gMul;
+    uint32_t gWidth;
+    uint32_t gHeight;
+    uint32_t gPad;
+};
+
+// ========================
+// WaveGrid クラス
+// ========================
 class WaveGrid {
 public:
-
+    // ========== Constructor / Destructor ==========
     WaveGrid(int width, int height, std::vector<SceneObject>& sceneObjects);
     ~WaveGrid();
 
+    // ========== GPU 初期化・実行 ==========
+    void InitializeGPU(ID3D12Device* device, TUFEngine* engine);
+    void DispatchWaveSimulation(float time, float freq, float strength);
+    void ReadbackToCPU();
+
+    // ========== CPU 側メソッド（従来） ==========
     void update();
     void addSource(int x, int y, float strength);
-    void setWall(int x, int y, bool isWall);        
+    void setWall(int x, int y, bool isWall);
     bool isWall(int x, int y);
     void setObjectWall(const std::vector<SceneObject>& objects);
     float getHeight(int x, int y);
-
-    // ← これも追加しておくと便利
     void reset();
     int valueIndex(int x, int y) const;
 
-    int mWidth, mHeight;
+    // ========== Getter for Cached Data ==========
+    float GetHeightFromCache(int x, int y) const;
 
+    // ========== 構造体定義 ==========
     struct Source {
         int x, y;
         float strength;
-        float lifetime;  // 波源の寿命（減衰に使う）
+        float lifetime;
     };
 
-    std::vector<Source> mSources;
-    std::vector<SceneObject>& sceneObjects;
-    // float* よりvectorの方が管理が楽
-    std::vector<float> mCurrent;
-    std::vector<float> mPrevious;
-    std::vector<float> mNext;    // ← 3フレーム必要
-    std::vector<bool>  mWall;
-
-    float mC;      // 波の速さ
-    float mDeltaX; // グリッド間隔]
-
-    // 既存のpublicの中に追加
     struct Normal {
         float x, y, z;
     };
+
     Normal getNormal(int x, int y);
 
+    // ========== Public メンバ（設定値など） ==========
+    int mWidth, mHeight;
+    float mC;      // 波の速さ
+    float mDeltaX; // グリッド間隔
+
+    std::vector<SceneObject>& sceneObjects;
+    std::vector<Source> mSources;
+
+private:
+    // ========== CPU 側バッファ（デバッグ用に残す） ==========
+    std::vector<float> mCurrent;
+    std::vector<float> mPrevious;
+    std::vector<float> mNext;
+    std::vector<bool>  mWall;
+
+    // ========== GPU リソース ==========
+    // ConstantBuffer
+    ComPtr<ID3D12Resource> mConstBufferWaveParams;
+    void* mParamsBufferMappedPtr;  // マップ済みポインタ
+
+    // Compute 用バッファ（StructuredBuffer<float>）
+    ComPtr<ID3D12Resource> mCurrentBuffer;    // u0 でも使う（可視用）
+    ComPtr<ID3D12Resource> mPreviousBuffer;   // u1
+    ComPtr<ID3D12Resource> mNextBuffer;       // u2
+
+    // Wall バッファ（StructuredBuffer<uint>）
+    ComPtr<ID3D12Resource> mWallBuffer;       // t0 (SRV)
+
+    // 出力バッファ
+    ComPtr<ID3D12Resource> mHeightBuffer;     // u3 (UAV)
+    ComPtr<ID3D12Resource> mNormalBuffer;     // u4 (UAV) - 後で
+
+    // Staging Buffer（Readback用）
+    ComPtr<ID3D12Resource> mHeightStaging;
+    ComPtr<ID3D12Resource> mNormalStaging;    // 後で
+
+    // ========== PSO / RootSignature ==========
+    ComPtr<ID3D12PipelineState> mComputePSO;
+    ComPtr<ID3D12RootSignature> mRootSignature;
+
+    // ========== CPU キャッシュ（フレーム遅延対応） ==========
+    std::vector<float> mHeightCPUCache;
+    std::vector<float> mNormalCPUCache;      // 後で
+
+    // ========== 状態フラグ ==========
+    bool mIsGPUReady;
+
+    // ========== エンジン参照 ==========
+    ID3D12Device* mDevice;
+    TUFEngine* mEngine;
+
+    // ========== Private Helper Methods ==========
+    void CreateGPUResources();
+    void CreateConstantBuffer();
+    void CreateStructuredBuffers();
+    void CreateStagingBuffers();
 };

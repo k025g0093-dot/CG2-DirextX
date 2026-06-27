@@ -126,6 +126,7 @@
     <ClCompile Include="Vector.cpp" />
     <ClCompile Include="VertexResource.cpp" />
     <ClCompile Include="WaveGrid.cpp" />
+    <ClCompile Include="WaveGridPSO.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="GpuDrivenIndirectArgs.CS.hlsl">
@@ -173,6 +174,10 @@
     <FxCompile Include="Object3d.VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="WaveGrid.CS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
@@ -225,6 +230,7 @@
     <ClInclude Include="Vector4.h" />
     <ClInclude Include="VertexResource.h" />
     <ClInclude Include="WaveGrid.h" />
+    <ClInclude Include="WaveGridPSO.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
