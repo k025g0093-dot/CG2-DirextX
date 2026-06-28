@@ -77,10 +77,10 @@ public:
 
     std::vector<SceneObject>& sceneObjects;
     std::vector<Source> mSources;
+    std::vector<float> mCurrent;
 
 private:
     // ========== CPU 側バッファ（デバッグ用に残す） ==========
-    std::vector<float> mCurrent;
     std::vector<float> mPrevious;
     std::vector<float> mNext;
     std::vector<bool>  mWall;
