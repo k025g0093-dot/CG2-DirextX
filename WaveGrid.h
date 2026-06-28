@@ -2,6 +2,8 @@
 #include <vector>
 #include <cmath>
 #include <wrl/client.h>
+#include "WaveGridPSO.h"
+
 
 // 前方宣言
 struct SceneObject;
@@ -119,9 +121,18 @@ private:
     ID3D12Device* mDevice;
     TUFEngine* mEngine;
 
+    //=========== ハンドル関係 ==========
+    D3D12_CPU_DESCRIPTOR_HANDLE mWallSrvCpuHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE mWallSrvGpuHandle{};
+
+    D3D12_CPU_DESCRIPTOR_HANDLE mWaveUavCpuHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE mWaveUavGpuHandle{};
+
     // ========== Private Helper Methods ==========
     void CreateGPUResources();
     void CreateConstantBuffer();
     void CreateStructuredBuffers();
     void CreateStagingBuffers();
+    void CreateDescriptorViews();
+    void CreateWaveUavDescriptors();
 };

@@ -1,5 +1,6 @@
 #include "WaveGrid.h"
 #include "TUFEngine.h"
+#include "PSO.h"
 #include <algorithm>
 
 WaveGrid::WaveGrid(int width, int height, std::vector<SceneObject>& sceneObjects)
@@ -175,4 +176,354 @@ WaveGrid::Normal WaveGrid::getNormal(int x, int y) {
     }
 
     return { nx, ny, nz };
+}
+
+//======================================================
+//GPU実装変
+//======================================================
+
+//初期化処理
+void  WaveGrid::InitializeGPU(ID3D12Device* device, TUFEngine* engine) {
+
+    mDevice = device;
+    mEngine = engine;
+
+    //安全装置
+    assert(device);
+    assert(engine);
+    mParamsBufferMappedPtr = nullptr;
+
+
+    //GPUリソースの作成
+    CreateGPUResources();
+
+    //ルートシグネチャとパイプラインの生成
+    HRESULT hr = S_OK;
+    mComputePSO = WaveGridCreateComputePipelineState(device, mRootSignature, hr);
+
+    if (FAILED(hr)) {
+        assert(false && "Failed to create Compute PSO");
+        return;
+    }
+
+    mHeightCPUCache.resize(mWidth * mHeight, 0.0f);
+    mNormalCPUCache.resize(mWidth * mHeight*3);
+
+    mIsGPUReady = true;
+}
+
+void WaveGrid::DispatchWaveSimulation(float time, float freq, float strength)
+{
+    if (!mIsGPUReady || !mEngine) {
+        return;
+    }
+
+    WaveParams params{};
+    params.gTime = time;
+    params.gWaveFreq = freq;
+    params.gWaveStrength = strength;
+    params.gDamping = 0.993f;
+    params.gMul = (1.0f / 60.0f) * (1.0f / 60.0f) * mC * mC / (mDeltaX * mDeltaX);
+    params.gWidth = static_cast<uint32_t>(mWidth);
+    params.gHeight = static_cast<uint32_t>(mHeight);
+    params.gPad = 0;
+
+    if (mParamsBufferMappedPtr) {
+        memcpy(mParamsBufferMappedPtr, &params, sizeof(WaveParams));
+    }
+
+    ID3D12GraphicsCommandList* cmdList = mEngine->GetCommandList();
+    if (!cmdList) {
+        return;
+    }
+
+    ID3D12DescriptorHeap* heaps[] = {
+        mEngine->GetSrvDescriptorHeap()
+    };
+    cmdList->SetDescriptorHeaps(1, heaps);
+
+    cmdList->SetComputeRootSignature(mRootSignature.Get());
+    cmdList->SetPipelineState(mComputePSO.Get());
+
+    cmdList->SetComputeRootConstantBufferView(
+        0,
+        mConstBufferWaveParams->GetGPUVirtualAddress()
+    );
+
+    // rootParameter[1] : t0 = gWall
+    cmdList->SetComputeRootDescriptorTable(1, mWallSrvGpuHandle);
+
+    // rootParameter[2] : u0,u1,u2 = gCurr,gPrev,gNext
+    cmdList->SetComputeRootDescriptorTable(2, mWaveUavGpuHandle);
+
+    uint32_t dispatchX = (mWidth + 7) / 8;
+    uint32_t dispatchY = (mHeight + 7) / 8;
+    cmdList->Dispatch(dispatchX, dispatchY, 1);
+
+    D3D12_RESOURCE_BARRIER uavBarrier{};
+    uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    uavBarrier.UAV.pResource = mNextBuffer.Get();
+    cmdList->ResourceBarrier(1, &uavBarrier);
+
+    D3D12_RESOURCE_BARRIER toCopySource =
+        CD3DX12_RESOURCE_BARRIER::Transition(
+            mNextBuffer.Get(),
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            D3D12_RESOURCE_STATE_COPY_SOURCE
+        );
+    cmdList->ResourceBarrier(1, &toCopySource);
+
+    if (mNextBuffer && mHeightStaging) {
+        cmdList->CopyResource(mHeightStaging.Get(), mNextBuffer.Get());
+    }
+
+    D3D12_RESOURCE_BARRIER backToUav =
+        CD3DX12_RESOURCE_BARRIER::Transition(
+            mNextBuffer.Get(),
+            D3D12_RESOURCE_STATE_COPY_SOURCE,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+        );
+    cmdList->ResourceBarrier(1, &backToUav);
+
+    std::swap(mPreviousBuffer, mCurrentBuffer);
+    std::swap(mCurrentBuffer, mNextBuffer);
+
+    // buffer を swap したので、u0/u1/u2 の UAV descriptor は作り直す必要あり
+    CreateWaveUavDescriptors();
+}
+
+
+void WaveGrid::ReadbackToCPU() {
+
+    if (!mHeightStaging)return;
+
+    void* mappedPtr = nullptr;
+    D3D12_RANGE readRenge = { 0,mWidth * mHeight * sizeof(float) };
+    HRESULT hr = mHeightStaging->Map(0, &readRenge, &mappedPtr);
+
+    if (SUCCEEDED(hr) && mappedPtr) {
+        memcpy(mHeightCPUCache.data(), mappedPtr, mHeightCPUCache.size() * sizeof(float));
+        mHeightStaging->Unmap(0, nullptr);
+    }
+
+}
+
+float WaveGrid::GetHeightFromCache(int x, int y) const
+{
+    if (x < 0 || x >= mWidth || y < 0 || y >= mHeight) {
+        return 0.0f;
+    }
+    return mHeightCPUCache[y * mWidth + x];
+}
+
+//---------------------------------
+//private関数
+//---------------------------------
+
+
+void WaveGrid::CreateGPUResources()
+{
+    if (!mDevice) return;
+
+    CreateConstantBuffer();
+    CreateStructuredBuffers();
+    CreateStagingBuffers();
+    CreateDescriptorViews();
+}
+
+
+
+void WaveGrid::CreateConstantBuffer() {
+
+    //サイズのアライメント
+    uint32_t bufferSize = ((sizeof(WaveParams) + 255) / 256) * 256;
+   
+    D3D12_HEAP_PROPERTIES heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+    D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
+
+    HRESULT hr = mDevice->CreateCommittedResource(
+        &heapProp,
+        D3D12_HEAP_FLAG_NONE,
+        &resourceDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(mConstBufferWaveParams.GetAddressOf())
+    );
+
+    if (SUCCEEDED(hr)) {
+        D3D12_RANGE readRange = { 0,0 };
+        mConstBufferWaveParams->Map(0, &readRange, &mParamsBufferMappedPtr);
+    }
+
+
+}
+
+void WaveGrid::CreateStructuredBuffers()
+{
+    uint32_t elementCount = mWidth * mHeight;
+    uint32_t waveBufferSize = elementCount * sizeof(float);
+
+    D3D12_HEAP_PROPERTIES defaultHeap =
+        CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+
+    D3D12_RESOURCE_DESC waveDesc =
+        CD3DX12_RESOURCE_DESC::Buffer(waveBufferSize);
+    waveDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    HRESULT hr = S_OK;
+
+    hr = mDevice->CreateCommittedResource(
+        &defaultHeap,
+        D3D12_HEAP_FLAG_NONE,
+        &waveDesc,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        nullptr,
+        IID_PPV_ARGS(mCurrentBuffer.GetAddressOf())
+    );
+    assert(SUCCEEDED(hr));
+
+    hr = mDevice->CreateCommittedResource(
+        &defaultHeap,
+        D3D12_HEAP_FLAG_NONE,
+        &waveDesc,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        nullptr,
+        IID_PPV_ARGS(mPreviousBuffer.GetAddressOf())
+    );
+    assert(SUCCEEDED(hr));
+
+    hr = mDevice->CreateCommittedResource(
+        &defaultHeap,
+        D3D12_HEAP_FLAG_NONE,
+        &waveDesc,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        nullptr,
+        IID_PPV_ARGS(mNextBuffer.GetAddressOf())
+    );
+    assert(SUCCEEDED(hr));
+
+    uint32_t wallBufferSize = elementCount * sizeof(uint32_t);
+
+    D3D12_HEAP_PROPERTIES uploadHeap =
+        CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+
+    D3D12_RESOURCE_DESC wallDesc =
+        CD3DX12_RESOURCE_DESC::Buffer(wallBufferSize);
+
+    hr = mDevice->CreateCommittedResource(
+        &uploadHeap,
+        D3D12_HEAP_FLAG_NONE,
+        &wallDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(mWallBuffer.GetAddressOf())
+    );
+    assert(SUCCEEDED(hr));
+}
+
+
+
+void WaveGrid::CreateStagingBuffers()
+{
+    // CPU が読み込むための Staging Buffer
+
+    uint32_t bufferSize = mWidth * mHeight * sizeof(float);
+
+    D3D12_HEAP_PROPERTIES heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+    D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
+
+    mDevice->CreateCommittedResource(
+        &heapProp,
+        D3D12_HEAP_FLAG_NONE,
+        &resourceDesc,
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        nullptr,
+        IID_PPV_ARGS(mHeightStaging.GetAddressOf())
+    );
+
+    // Normal Staging も同様に作成（後で）
+}
+
+void WaveGrid::CreateDescriptorViews()
+{
+    ID3D12DescriptorHeap* heap = mEngine->GetSrvDescriptorHeap();
+
+    UINT descriptorSize =
+        mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuStart = heap->GetCPUDescriptorHandleForHeapStart();
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuStart = heap->GetGPUDescriptorHandleForHeapStart();
+
+    // GpuDrivenRenderer が 101-103 を使ってるので、被らない番号にする
+    UINT wallSrvIndex = 110;
+    UINT waveUavIndex = 111; // 111,112,113 を u0,u1,u2 に使う
+
+    mWallSrvCpuHandle.ptr = cpuStart.ptr + descriptorSize * wallSrvIndex;
+    mWallSrvGpuHandle.ptr = gpuStart.ptr + descriptorSize * wallSrvIndex;
+
+    mWaveUavCpuHandle.ptr = cpuStart.ptr + descriptorSize * waveUavIndex;
+    mWaveUavGpuHandle.ptr = gpuStart.ptr + descriptorSize * waveUavIndex;
+
+    // t0 : gWall
+    D3D12_SHADER_RESOURCE_VIEW_DESC wallSrvDesc{};
+    wallSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
+    wallSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    wallSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    wallSrvDesc.Buffer.FirstElement = 0;
+    wallSrvDesc.Buffer.NumElements = mWidth * mHeight;
+    wallSrvDesc.Buffer.StructureByteStride = sizeof(uint32_t);
+    wallSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+
+    mDevice->CreateShaderResourceView(
+        mWallBuffer.Get(),
+        &wallSrvDesc,
+        mWallSrvCpuHandle
+    );
+
+    CreateWaveUavDescriptors();
+}
+
+
+void WaveGrid::CreateWaveUavDescriptors()
+{
+    UINT descriptorSize =
+        mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+    uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+    uavDesc.Buffer.FirstElement = 0;
+    uavDesc.Buffer.NumElements = mWidth * mHeight;
+    uavDesc.Buffer.StructureByteStride = sizeof(float);
+    uavDesc.Buffer.CounterOffsetInBytes = 0;
+    uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE handle = mWaveUavCpuHandle;
+
+    // u0 : gCurr
+    mDevice->CreateUnorderedAccessView(
+        mCurrentBuffer.Get(),
+        nullptr,
+        &uavDesc,
+        handle
+    );
+
+    // u1 : gPrev
+    handle.ptr += descriptorSize;
+    mDevice->CreateUnorderedAccessView(
+        mPreviousBuffer.Get(),
+        nullptr,
+        &uavDesc,
+        handle
+    );
+
+    // u2 : gNext
+    handle.ptr += descriptorSize;
+    mDevice->CreateUnorderedAccessView(
+        mNextBuffer.Get(),
+        nullptr,
+        &uavDesc,
+        handle
+    );
 }
