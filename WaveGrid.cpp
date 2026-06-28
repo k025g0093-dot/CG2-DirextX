@@ -183,33 +183,44 @@ WaveGrid::Normal WaveGrid::getNormal(int x, int y) {
 //======================================================
 
 //初期化処理
-void  WaveGrid::InitializeGPU(ID3D12Device* device, TUFEngine* engine) {
+void WaveGrid::InitializeGPU(ID3D12Device* device, TUFEngine* engine)
+{
+    assert(device && "Device is null");
+    assert(engine && "Engine is null");
 
     mDevice = device;
     mEngine = engine;
-
-    //安全装置
-    assert(device);
-    assert(engine);
     mParamsBufferMappedPtr = nullptr;
 
+    OutputDebugStringA("=== InitializeGPU start ===\n");
 
-    //GPUリソースの作成
     CreateGPUResources();
+    OutputDebugStringA("CreateGPUResources done\n");
 
-    //ルートシグネチャとパイプラインの生成
     HRESULT hr = S_OK;
-    mComputePSO = WaveGridCreateComputePipelineState(device, mRootSignature, hr);
+    mRootSignature = WaveGridCreateComputeRootSignature(device, hr);
+    OutputDebugStringA("RootSignature created\n");
 
     if (FAILED(hr)) {
-        assert(false && "Failed to create Compute PSO");
+        OutputDebugStringA("ERROR: RootSignature creation failed\n");
+        assert(false);
+        return;
+    }
+
+    mComputePSO = WaveGridCreateComputePipelineState(device, mRootSignature, hr);
+    OutputDebugStringA("ComputePSO created\n");
+
+    if (FAILED(hr)) {
+        OutputDebugStringA("ERROR: ComputePSO creation failed\n");
+        assert(false);
         return;
     }
 
     mHeightCPUCache.resize(mWidth * mHeight, 0.0f);
-    mNormalCPUCache.resize(mWidth * mHeight*3);
+    mNormalCPUCache.resize(mWidth * mHeight);
 
     mIsGPUReady = true;
+    OutputDebugStringA("=== InitializeGPU done ===\n");
 }
 
 void WaveGrid::DispatchWaveSimulation(float time, float freq, float strength)
@@ -217,6 +228,8 @@ void WaveGrid::DispatchWaveSimulation(float time, float freq, float strength)
     if (!mIsGPUReady || !mEngine) {
         return;
     }
+
+    UploadWallDataToGPU();
 
     WaveParams params{};
     params.gTime = time;
@@ -316,6 +329,115 @@ float WaveGrid::GetHeightFromCache(int x, int y) const
     }
     return mHeightCPUCache[y * mWidth + x];
 }
+
+void WaveGrid::InitializeGPUBuffers()
+{
+    //コマンドリストの取得
+    auto cmdList = mEngine->GetCommandList();
+
+    //0で初期化する
+    uint32_t bufferSize = mWidth * mHeight * sizeof(float);
+    std::vector<float> zeroData(mWidth * mHeight, 0.0f);
+
+    //バッファーの取得
+    D3D12_HEAP_PROPERTIES uploadHeap =
+        CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+    D3D12_RESOURCE_DESC bufferDesc =
+        CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
+
+    //ComPtrで初期化
+    ComPtr<ID3D12Resource> uploadBuffer;
+    
+    //リソースの取得
+    HRESULT hr = mDevice->CreateCommittedResource(
+        &uploadHeap,
+        D3D12_HEAP_FLAG_NONE,
+        &bufferDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(uploadBuffer.GetAddressOf())
+    );
+    assert(SUCCEEDED(hr));//壊れてないかの確認
+
+    void* mappedPtr = nullptr;
+    D3D12_RANGE readRange = { 0, 0 };
+    uploadBuffer->Map(0, &readRange, &mappedPtr);
+    memcpy(mappedPtr, zeroData.data(), bufferSize);
+    uploadBuffer->Unmap(0, nullptr);
+
+    //ボックスの設定
+    D3D12_BOX sourceRegion{};
+    sourceRegion.left = 0;
+    sourceRegion.top = 0;
+    sourceRegion.front = 0;
+    sourceRegion.right = bufferSize;
+    sourceRegion.bottom = 1;
+    sourceRegion.back = 1;
+
+    D3D12_RESOURCE_BARRIER barrierToDest1 = CD3DX12_RESOURCE_BARRIER::Transition(
+        mCurrentBuffer.Get(),  // ← Current を COPY_DEST に
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_COPY_DEST
+    );
+    cmdList->ResourceBarrier(1, &barrierToDest1);
+
+    cmdList->CopyBufferRegion(
+        mCurrentBuffer.Get(), 0,  // ← Current へコピー
+        uploadBuffer.Get(), 0,
+        bufferSize
+    );
+
+    D3D12_RESOURCE_BARRIER barrierToUav1 = CD3DX12_RESOURCE_BARRIER::Transition(
+        mCurrentBuffer.Get(),  // ← Current を戻す
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+    );
+    cmdList->ResourceBarrier(1, &barrierToUav1);
+
+    // ========== mPreviousBuffer ==========
+    D3D12_RESOURCE_BARRIER barrierToDest2 = CD3DX12_RESOURCE_BARRIER::Transition(
+        mPreviousBuffer.Get(),  // ← Previous を COPY_DEST に
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_COPY_DEST
+    );
+    cmdList->ResourceBarrier(1, &barrierToDest2);
+
+    cmdList->CopyBufferRegion(
+        mPreviousBuffer.Get(), 0,  // ← Previous へコピー
+        uploadBuffer.Get(), 0,
+        bufferSize
+    );
+
+    D3D12_RESOURCE_BARRIER barrierToUav2 = CD3DX12_RESOURCE_BARRIER::Transition(
+        mPreviousBuffer.Get(),  // ← Previous を戻す
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+    );
+    cmdList->ResourceBarrier(1, &barrierToUav2);
+}
+
+void WaveGrid::UploadWallDataToGPU() {
+
+    //バッファがあるかの確認
+    if (!mWallBuffer)return;
+
+    //バッファのサイズ取得
+    uint32_t wallBufferSize = mWidth * mHeight * sizeof(uint32_t);
+    std::vector<uint32_t>wallData(mWidth * mHeight);
+    
+    //bool を uint32_t に変換
+    for (size_t i = 0; i < mWall.size(); ++i) {
+        wallData[i] = mWall[i] ? 1u : 0u;
+    }
+
+    //メモリにコピーしてGPUが読み込める状態に戻す
+    void* mappedPtr = nullptr;
+    D3D12_RANGE readRange = { 0, 0 };
+    mWallBuffer->Map(0, &readRange, &mappedPtr);
+    memcpy(mappedPtr, wallData.data(), wallBufferSize);
+    mWallBuffer->Unmap(0, nullptr);
+}
+
 
 //---------------------------------
 //private関数

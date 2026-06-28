@@ -26,9 +26,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif // _DEBUG
 
-
-
-
 	TUFEngine* engine = new TUFEngine(kClineWidth, kClineHeight, L"CG2_TUFEngine_LE2B_29_ヤマト_ユウヤ");
 	assert(engine->GetDevice() != nullptr);
 
@@ -40,7 +37,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	int normal = engine->LoadTexture("resources/top normal.png");
 
-
 	MeshModel* modelData = engine->LoadModel("resources/skyDome", "sky_sphere.obj");
 	if (modelData) modelData->SetEnableLighting(0);
 
@@ -51,11 +47,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DebugCamer* debugCamer_ = new DebugCamer;
 	debugCamer_->Initialize((float)kClineWidth, (float)kClineHeight);
 
-
 	const int cubeCountX = 200;
 	const int cubeCountZ = 200;
 
 	WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
+
+	// ========== GPU初期化 ==========
+	waveGrid.InitializeGPU(engine->GetDevice(), engine);
 
 	int wallX = cubeCountX / 5;
 	int wall2 = cubeCountX / 2;
@@ -71,7 +69,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DynamicMesh mesh(cubeCountX, cubeCountZ);
 	std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
 	float t = 0.0f;
-#pragma endregion
 
 	const auto& droppedMeshes = engine->GetDroppedMeshes();
 
@@ -106,15 +103,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	uvTransformSprite.rotate = { 0.0f, 0.0f, 0.0f };
 	uvTransformSprite.translate = { 0.0f, 0.0f, 0.0f };
 
-	//std::ofstream waveLog("wave_analysis.csv");
-	//waveLog << "frame,z,height,intensity\n";
 	int frameIndex = 0;
 	int observeX = wallX + 40;
 
-
 	LightManager::GetInstance()->SetPerObjectLight(1, { {1,1,1,1}, {0,-1,0}, 1.0f });
 	LightManager::GetInstance()->SetPerObjectLight(2, { {1,1,1,1}, {0,-1,0}, 1.0f });
-
 
 	MSG msg{};
 	while (msg.message != WM_QUIT) {
@@ -128,16 +121,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			////更新処理ここから
 			////================================================================================================================
 
-
 			engine->OnUpdate();
 
 #ifdef USE_IMGUI
 			engine->GetImGuiManager()->onDrawGUI = [&]() {
 
 				if (ImGui::Begin("SceneSettingsModel")) {
-
-					
-
 
 					if (ImGui::CollapsingHeader("Wave Settings")) {
 						ImGui::DragFloat("Wave Strength", &waveStrength, 0.1f, 0.0f, 50.0f);
@@ -196,8 +185,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				};
 #endif // USE_IMGUI
 
-
-
 			engine->m_camera.transform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
 			engine->m_camera.transform.rotate.x -= Input::GetRightStickY() * cameraRotateSpeed;
 			engine->m_camera.transform.translate.x += Input::GetLeftStickX();
@@ -214,50 +201,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
+			// ========== GPU ベースの波シミュレーション ==========
 			t += 0.01f;
-			for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-				waveGrid.mCurrent[waveGrid.valueIndex(1, gz)] = sinf(t * 30.0f) * waveStrength;
-			}
-
-			//// 右端から別の波
-			//for (int gz = 1; gz < cubeCountZ - 1; gz++) {
-			//	waveGrid.mCurrent[waveGrid.valueIndex(cubeCountX - 2, gz)] = sinf(t * 20.0f) * waveStrength;
-			//}
-
-			//// 中心点から円形に広がる波
-			//waveGrid.addSource(cubeCountX / 2, cubeCountZ / 2, sinf(t * 15.0f) * waveStrength);
-
-			//// 上端から
-			//for (int gx = 1; gx < cubeCountX - 1; gx++) {
-			//	waveGrid.mCurrent[waveGrid.valueIndex(gx, 1)] = sinf(t * 25.0f + gx * 0.3f) * waveStrength;
-			//}
-			
-
-			waveGrid.update();
+			waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
+			waveGrid.ReadbackToCPU();
 			waveGrid.setObjectWall(engine->GetDroppedMeshes());
-			
 
-			//if (frameIndex % 60 == 0) {
-			//	waveLog << frameIndex;
-			//	for (int iz = 0; iz < cubeCountZ; iz++) {
-			//		for (int ix = 0; ix < cubeCountX; ix++) {
-			//			waveLog << "," << waveGrid.getHeight(ix, iz);
-			//		}
-			//	}
-			//	waveLog << "\n";
-			//}
 			frameIndex++;
-
-			//engine->SetSpriteUVScale({ uvTransformSprite.scale.x, uvTransformSprite.scale.y });
-			//engine->SetSpriteUVTranslate({ uvTransformSprite.translate.x, uvTransformSprite.translate.y });
-
-			//engine->SetSpriteUVRotate(uvTransformSprite.rotate.z);
-
-			////================================================================================================================
-			////更新処理ここまで
-			////================================================================================================================
-
-
 
 			////================================================================================================================
 			////描画処理ここから
@@ -267,9 +217,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			for (int iz = 0; iz < cubeCountZ; iz++) {
 				for (int ix = 0; ix < cubeCountX; ix++) {
-					float h = waveGrid.getHeight(ix, iz);
+					float h = waveGrid.GetHeightFromCache(ix, iz);
 					mesh.updateHeight(ix, iz, h);
-					auto  n = waveGrid.getNormal(ix, iz);
+					auto n = waveGrid.getNormal(ix, iz);
 					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
 					int idx = iz * cubeCountX + ix;
 					normalColors[idx] = {
@@ -282,7 +232,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
-		
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(
@@ -291,12 +240,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					sphereScale[i],
 					sphereUseMonsterBall[i] ? monsterBall : uvChecker,
 					i + 1
-					);
+				);
 			}
 
-			engine->DrawMesh(modelData, meshPos, meshRot, meshScale, -1);
-
-
+			//engine->DrawMesh(modelData, meshPos, meshRot, meshScale, -1);
 
 			for (int i = 0; i < 10; i++) {
 				engine->DrawTriangle(
@@ -307,36 +254,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					uvChecker);
 			}
 
-			//engine->DrawSprite(
-			//	spritePos,
-			//	720 * spriteScale.x, 360 * spriteScale.y,
-			//	spriteRot,
-			//	{ 1, 1, 1 },
-			//	{ 1, 1, 1, 1 },
-			//	uvChecker);
-
-			
-
-
-	
 			engine->PostDraw();
 
 			////================================================================================================================
 			////描画処理ここまで
 			////================================================================================================================
 
-			//謎の音声鳴らす処理多分ここじゃないほうがいい
 			if (Input::GetKeyDown(VK_SPACE)) {
 				sound->SoundPlayer(soundData1);
 				sound->SoundPlayer(title);
-
 			}
 		}
 
-		//デバック時のみEscキーで終了できるようにするここはあとで変更しても全然ダイジョブ
-//#ifdef _DEBUG
 		if (Input::GetKeyDown(VK_ESCAPE)) break;
-//#endif
 	}
 
 	sound->SoundUnLoad(&soundData1);

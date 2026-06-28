@@ -44,6 +44,11 @@ public:
     void DispatchWaveSimulation(float time, float freq, float strength);
     void ReadbackToCPU();
 
+    //========== 初期化関数 ==============
+    void InitializeGPUBuffers();  // GPU バッファを 0 で初期化
+    void UploadWallDataToGPU();
+
+
     // ========== CPU 側メソッド（従来） ==========
     void update();
     void addSource(int x, int y, float strength);
@@ -69,7 +74,7 @@ public:
     };
 
     Normal getNormal(int x, int y);
-    　
+    
     // ========== Public メンバ（設定値など） ==========
     int mWidth, mHeight;
     float mC;      // 波の速さ
