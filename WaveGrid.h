@@ -69,7 +69,7 @@ public:
     };
 
     Normal getNormal(int x, int y);
-
+    　
     // ========== Public メンバ（設定値など） ==========
     int mWidth, mHeight;
     float mC;      // 波の速さ
