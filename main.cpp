@@ -16,8 +16,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #ifdef _DEBUG
 
-	const int32_t kClineWidth = 1920;
-	const int32_t kClineHeight = 1080;
+	const int32_t kClineWidth = 1980;
+	const int32_t kClineHeight = 1020;
 
 #else
 
@@ -202,10 +202,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 			// ========== GPU ベースの波シミュレーション ==========
-			t += 0.01f;
-			waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
-			waveGrid.ReadbackToCPU();
-			waveGrid.setObjectWall(engine->GetDroppedMeshes());
+			//t += 0.01f;
+			//waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
+			//waveGrid.ReadbackToCPU();
+			//waveGrid.setObjectWall(engine->GetDroppedMeshes());
 
 			frameIndex++;
 
@@ -215,23 +215,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->PreDraw();
 
-			for (int iz = 0; iz < cubeCountZ; iz++) {
-				for (int ix = 0; ix < cubeCountX; ix++) {
-					float h = waveGrid.GetHeightFromCache(ix, iz);
-					mesh.updateHeight(ix, iz, h);
-					auto n = waveGrid.getNormal(ix, iz);
-					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
-					int idx = iz * cubeCountX + ix;
-					normalColors[idx] = {
-						(n.x + 1.0f) / 2.0f,
-						(n.y + 1.0f) / 2.0f,
-						(n.z + 1.0f) / 2.0f,
-						1.0f
-					};
-				}
-			}
+			//for (int iz = 0; iz < cubeCountZ; iz++) {
+			//	for (int ix = 0; ix < cubeCountX; ix++) {
+			//		float h = waveGrid.GetHeightFromCache(ix, iz);
+			//		mesh.updateHeight(ix, iz, h);
+			//		auto n = waveGrid.getNormal(ix, iz);
+			//		mesh.updateNormal(ix, iz, n.x, n.y, n.z);
+			//		int idx = iz * cubeCountX + ix;
+			//		normalColors[idx] = {
+			//			(n.x + 1.0f) / 2.0f,
+			//			(n.y + 1.0f) / 2.0f,
+			//			(n.z + 1.0f) / 2.0f,
+			//			1.0f
+			//		};
+			//	}
+			//}
 
-			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(
@@ -243,7 +243,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-			//engine->DrawMesh(modelData, meshPos, meshRot, meshScale, -1);
+			engine->DrawMesh(modelData, meshPos, meshRot, meshScale, -1);
 
 			for (int i = 0; i < 10; i++) {
 				engine->DrawTriangle(
