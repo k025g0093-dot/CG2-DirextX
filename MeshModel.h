@@ -39,8 +39,9 @@ public:
     void ProcessNode(
         aiNode* node,
         const aiScene* scene,
-        std::vector<VertexData>& vertices, 
-        std::vector<uint32_t>& indices);
+        std::vector<VertexData>& vertices,
+        std::vector<uint32_t>& indices,
+        const aiMatrix4x4& parentTransform = aiMatrix4x4());
 
     void CreateBuffers(
         std::vector<VertexData>& vertices, 

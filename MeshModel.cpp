@@ -249,11 +249,11 @@ void MeshModel::Draw(
 }
 
 void MeshModel::SetEnableLighting(int val) {
-    if (!m_pMaterialResource) return;
-    Material* materialData = nullptr;
-    m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-    materialData->enableLighting = val;
-    m_pMaterialResource->Unmap(0, nullptr);
+	if (!m_pMaterialResource) return;
+	Material* materialData = nullptr;
+	m_pMaterialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+	materialData->enableLighting = val;
+	m_pMaterialResource->Unmap(0, nullptr);
 }
 
 void MeshModel::UpdateVertices(
@@ -269,9 +269,9 @@ void MeshModel::UpdateVertices(
 
 	VertexData* vertices = static_cast<VertexData*>(pData);
 
-	vertices[index].position = { points.x * -1.0f, points.y, points.z, 1.0f };
+	vertices[index].position = { points.x , points.y, points.z * -1.0f , 0.0f };
 	vertices[index].texcoord = texcoord;
-	vertices[index].normal = { normal.x * -1.0f, normal.y, normal.z };
+	vertices[index].normal = { normal.x , normal.y, normal.z * -1.0f };
 	vertices[index].tangent = { 0.0f, 0.0f, 0.0f };
 
 	m_vertexBuffer->Unmap(0, nullptr);
@@ -319,8 +319,11 @@ bool MeshModel::LoadFormFBX(const std::string& filepath) {
 }
 
 void MeshModel::ProcessNode(aiNode* node, const aiScene* scene,
-	std::vector<VertexData>& vertices, std::vector<uint32_t>& indices)
+	std::vector<VertexData>& vertices, std::vector<uint32_t>& indices,
+	const aiMatrix4x4& parentTransform)
 {
+	aiMatrix4x4 nodeTransform = parentTransform * node->mTransformation;
+
 	for (UINT i = 0; i < node->mNumMeshes; i++) {
 		unsigned int meshIndex = node->mMeshes[i];
 		if (meshIndex >= scene->mNumMeshes) continue;
@@ -329,17 +332,14 @@ void MeshModel::ProcessNode(aiNode* node, const aiScene* scene,
 		UINT baseVertex = (UINT)vertices.size();
 		for (UINT v = 0; v < mesh->mNumVertices; v++) {
 			VertexData vert{};
-			vert.position = {
-				mesh->mVertices[v].x * -1.0f,    // 右手→左手
-				mesh->mVertices[v].y,
-				mesh->mVertices[v].z,
-				1.0f
-			};
+			aiVector3D pos = nodeTransform * mesh->mVertices[v];
+			vert.position = { pos.x, pos.y, pos.z, 1.0f };
 			if (mesh->mTextureCoords[0]) {
 				vert.texcoord = { mesh->mTextureCoords[0][v].x, 1.0f - mesh->mTextureCoords[0][v].y };
 			}
 			if (mesh->mNormals) {
-				vert.normal = { mesh->mNormals[v].x * -1.0f, mesh->mNormals[v].y, mesh->mNormals[v].z };
+				aiVector3D nm = aiMatrix3x3(nodeTransform) * mesh->mNormals[v];
+				vert.normal = { nm.x, nm.y, nm.z };
 			}
 			if (mesh->mTangents) {
 				vert.tangent = { mesh->mTangents[v].x, mesh->mTangents[v].y, mesh->mTangents[v].z };
@@ -354,7 +354,7 @@ void MeshModel::ProcessNode(aiNode* node, const aiScene* scene,
 	}
 	for (UINT i = 0; i < node->mNumChildren; i++)
 		if (node->mChildren[i])
-			ProcessNode(node->mChildren[i], scene, vertices, indices);
+			ProcessNode(node->mChildren[i], scene, vertices, indices, nodeTransform);
 }
 
 

@@ -7,7 +7,8 @@ const aiScene* FBXLoader::Load(const std::string& filepath, Assimp::Importer& im
         aiProcess_GenNormals |
         aiProcess_ValidateDataStructure |
         aiProcess_ImproveCacheLocality |
-        aiProcess_SortByPType);
+        aiProcess_SortByPType |
+        aiProcess_ConvertToLeftHanded);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
         return nullptr;
