@@ -211,49 +211,54 @@ MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::str
 		return m_meshes[filename].get();
 	}
 
-	// MeshModel を作成する
 	auto mesh = std::make_unique<MeshModel>();
 	mesh->InitMeshModel(this);
 
-	if (!mesh->LoadFromOBJ(directoryPath, filename)) {
-		OutputDebugStringA(("Error: Failed to load OBJ: " + directoryPath + "/" + filename + "\n").c_str());
-		return nullptr;
-	}
+	std::string ext = filename.substr(filename.find_last_of("."));
+	bool isFBX = (ext == ".fbx" || ext == ".FBX");
 
-	std::string baseName = filename;
-	size_t lastDot = filename.find_last_of(".");
-	if (lastDot != std::string::npos) {
-		baseName = filename.substr(0, lastDot);
+	if (isFBX) {
+		if (!mesh->LoadFormFBX(directoryPath + "/" + filename)) {
+			OutputDebugStringA(("Error: Failed to load FBX: " + directoryPath + "/" + filename + "\n").c_str());
+			return nullptr;
+		}
+		// FBX側のマテリアルからテクスチャ読み込み（LoadFormFBX内でやる前提）
 	}
+	else {
+		if (!mesh->LoadFromOBJ(directoryPath, filename)) {
+			OutputDebugStringA(("Error: Failed to load OBJ: " + directoryPath + "/" + filename + "\n").c_str());
+			return nullptr;
+		}
 
-	std::string folderAndBase = directoryPath + "/" + baseName;
-	std::string jpgPath = folderAndBase + ".jpg";
-	std::string pngPath = folderAndBase + ".png";
-
-	std::string texPath = "";
-	if (GetFileAttributesA(jpgPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-		texPath = jpgPath;
-	}
-	else if (GetFileAttributesA(pngPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-		texPath = pngPath;
-	}
-
-	if (!texPath.empty()) {
-		int texIndex = TextureManager::GetInstance()->LoadTexture(texPath);
-		mesh->SetTextureIndex(texIndex);
-	}
-
-	std::string normalMapPath = folderAndBase + "_normal.png";
-	if (GetFileAttributesA(normalMapPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-		int normalIdx = TextureManager::GetInstance()->LoadTexture(normalMapPath);
-		mesh->SetNormalMapIndex(normalIdx);  // ← これ
+		// フォールバックテクスチャ自動検出（OBJのみ）
+		std::string baseName = filename;
+		size_t lastDot = filename.find_last_of(".");
+		if (lastDot != std::string::npos) {
+			baseName = filename.substr(0, lastDot);
+		}
+		std::string folderAndBase = directoryPath + "/" + baseName;
+		std::string texPath = "";
+		if (GetFileAttributesA((folderAndBase + ".jpg").c_str()) != INVALID_FILE_ATTRIBUTES) {
+			texPath = folderAndBase + ".jpg";
+		}
+		else if (GetFileAttributesA((folderAndBase + ".png").c_str()) != INVALID_FILE_ATTRIBUTES) {
+			texPath = folderAndBase + ".png";
+		}
+		if (!texPath.empty()) {
+			mesh->SetTextureIndex(TextureManager::GetInstance()->LoadTexture(texPath));
+		}
+		std::string normalMapPath = folderAndBase + "_normal.png";
+		if (GetFileAttributesA(normalMapPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+			mesh->SetNormalMapIndex(TextureManager::GetInstance()->LoadTexture(normalMapPath));
+		}
 	}
 
 	MeshModel* ptr = mesh.get();
 	m_meshes[filename] = std::move(mesh);
-
 	return ptr;
 }
+
+
 
 
 void TUFEngine::OnUpdate() {
@@ -368,7 +373,7 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 		int index = LoadTexture("resources/" + pathStr);
 		OutputDebugStringA(("Texture Loaded: " + pathStr + "\n").c_str());
 	}
-	else if (ext == ".obj") {
+	else if (ext == ".obj" || ext == ".fbx") {
 		std::string dir = filePath.parent_path().string();
 		std::string filename = filePath.filename().string();
 		MeshModel* mesh = LoadModel("resources/" + dir, filename);
@@ -423,6 +428,8 @@ void TUFEngine::OnFileDropped(const std::wstring& path) {
 			std::ofstream file("sceneObject.json");
 			file << data.dump(4);
 		}
+
+
 	}
 	else {
 		OutputDebugStringA("Unknown file type dropped\n");

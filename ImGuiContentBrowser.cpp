@@ -10,6 +10,13 @@ ImGuiContentBrowser::ImGuiContentBrowser()
 
 }
 
+bool ImGuiContentBrowser::isImageFile(const std::filesystem::path& filePath) const
+{
+	std::string ext = filePath.extension().string();
+	for (auto& c : ext) c = (char)tolower(c);
+	return ext == ".png" || ext == ".jpg" || ext == ".jpeg";
+}
+
 //あとで変更予定
 
 void ImGuiContentBrowser::update(TUFEngine* engine) {
@@ -52,8 +59,30 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 
 			ImGui::PushID(filenameString.c_str());
 
+			int textureIndex;
+			if (directoryEntry.is_directory())
+			{
+				textureIndex = m_DirectoryIcon;
+			}
+			else if (isImageFile(path))
+			{
+				auto it = m_ThumbnailCache.find(filenameString);
+				if (it != m_ThumbnailCache.end())
+				{
+					textureIndex = it->second;
+				}
+				else
+				{
+					textureIndex = TextureManager::GetInstance()->LoadTexture(path.string());
+					m_ThumbnailCache[filenameString] = textureIndex;
+				}
+			}
+			else
+			{
+				textureIndex = m_FileIcon;
+			}
 
-			auto gpuHandle = TextureManager::GetInstance()->GetGPUHandle(directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon);
+			auto gpuHandle = TextureManager::GetInstance()->GetGPUHandle(textureIndex);
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,0));
 			ImGui::ImageButton(filenameString.c_str(), (ImTextureID)gpuHandle.ptr, { thumbnailSize,thumbnailSize });
 

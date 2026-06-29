@@ -73,25 +73,28 @@
     <Filter Include="ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分">
       <UniqueIdentifier>{0b299a22-f924-491a-9e93-534f7da908ee}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\外部で入手したコード">
+    <Filter Include="ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数">
+      <UniqueIdentifier>{2fbf40e5-2405-46e0-964c-67f46fc904e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\外部ライブラリなど">
       <UniqueIdentifier>{3fa35654-a00a-452f-9e2a-39e9e7f6c50e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\外部で入手したコード\ImGui">
+    <Filter Include="ソース ファイル\TUFengine\外部ライブラリなど\ImGui">
       <UniqueIdentifier>{a58f401e-1fee-4f97-b737-6042e8cd6f8e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui">
+    <Filter Include="ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui">
       <UniqueIdentifier>{4b71b213-f9c5-4e64-b6b7-018a86e2142c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\外部で入手したコード\ImGui\アセット管理用GUI">
+    <Filter Include="ソース ファイル\TUFengine\外部ライブラリなど\ImGui\アセット管理用GUI">
       <UniqueIdentifier>{b960d42e-b0f7-4a8a-937d-4c3e15b34e49}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\外部で入手したコード\ImGui\デバック情報をまとめるGUI">
+    <Filter Include="ソース ファイル\TUFengine\外部ライブラリなど\ImGui\デバック情報をまとめるGUI">
       <UniqueIdentifier>{050d8f04-21f2-4415-81d9-4b40050f2d66}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\外部で入手したコード\ImGui\imGuiZmo">
+    <Filter Include="ソース ファイル\TUFengine\外部ライブラリなど\ImGui\imGuiZmo">
       <UniqueIdentifier>{7a83f7e2-04f6-46dc-b7f0-e76933dd39d4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\外部で入手したコード\json">
+    <Filter Include="ソース ファイル\TUFengine\外部ライブラリなど\json">
       <UniqueIdentifier>{27826810-ec8c-4f1d-8a35-34226bd9fcd1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -142,31 +145,31 @@
       <Filter>外部から持ってきた関数やファイル</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_demo.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_draw.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_impl_win32.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui_tables.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiWindow.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiUIManager.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="DynamicMeshModel.cpp">
       <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
@@ -178,7 +181,7 @@
       <Filter>ソース ファイル\TUFengine\Camera</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiDebug.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\デバック情報をまとめるGUI</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\デバック情報をまとめるGUI</Filter>
     </ClCompile>
     <ClCompile Include="Sprite.cpp">
       <Filter>ソース ファイル\TUFengine\描画物関係\Texture</Filter>
@@ -196,10 +199,10 @@
       <Filter>ソース ファイル\TUFengine\描画物関係\Texture\専用GUI</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiContentBrowser.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\アセット管理用GUI</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\アセット管理用GUI</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\ImGuizmo.cpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\imGuiZmo</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\imGuiZmo</Filter>
     </ClCompile>
     <ClCompile Include="LightManager.cpp">
       <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
@@ -214,7 +217,7 @@
       <Filter>外部から持ってきた関数やファイル</Filter>
     </ClCompile>
     <ClCompile Include="FBXLoader.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群</Filter>
+      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -289,37 +292,37 @@
       <Filter>外部から持ってきた関数やファイル</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imconfig.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imgui.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imgui_impl_win32.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imgui_internal.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imstb_rectpack.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imstb_textedit.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\imstb_truetype.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\外部ファイルのImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\外部ファイルのImGui</Filter>
     </ClInclude>
     <ClInclude Include="AllIncludeHeder.h">
       <Filter>ソース ファイル\TUFengine</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiWindow.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiUIManager.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="DynamicMeshModel.h">
       <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
@@ -331,7 +334,7 @@
       <Filter>ソース ファイル\TUFengine\Camera</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiDebug.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\デバック情報をまとめるGUI</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\デバック情報をまとめるGUI</Filter>
     </ClInclude>
     <ClInclude Include="Sprite.h">
       <Filter>ソース ファイル\TUFengine\描画物関係\Texture</Filter>
@@ -349,13 +352,13 @@
       <Filter>ソース ファイル\TUFengine\描画物関係\Texture\専用GUI</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiContentBrowser.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\アセット管理用GUI</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\アセット管理用GUI</Filter>
     </ClInclude>
     <ClInclude Include="externals\nlohmann\json.hpp">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\json</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\json</Filter>
     </ClInclude>
     <ClInclude Include="externals\imgui\ImGuizmo.h">
-      <Filter>ソース ファイル\TUFengine\外部で入手したコード\ImGui\imGuiZmo</Filter>
+      <Filter>ソース ファイル\TUFengine\外部ライブラリなど\ImGui\imGuiZmo</Filter>
     </ClInclude>
     <ClInclude Include="LightManager.h">
       <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
@@ -373,7 +376,7 @@
       <Filter>外部から持ってきた関数やファイル</Filter>
     </ClInclude>
     <ClInclude Include="FBXLoader.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群</Filter>
+      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

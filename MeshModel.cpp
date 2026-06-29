@@ -6,7 +6,7 @@ MeshModel::~MeshModel() = default;
 
 void MeshModel::InitMeshModel(TUFEngine* engine) {
 	m_pEngine = engine;
-	ID3D12Device* device = engine->GetDevice();
+	device = engine->GetDevice();
 
 	m_pMaterialResource = CreateBufferResource(device, Align256(sizeof(Material)));
 	Material* materialData = nullptr;
@@ -113,62 +113,13 @@ bool MeshModel::LoadFromOBJ(
 		}
 	}
 
-	m_vertexCount = static_cast<uint32_t>(modelData.vertices.size());
-	if (m_vertexCount > 0) {
+	// LoadFromOBJ のパースが終わった後
+	uint32_t vertCount = static_cast<uint32_t>(modelData.vertices.size());
+	std::vector<uint32_t> indices(vertCount);
+	for (uint32_t i = 0; i < vertCount; i++) indices[i] = i;
 
-		// 頂点バッファ作成
-		m_vertexBuffer = CreateBufferResource(device, sizeof(VertexData) * m_vertexCount);
+	CreateBuffers(modelData.vertices, indices);
 
-		if (!m_vertexBuffer) {
-			OutputDebugStringA("Error: CreateBufferResource failed!\n");
-			return false;
-		}
-
-		void* pData = nullptr;
-		HRESULT hr = m_vertexBuffer->Map(0, nullptr, &pData);
-		if (SUCCEEDED(hr)) {
-			std::memcpy(pData, modelData.vertices.data(), sizeof(VertexData) * m_vertexCount);
-			m_vertexBuffer->Unmap(0, nullptr);
-		}
-		else {
-			OutputDebugStringA("Error: VertexBuffer Map failed!\n");
-			return false;
-		}
-
-		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-		m_vertexBufferView.SizeInBytes = (UINT)sizeof(VertexData) * (UINT)m_vertexCount;
-		m_vertexBufferView.StrideInBytes = sizeof(VertexData);
-
-		m_pVertexData = reinterpret_cast<Vertex*>(modelData.vertices.data());
-		Model::m_indexCount = (UINT)m_vertexCount;
-		// ★ インデックスバッファ作成
-		// OBJ は LoadFromOBJ 内で既に三角形分割済みなので
-		// シーケンシャルなインデックス (0, 1, 2, 3, ...) で十分
-		m_indexCount = (uint32_t)m_vertexCount;
-		m_indexBuffer = CreateBufferResource(device, sizeof(uint32_t) * m_indexCount);
-
-		if (!m_indexBuffer) {
-			OutputDebugStringA("Error: IndexBuffer CreateBufferResource failed!\n");
-			return false;
-		}
-
-		uint32_t* indexData = nullptr;
-		hr = m_indexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
-		if (SUCCEEDED(hr)) {
-			for (uint32_t i = 0; i < m_indexCount; i++) {
-				indexData[i] = i;
-			}
-			m_indexBuffer->Unmap(0, nullptr);
-		}
-		else {
-			OutputDebugStringA("Error: IndexBuffer Map failed!\n");
-			return false;
-		}
-
-		m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-		m_indexBufferView.SizeInBytes = sizeof(uint32_t) * m_indexCount;
-		m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-	}
 
 	return true;
 }
@@ -324,4 +275,102 @@ void MeshModel::UpdateVertices(
 	vertices[index].tangent = { 0.0f, 0.0f, 0.0f };
 
 	m_vertexBuffer->Unmap(0, nullptr);
+}
+
+//=============FBX形式のモデルロード関数====================
+bool MeshModel::LoadFormFBX(const std::string& filepath) {
+
+	//ファイルが合っているか確認、間違っていたりすればfalseを返す
+	const aiScene* scene = FBXLoader::Load(filepath);
+	if (!scene || !scene->mRootNode)return false;
+
+	//頂点インデックスを集める
+	std::vector<VertexData>vertices;
+	std::vector<uint32_t>indices;
+
+	ProcessNode(scene->mRootNode, scene, vertices, indices); // 再帰トラバース
+
+	//バッファ作成
+	m_vertexCount = (uint32_t)vertices.size();
+	m_indexCount = (uint32_t)indices.size();
+
+	CreateBuffers(vertices, indices);
+	if (scene->mNumMaterials > 0) {
+		aiMaterial* mtl = scene->mMaterials[0];
+		aiString path;
+		if (mtl->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
+			int texIndex = TextureManager::GetInstance()->LoadTexture(path.C_Str());
+			SetTextureIndex(texIndex);
+		}
+		// normal map, color なども同様に
+	}
+	return true;
+
+}
+
+void MeshModel::ProcessNode(aiNode* node, const aiScene* scene,
+	std::vector<VertexData>& vertices, std::vector<uint32_t>& indices)
+{
+	for (UINT i = 0; i < node->mNumMeshes; i++) {
+		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+		UINT baseVertex = (UINT)vertices.size();
+		for (UINT v = 0; v < mesh->mNumVertices; v++) {
+			VertexData vert{};
+			vert.position = {
+				mesh->mVertices[v].x * -1.0f,    // 右手→左手
+				mesh->mVertices[v].y,
+				mesh->mVertices[v].z,
+				1.0f
+			};
+			if (mesh->mTextureCoords[0]) {
+				vert.texcoord = { mesh->mTextureCoords[0][v].x, 1.0f - mesh->mTextureCoords[0][v].y };
+			}
+			if (mesh->mNormals) {
+				vert.normal = { mesh->mNormals[v].x * -1.0f, mesh->mNormals[v].y, mesh->mNormals[v].z };
+			}
+			if (mesh->mTangents) {
+				vert.tangent = { mesh->mTangents[v].x, mesh->mTangents[v].y, mesh->mTangents[v].z };
+			}
+			vertices.push_back(vert);
+		}
+		for (UINT f = 0; f < mesh->mNumFaces; f++) {
+			aiFace& face = mesh->mFaces[f];
+			for (UINT idx = 0; idx < face.mNumIndices; idx++)
+				indices.push_back(baseVertex + face.mIndices[idx]);
+		}
+	}
+	for (UINT i = 0; i < node->mNumChildren; i++)
+		ProcessNode(node->mChildren[i], scene, vertices, indices);
+}
+
+
+//バッファの作成関数
+void MeshModel::CreateBuffers(std::vector<VertexData>& vertices, std::vector<uint32_t>& indices)
+{
+	m_vertexCount = (uint32_t)vertices.size();
+	m_indexCount = (uint32_t)indices.size();
+
+	// 頂点バッファ
+	m_vertexBuffer = CreateBufferResource(device, sizeof(VertexData) * m_vertexCount);
+	void* pData = nullptr;
+	m_vertexBuffer->Map(0, nullptr, &pData);
+	memcpy(pData, vertices.data(), sizeof(VertexData) * m_vertexCount);
+	m_vertexBuffer->Unmap(0, nullptr);
+
+	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+	m_vertexBufferView.SizeInBytes = sizeof(VertexData) * (UINT)m_vertexCount;
+	m_vertexBufferView.StrideInBytes = sizeof(VertexData);
+
+	m_pVertexData = reinterpret_cast<Vertex*>(vertices.data());
+
+	// インデックスバッファ
+	m_indexBuffer = CreateBufferResource(device, sizeof(uint32_t) * m_indexCount);
+	uint32_t* idxData = nullptr;
+	m_indexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&idxData));
+	memcpy(idxData, indices.data(), sizeof(uint32_t) * m_indexCount);
+	m_indexBuffer->Unmap(0, nullptr);
+
+	m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
+	m_indexBufferView.SizeInBytes = sizeof(uint32_t) * m_indexCount;
+	m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 }

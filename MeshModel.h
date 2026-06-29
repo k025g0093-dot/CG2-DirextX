@@ -1,5 +1,6 @@
 #pragma once
 #include "Model.h"
+#include "FBXLoader.h"
 #include <wrl.h>
 #include <vector>
 #include <string>
@@ -32,6 +33,18 @@ public:
     bool LoadFromOBJ(
         const std::string& directoryPath,
         const std::string& filename);
+
+    bool LoadFormFBX(const std::string& filepath);
+
+    void ProcessNode(
+        aiNode* node,
+        const aiScene* scene,
+        std::vector<VertexData>& vertices, 
+        std::vector<uint32_t>& indices);
+
+    void CreateBuffers(
+        std::vector<VertexData>& vertices, 
+        std::vector<uint32_t>& indices);
 
     void Draw(
         ID3D12GraphicsCommandList* cmdList,
@@ -69,7 +82,7 @@ private:
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
     size_t                   m_vertexCount = 0;
     TUFEngine* m_pEngine = nullptr;
-
+    ID3D12Device* device = nullptr;
 
     ComPtr<ID3D12Resource>  m_indexBuffer;
     D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};
