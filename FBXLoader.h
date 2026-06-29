@@ -9,5 +9,5 @@
 
 class FBXLoader {
 public:
-    static const aiScene* Load(const std::string& filepath);
+    static const aiScene* Load(const std::string& filepath, Assimp::Importer& importer);
 };

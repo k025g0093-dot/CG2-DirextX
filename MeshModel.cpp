@@ -281,7 +281,8 @@ void MeshModel::UpdateVertices(
 bool MeshModel::LoadFormFBX(const std::string& filepath) {
 
 	//ファイルが合っているか確認、間違っていたりすればfalseを返す
-	const aiScene* scene = FBXLoader::Load(filepath);
+	Assimp::Importer importer;
+	const aiScene* scene = FBXLoader::Load(filepath, importer);
 	if (!scene || !scene->mRootNode)return false;
 
 	//頂点インデックスを集める
@@ -299,8 +300,17 @@ bool MeshModel::LoadFormFBX(const std::string& filepath) {
 		aiMaterial* mtl = scene->mMaterials[0];
 		aiString path;
 		if (mtl->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
-			int texIndex = TextureManager::GetInstance()->LoadTexture(path.C_Str());
-			SetTextureIndex(texIndex);
+			std::string texPath = path.C_Str();
+			// ファイル名だけの相対パスならFBXと同じディレクトリから探す
+			if (texPath.find('/') == std::string::npos && texPath.find('\\') == std::string::npos) {
+				std::string dir = filepath.substr(0, filepath.find_last_of("/\\"));
+				texPath = dir + "/" + texPath;
+			}
+			// ファイルが存在しなければスキップ
+			if (GetFileAttributesA(texPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+				int texIndex = TextureManager::GetInstance()->LoadTexture(texPath);
+				SetTextureIndex(texIndex);
+			}
 		}
 		// normal map, color なども同様に
 	}
@@ -312,7 +322,10 @@ void MeshModel::ProcessNode(aiNode* node, const aiScene* scene,
 	std::vector<VertexData>& vertices, std::vector<uint32_t>& indices)
 {
 	for (UINT i = 0; i < node->mNumMeshes; i++) {
-		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+		unsigned int meshIndex = node->mMeshes[i];
+		if (meshIndex >= scene->mNumMeshes) continue;
+		aiMesh* mesh = scene->mMeshes[meshIndex];
+		if (!mesh || !mesh->mVertices) continue;
 		UINT baseVertex = (UINT)vertices.size();
 		for (UINT v = 0; v < mesh->mNumVertices; v++) {
 			VertexData vert{};
@@ -340,7 +353,8 @@ void MeshModel::ProcessNode(aiNode* node, const aiScene* scene,
 		}
 	}
 	for (UINT i = 0; i < node->mNumChildren; i++)
-		ProcessNode(node->mChildren[i], scene, vertices, indices);
+		if (node->mChildren[i])
+			ProcessNode(node->mChildren[i], scene, vertices, indices);
 }
 
 
