@@ -3,7 +3,7 @@
 #include <cmath>
 #include <wrl/client.h>
 #include "WaveGridPSO.h"
-
+#include "allVector.h"
 
 // 前方宣言
 struct SceneObject;
@@ -62,6 +62,10 @@ public:
     // ========== Getter for Cached Data ==========
     float GetHeightFromCache(int x, int y) const;
 
+    Vector4 GetNormalFromCache(int x, int z) const {
+        return mNormalCPUCache[z * mWidth + x];
+    }
+
     // ========== 構造体定義 ==========
     struct Source {
         int x, y;
@@ -89,6 +93,7 @@ private:
     std::vector<float> mPrevious;
     std::vector<float> mNext;
     std::vector<bool>  mWall;
+    std::vector<Vector4>mNormalCPUCache;//サイズ:mWidth*mHeight
 
     // ========== GPU リソース ==========
     // ConstantBuffer
@@ -99,17 +104,17 @@ private:
     ComPtr<ID3D12Resource> mCurrentBuffer;    // u0 でも使う（可視用）
     ComPtr<ID3D12Resource> mPreviousBuffer;   // u1
     ComPtr<ID3D12Resource> mNextBuffer;       // u2
+    ComPtr<ID3D12Resource> mNormalBuffer;     // u3 (UAV) - 後で
+
 
     // Wall バッファ（StructuredBuffer<uint>）
     ComPtr<ID3D12Resource> mWallBuffer;       // t0 (SRV)
 
-    // 出力バッファ
-    ComPtr<ID3D12Resource> mHeightBuffer;     // u3 (UAV)
-    ComPtr<ID3D12Resource> mNormalBuffer;     // u4 (UAV) - 後で
 
     // Staging Buffer（Readback用）
     ComPtr<ID3D12Resource> mHeightStaging;
-    ComPtr<ID3D12Resource> mNormalStaging;    // 後で
+    ComPtr<ID3D12Resource> mNormalStaging;    // READBACK用
+
 
     // ========== PSO / RootSignature ==========
     ComPtr<ID3D12PipelineState> mComputePSO;
@@ -117,7 +122,6 @@ private:
 
     // ========== CPU キャッシュ（フレーム遅延対応） ==========
     std::vector<float> mHeightCPUCache;
-    std::vector<float> mNormalCPUCache;      // 後で
 
     // ========== 状態フラグ ==========
     bool mIsGPUReady;
