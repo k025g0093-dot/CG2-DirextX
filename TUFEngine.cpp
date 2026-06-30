@@ -310,6 +310,26 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
+
+	// カスタムカラースキーム
+	auto& style = ImGui::GetStyle();
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.01f, 0.01f, 0.01f, 1.00f);
+	style.Colors[ImGuiCol_TitleBg] = ImVec4(0.12f, 0.06f, 0.15f, 1.00f);
+	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.18f, 0.08f, 0.22f, 1.00f);
+	style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.12f, 0.06f, 0.15f, 1.00f);
+	style.Colors[ImGuiCol_Header] = ImVec4(0.06f, 0.35f, 0.35f, 0.90f);
+	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.08f, 0.45f, 0.45f, 0.90f);
+	style.Colors[ImGuiCol_Button] = ImVec4(0.06f, 0.35f, 0.35f, 1.00f);
+	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.10f, 0.50f, 0.50f, 1.00f);
+	style.Colors[ImGuiCol_FrameBg] = ImVec4(0.10f, 0.10f, 0.12f, 1.00f);
+	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.14f, 0.14f, 0.18f, 1.00f);
+	style.Colors[ImGuiCol_CheckMark] = ImVec4(0.20f, 0.80f, 0.80f, 1.00f);
+	style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.20f, 0.70f, 0.70f, 1.00f);
+	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.30f, 0.85f, 0.85f, 1.00f);
+	style.Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.04f, 0.04f, 0.06f, 1.00f);
+	style.Colors[ImGuiCol_ChildBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
+
+
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX12_Init(device.Get(),
 		swapChainDesc.BufferCount,
