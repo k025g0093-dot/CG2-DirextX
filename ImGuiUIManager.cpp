@@ -5,14 +5,11 @@ ImGuiUIManager::ImGuiUIManager(HWND hwnd)
 {
 #ifdef USE_IMGUI
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-    ImGui::StyleColorsDark();
 
     ImGuiStyle& style = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
