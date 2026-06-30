@@ -219,7 +219,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				for (int ix = 0; ix < cubeCountX; ix++) {
 					float h = waveGrid.GetHeightFromCache(ix, iz);
 					mesh.updateHeight(ix, iz, h);
-					auto n = waveGrid.getNormal(ix, iz);
+					Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
 					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
 					int idx = iz * cubeCountX + ix;
 					normalColors[idx] = {

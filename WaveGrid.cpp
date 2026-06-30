@@ -299,6 +299,36 @@ void WaveGrid::DispatchWaveSimulation(float time, float freq, float strength)
         );
     cmdList->ResourceBarrier(1, &backToUav);
 
+
+    // Normal も UAV barrier + transition + copy + 戻し
+    D3D12_RESOURCE_BARRIER normalUavBarrier{};
+    normalUavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    normalUavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    normalUavBarrier.UAV.pResource = mNormalBuffer.Get();
+    cmdList->ResourceBarrier(1, &normalUavBarrier);
+
+    D3D12_RESOURCE_BARRIER normalToCopy =
+        CD3DX12_RESOURCE_BARRIER::Transition(
+            mNormalBuffer.Get(),
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            D3D12_RESOURCE_STATE_COPY_SOURCE
+        );
+    cmdList->ResourceBarrier(1, &normalToCopy);
+
+    if (mNormalBuffer && mNormalStaging) {
+        cmdList->CopyResource(mNormalStaging.Get(), mNormalBuffer.Get());
+    }
+
+    D3D12_RESOURCE_BARRIER normalBackToUav =
+        CD3DX12_RESOURCE_BARRIER::Transition(
+            mNormalBuffer.Get(),
+            D3D12_RESOURCE_STATE_COPY_SOURCE,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+        );
+    cmdList->ResourceBarrier(1, &normalBackToUav);
+
+
+
     std::swap(mPreviousBuffer, mCurrentBuffer);
     std::swap(mCurrentBuffer, mNextBuffer);
 
@@ -308,18 +338,27 @@ void WaveGrid::DispatchWaveSimulation(float time, float freq, float strength)
 
 
 void WaveGrid::ReadbackToCPU() {
-
-    if (!mHeightStaging)return;
-
-    void* mappedPtr = nullptr;
-    D3D12_RANGE readRenge = { 0,mWidth * mHeight * sizeof(float) };
-    HRESULT hr = mHeightStaging->Map(0, &readRenge, &mappedPtr);
-
-    if (SUCCEEDED(hr) && mappedPtr) {
-        memcpy(mHeightCPUCache.data(), mappedPtr, mHeightCPUCache.size() * sizeof(float));
-        mHeightStaging->Unmap(0, nullptr);
+    // --- Height readback（既存）---
+    if (mHeightStaging) {
+        void* mappedPtr = nullptr;
+        D3D12_RANGE readRange = { 0, mWidth * mHeight * sizeof(float) };
+        HRESULT hr = mHeightStaging->Map(0, &readRange, &mappedPtr);
+        if (SUCCEEDED(hr) && mappedPtr) {
+            memcpy(mHeightCPUCache.data(), mappedPtr, mHeightCPUCache.size() * sizeof(float));
+            mHeightStaging->Unmap(0, nullptr);
+        }
     }
 
+    // --- Normal readback（追加）---
+    if (mNormalStaging) {
+        void* mappedPtr = nullptr;
+        D3D12_RANGE readRange = { 0, mWidth * mHeight * sizeof(float) * 4 };
+        HRESULT hr = mNormalStaging->Map(0, &readRange, &mappedPtr);
+        if (SUCCEEDED(hr) && mappedPtr) {
+            memcpy(mNormalCPUCache.data(), mappedPtr, mNormalCPUCache.size() * sizeof(Vector4));
+            mNormalStaging->Unmap(0, nullptr);
+        }
+    }
 }
 
 float WaveGrid::GetHeightFromCache(int x, int y) const
@@ -414,6 +453,46 @@ void WaveGrid::InitializeGPUBuffers()
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS
     );
     cmdList->ResourceBarrier(1, &barrierToUav2);
+
+
+    // --- Normal buffer の初期化 ---
+    uint32_t normalBufferSize = mWidth * mHeight * sizeof(float) * 4;
+    std::vector<float> normalZeroData(mWidth * mHeight * 4, 0.0f);
+    D3D12_RESOURCE_DESC normalBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(normalBufferSize);
+
+    ComPtr<ID3D12Resource> uploadNormal;
+    hr = mDevice->CreateCommittedResource(
+        &uploadHeap, D3D12_HEAP_FLAG_NONE,
+        &normalBufferDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+        IID_PPV_ARGS(uploadNormal.GetAddressOf())
+    );
+    assert(SUCCEEDED(hr));
+
+    void* normalMapped = nullptr;
+    uploadNormal->Map(0, &readRange, &normalMapped);
+    memcpy(normalMapped, normalZeroData.data(), normalBufferSize);
+    uploadNormal->Unmap(0, nullptr);
+
+    D3D12_RESOURCE_BARRIER barrierToDestN = CD3DX12_RESOURCE_BARRIER::Transition(
+        mNormalBuffer.Get(),
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_COPY_DEST
+    );
+    cmdList->ResourceBarrier(1, &barrierToDestN);
+
+    cmdList->CopyBufferRegion(
+        mNormalBuffer.Get(), 0,
+        uploadNormal.Get(), 0,
+        normalBufferSize
+    );
+
+    D3D12_RESOURCE_BARRIER barrierToUavN = CD3DX12_RESOURCE_BARRIER::Transition(
+        mNormalBuffer.Get(),
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+    );
+    cmdList->ResourceBarrier(1, &barrierToUavN);
 }
 
 void WaveGrid::UploadWallDataToGPU() {
@@ -525,6 +604,17 @@ void WaveGrid::CreateStructuredBuffers()
     );
     assert(SUCCEEDED(hr));
 
+    uint32_t normalBufferSize = elementCount * sizeof(float) * 4;
+    D3D12_RESOURCE_DESC normalDesc = CD3DX12_RESOURCE_DESC::Buffer(normalBufferSize);
+    normalDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    hr = mDevice->CreateCommittedResource(
+        &defaultHeap, D3D12_HEAP_FLAG_NONE, &normalDesc,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr,
+        IID_PPV_ARGS(mNormalBuffer.GetAddressOf())
+    );
+    assert(SUCCEEDED(hr));
+
     uint32_t wallBufferSize = elementCount * sizeof(uint32_t);
 
     D3D12_HEAP_PROPERTIES uploadHeap =
@@ -552,6 +642,7 @@ void WaveGrid::CreateStagingBuffers()
 
     uint32_t bufferSize = mWidth * mHeight * sizeof(float);
 
+
     D3D12_HEAP_PROPERTIES heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
     D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
 
@@ -565,6 +656,19 @@ void WaveGrid::CreateStagingBuffers()
     );
 
     // Normal Staging も同様に作成（後で）
+
+    uint32_t normalBufferSize = mWidth * mHeight * sizeof(float) * 4;
+    D3D12_RESOURCE_DESC resourceDescNormal = CD3DX12_RESOURCE_DESC::Buffer(normalBufferSize);
+
+    mDevice->CreateCommittedResource(
+        &heapProp,
+        D3D12_HEAP_FLAG_NONE,
+        &resourceDescNormal,  
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        nullptr,
+        IID_PPV_ARGS(mNormalStaging.GetAddressOf())
+    );
+
 }
 
 void WaveGrid::CreateDescriptorViews()
@@ -646,6 +750,18 @@ void WaveGrid::CreateWaveUavDescriptors()
         mNextBuffer.Get(),
         nullptr,
         &uavDesc,
+        handle
+    );
+
+    // u3 : Normal法線
+   // u3 : Normal法線
+    handle.ptr += descriptorSize;
+    D3D12_UNORDERED_ACCESS_VIEW_DESC normalUavDesc = uavDesc;
+    normalUavDesc.Buffer.StructureByteStride = sizeof(float) * 4;  // float4
+    mDevice->CreateUnorderedAccessView(
+        mNormalBuffer.Get(),
+        nullptr,
+        &normalUavDesc,
         handle
     );
 }

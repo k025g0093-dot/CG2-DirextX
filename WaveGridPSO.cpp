@@ -31,7 +31,7 @@ ComPtr<ID3D12RootSignature> WaveGridCreateComputeRootSignature(
 	// [2]: register(u0) 用 (gInstances用のUAV)
 	D3D12_DESCRIPTOR_RANGE descriptorRangeUAV{};
 	descriptorRangeUAV.BaseShaderRegister = 0; // register(u0)
-	descriptorRangeUAV.NumDescriptors = 3;
+	descriptorRangeUAV.NumDescriptors = 4;
 	descriptorRangeUAV.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 	descriptorRangeUAV.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
