@@ -215,19 +215,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->PreDraw();
 
-			for (int iz = 0; iz < cubeCountZ; iz++) {
-				for (int ix = 0; ix < cubeCountX; ix++) {
-					float h = waveGrid.GetHeightFromCache(ix, iz);
-					mesh.updateHeight(ix, iz, h);
-					Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
-					mesh.updateNormal(ix, iz, n.x, n.y, n.z);
-					int idx = iz * cubeCountX + ix;
-					normalColors[idx] = {
-						(n.x + 1.0f) / 2.0f,
-						(n.y + 1.0f) / 2.0f,
-						(n.z + 1.0f) / 2.0f,
-						1.0f
-					};
+			{
+				// DynamicMeshModel が未初期化なら先に作らせる
+				if (!engine->GetDynamicMeshModel())
+					engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+				VertexData* vb = engine->GetDynamicMeshModel()->GetMappedVertexBuffer();
+				for (int iz = 0; iz < cubeCountZ; iz++) {
+					for (int ix = 0; ix < cubeCountX; ix++) {
+						int idx = iz * cubeCountX + ix;
+						float h = waveGrid.GetHeightFromCache(ix, iz);
+						Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
+						vb[idx].position.y = h;
+						vb[idx].normal = { n.x, n.y, n.z };
+						normalColors[idx] = {
+							(n.x + 1.0f) / 2.0f,
+							(n.y + 1.0f) / 2.0f,
+							(n.z + 1.0f) / 2.0f,
+							1.0f
+						};
+					}
 				}
 			}
 
