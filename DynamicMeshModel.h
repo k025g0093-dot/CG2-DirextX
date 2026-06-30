@@ -34,6 +34,7 @@ public:
         m_currentBufferIndex = (m_currentBufferIndex + 1) % 2;
     }
     void UpdateVertexColors(const std::vector<Vector4>& colors);
+    VertexData* GetMappedVertexBuffer() const { return m_mappedDatas[m_currentBufferIndex]; }
 private:
     ComPtr<ID3D12Resource>   m_vertexBuffers[2];
     ComPtr<ID3D12Resource>   m_indexBuffer;

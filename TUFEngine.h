@@ -168,6 +168,7 @@ public:
 
 	void OnFileDropped(const std::wstring& path);
 	std::vector<SceneObject>& GetDroppedMeshes() { return m_droppedMeshes; }
+	DynamicMeshModel* GetDynamicMeshModel() const { return m_dynamicMeshModel.get(); }
 
 	void ResizeWindow(int newWidth, int newHeight);
 
