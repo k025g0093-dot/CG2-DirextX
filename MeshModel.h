@@ -81,7 +81,6 @@ private:
     ComPtr<ID3D12Resource> m_pMaterialResource;
     ComPtr<ID3D12Resource>   m_vertexBuffer;      // 元々 ComPtr のため実質変更なし
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
-    size_t                   m_vertexCount = 0;
     TUFEngine* m_pEngine = nullptr;
     ID3D12Device* device = nullptr;
 

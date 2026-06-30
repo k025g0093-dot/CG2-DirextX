@@ -17,13 +17,14 @@ protected:
     Vector3 m_scale = { 1, 1, 1 };
 
     Vertex* m_pVertexData = nullptr;
+    UINT m_vertexCount = 0;
     UINT m_indexCount = 0;
 
 public:
 
     // Model.h の public: セクション内に追加
     const Vertex* GetVertexData() const { return m_pVertexData; }
-    UINT GetVertexCount() const { return m_indexCount; }
+    UINT GetVertexCount() const { return m_vertexCount; }
 
     virtual ~Model() {}
 

@@ -49,7 +49,6 @@ private:
 
     int m_currentBufferIndex = 0;
 
-    uint32_t m_vertexCount = 0;
     uint32_t m_indexCount = 0;
     int m_gridW = 0;
     int m_gridH = 0;

@@ -37,7 +37,6 @@ private:
     // ライトリソースは外部から差し込むケースがあるため生ポインタを維持
     ComPtr<ID3D12Resource> m_pLightResource;
 
-    uint32_t m_vertexCount = 0;
     uint32_t m_indexCount = 0;
     TUFEngine* m_pEngine = nullptr;
 

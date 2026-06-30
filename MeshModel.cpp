@@ -295,7 +295,10 @@ bool MeshModel::LoadFormFBX(const std::string& filepath) {
 	m_vertexCount = (uint32_t)vertices.size();
 	m_indexCount = (uint32_t)indices.size();
 
-	CreateBuffers(vertices, indices);
+	// modelData.vertices に移してから CreateBuffers を呼ぶ（m_pVertexDataがmodelData.verticesを指すように）
+	modelData.vertices = std::move(vertices);
+	CreateBuffers(modelData.vertices, indices);
+
 	if (scene->mNumMaterials > 0) {
 		aiMaterial* mtl = scene->mMaterials[0];
 		aiString path;

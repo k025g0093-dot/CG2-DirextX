@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;USE_IMGUI;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/ignore:4049 %(AdditionalOptions)/utf-8</AdditionalOptions>

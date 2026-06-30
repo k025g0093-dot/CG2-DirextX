@@ -39,7 +39,6 @@ private:
 
     VertexData* m_pVertexData = nullptr;
 
-    uint32_t   m_vertexCount = 0;
     TUFEngine* m_pEngine = nullptr;
 
     uint32_t Align256(uint32_t size) {
