@@ -105,8 +105,11 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 		for (int i = 0; i < (int)objects.size(); i++) {
 			ImGui::PushID(i);
 
-			// オブジェクト名
-			ImGui::Text(objects[i].name.c_str());
+			// オブジェクト名（パスからファイル名のみ抽出）
+			std::string objName = objects[i].name;
+			size_t sep = objName.find_last_of("/\\");
+			if (sep != std::string::npos) objName = objName.substr(sep + 1);
+			ImGui::Text("%s", objName.c_str());
 			ImGui::SameLine();
 
 			// 選択ボタン
