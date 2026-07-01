@@ -1,4 +1,5 @@
 #include "TUFEngine.h"
+#include "ModelManager.h"
 #include "Sphere.h"
 #include "WaveGrid.h"
 #include "Camera.h"
@@ -37,7 +38,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	int normal = engine->LoadTexture("resources/top normal.png");
 
-	MeshModel* modelData = engine->LoadModel("resources/skyDome", "sky_sphere.obj");
+	MeshModel* modelData = ModelManager::GetInstance()->LoadModel("resources/skyDome", "sky_sphere.obj");
 	if (modelData) modelData->SetEnableLighting(0);
 
 	Sound* sound = new Sound;
@@ -47,10 +48,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DebugCamer* debugCamer_ = new DebugCamer;
 	debugCamer_->Initialize((float)kClineWidth, (float)kClineHeight);
 
-	const int cubeCountX = 200;
-	const int cubeCountZ = 200;
+	const int cubeCountX = 250;
+	const int cubeCountZ = 250;
 
-	WaveGrid waveGrid(cubeCountX, cubeCountZ, engine->GetDroppedMeshes());
+	WaveGrid waveGrid(cubeCountX, cubeCountZ, ModelManager::GetInstance()->GetSceneObjects());
 
 	// ========== GPU初期化 ==========
 	waveGrid.InitializeGPU(engine->GetDevice(), engine);
@@ -70,7 +71,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	std::vector<Vector4> normalColors(cubeCountX * cubeCountZ);
 	float t = 0.0f;
 
-	const auto& droppedMeshes = engine->GetDroppedMeshes();
+	const auto& droppedMeshes = ModelManager::GetInstance()->GetSceneObjects();
 
 	engine->m_camera.transform.translate.x = 0.0f;
 	engine->m_camera.transform.translate.y = 200.0f;
@@ -201,11 +202,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-			// ========== GPU ベースの波シミュレーション ==========
+			//// ========== GPU ベースの波シミュレーション ==========
 			t += 0.01f;
 			waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
 			waveGrid.ReadbackToCPU();
-			waveGrid.setObjectWall(engine->GetDroppedMeshes());
+			waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
 
 			frameIndex++;
 

@@ -56,7 +56,7 @@ public:
         const std::string& directoryPath,
         const std::string& filename);
 
-    void InitMeshModel(TUFEngine* engine);
+    void InitMeshModel(ID3D12Device* device);
 
     void SetTextureIndex(int index) { m_textureIndex = index; }
     int  GetTextureIndex() const { return m_textureIndex; }
@@ -81,8 +81,7 @@ private:
     ComPtr<ID3D12Resource> m_pMaterialResource;
     ComPtr<ID3D12Resource>   m_vertexBuffer;      // 元々 ComPtr のため実質変更なし
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
-    TUFEngine* m_pEngine = nullptr;
-    ID3D12Device* device = nullptr;
+    ID3D12Device* device_ = nullptr;
 
     ComPtr<ID3D12Resource>  m_indexBuffer;
     D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};

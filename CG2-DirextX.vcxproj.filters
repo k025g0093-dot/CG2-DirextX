@@ -219,6 +219,9 @@
     <ClCompile Include="FBXLoader.cpp">
       <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数</Filter>
     </ClCompile>
+    <ClCompile Include="ModelManager.cpp">
+      <Filter>ソース ファイル\TUFengine\描画物関係</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -377,6 +380,9 @@
     </ClInclude>
     <ClInclude Include="FBXLoader.h">
       <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelManager.h">
+      <Filter>ソース ファイル\TUFengine\描画物関係</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,6 @@
 #include "ImGuiWindow.h"
-#include "TUFEngine.h" // 🌟 ここで include することで、engineの中身が解禁される！
+#include "TUFEngine.h"
+#include "ModelManager.h"
 
 ImGuiUIWindow::ImGuiUIWindow() : show(true) {}
 ImGuiUIWindow::~ImGuiUIWindow() {}
@@ -101,7 +102,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
 		// オブジェクト一覧
-		auto& objects = engine->GetDroppedMeshes();
+		auto& objects = ModelManager::GetInstance()->GetSceneObjects();
 		for (int i = 0; i < (int)objects.size(); i++) {
 			ImGui::PushID(i);
 
@@ -137,7 +138,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 
 			ImGui::Spacing(); // 削除ボタンの前に余白
 			if (ImGui::Button("Delete")) {
-				engine->RemoveDroppedMesh(i);
+				ModelManager::GetInstance()->RemoveSceneObject(i);
 				ImGui::PopID();
 				break;
 			}
@@ -160,7 +161,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 //ギズモの仮実装。まだまだいらないものとか将来的に自由にアイテムを選択できるようにしたりしていきたい
 void ImGuiZmoWindow::update(TUFEngine* engine) {
 #ifdef _DEBUG
-	auto& objects = engine->GetDroppedMeshes();
+	auto& objects = ModelManager::GetInstance()->GetSceneObjects();
 	if (objects.empty()) return; // オブジェクトがなければ何もしない
 
 	// キー入力による切り替え判定だけを行う
@@ -205,7 +206,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 		// --- ② ギズモ（ImGuizmo）の描画 ---
 #ifdef _DEBUG
-		auto& objects = engine->GetDroppedMeshes();
+		auto& objects = ModelManager::GetInstance()->GetSceneObjects();
 		if (!objects.empty()) {
 			ImGuizmo::BeginFrame();
 			ImGuizmo::SetDrawlist();

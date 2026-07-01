@@ -1,4 +1,6 @@
 #include "TUFEngine.h"
+#include "ModelManager.h"
+#include "TextureManager.h"
 #include "ImGuiUIManager.h" 
 #include "ImGuiWindow.h" 
 
@@ -122,6 +124,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	CreateDepthStencilTextureResource(width, height);
 
 	TextureManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
+	ModelManager::GetInstance()->Initialize(device.Get(), commandList.Get());
 
 
 	auto sphere = std::make_unique<Sphere>();
@@ -156,40 +159,14 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 				std::string directory = modelPath.substr(0, modelPath.find_last_of("/"));
 				std::string filename = modelPath.substr(modelPath.find_last_of("/") + 1);
 
-				MeshModel* mesh = LoadModel(directory, filename);
-
-
+				MeshModel* mesh = ModelManager::GetInstance()->LoadModel(directory, filename);
 
 				if (mesh) {
 					Vector3	pos = { object["position"][0], object["position"][1], object["position"][2] };
 					Vector3	rot = { object["rotation"][0], object["rotation"][1], object["rotation"][2] };
 					Vector3	scale = { object["scale"][0], object["scale"][1], object["scale"][2] };
 
-					Create3DObjectOBB obbCreator;
-					OBB obb = obbCreator.CreateOBBForModel(*mesh, pos);
-
-					// ローカルAABBをキャッシュ
-					const Vertex* verts = mesh->GetVertexData();
-					UINT vCount = mesh->GetVertexCount();
-					Vector3 lMin = { FLT_MAX, FLT_MAX, FLT_MAX }, lMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
-					for (UINT j = 0; j < vCount; j++) {
-						if (verts[j].position.x < lMin.x) lMin.x = verts[j].position.x;
-						if (verts[j].position.x > lMax.x) lMax.x = verts[j].position.x;
-						if (verts[j].position.y < lMin.y) lMin.y = verts[j].position.y;
-						if (verts[j].position.y > lMax.y) lMax.y = verts[j].position.y;
-						if (verts[j].position.z < lMin.z) lMin.z = verts[j].position.z;
-						if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
-					}
-
-					m_droppedMeshes.push_back({
-							modelPath,
-							mesh,
-							pos,
-							rot,
-							scale,
-							obb,
-							{ lMin, lMax }
-						});
+					ModelManager::GetInstance()->AddSceneObject(modelPath, pos, rot, scale);
 
 				}
 
@@ -206,57 +183,7 @@ int TUFEngine::LoadTexture(const std::string& filePath) {
 }
 
 
-MeshModel* TUFEngine::LoadModel(const std::string& directoryPath, const std::string& filename) {
-	if (m_meshes.count(filename) > 0) {
-		return m_meshes[filename].get();
-	}
 
-	auto mesh = std::make_unique<MeshModel>();
-	mesh->InitMeshModel(this);
-
-	std::string ext = filename.substr(filename.find_last_of("."));
-	bool isFBX = (ext == ".fbx" || ext == ".FBX");
-
-	if (isFBX) {
-		if (!mesh->LoadFormFBX(directoryPath + "/" + filename)) {
-			OutputDebugStringA(("Error: Failed to load FBX: " + directoryPath + "/" + filename + "\n").c_str());
-			return nullptr;
-		}
-		// FBX側のマテリアルからテクスチャ読み込み（LoadFormFBX内でやる前提）
-	}
-	else {
-		if (!mesh->LoadFromOBJ(directoryPath, filename)) {
-			OutputDebugStringA(("Error: Failed to load OBJ: " + directoryPath + "/" + filename + "\n").c_str());
-			return nullptr;
-		}
-
-		// フォールバックテクスチャ自動検出（OBJのみ）
-		std::string baseName = filename;
-		size_t lastDot = filename.find_last_of(".");
-		if (lastDot != std::string::npos) {
-			baseName = filename.substr(0, lastDot);
-		}
-		std::string folderAndBase = directoryPath + "/" + baseName;
-		std::string texPath = "";
-		if (GetFileAttributesA((folderAndBase + ".jpg").c_str()) != INVALID_FILE_ATTRIBUTES) {
-			texPath = folderAndBase + ".jpg";
-		}
-		else if (GetFileAttributesA((folderAndBase + ".png").c_str()) != INVALID_FILE_ATTRIBUTES) {
-			texPath = folderAndBase + ".png";
-		}
-		if (!texPath.empty()) {
-			mesh->SetTextureIndex(TextureManager::GetInstance()->LoadTexture(texPath));
-		}
-		std::string normalMapPath = folderAndBase + "_normal.png";
-		if (GetFileAttributesA(normalMapPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-			mesh->SetNormalMapIndex(TextureManager::GetInstance()->LoadTexture(normalMapPath));
-		}
-	}
-
-	MeshModel* ptr = mesh.get();
-	m_meshes[filename] = std::move(mesh);
-	return ptr;
-}
 
 
 
@@ -363,8 +290,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto contentBrowser = std::make_shared<ImGuiContentBrowser>();
 	m_imguiManager->addWindow(contentBrowser);
 
-	m_imguiManager->onFileDrop = [this](const std::wstring& path) {
-		OnFileDropped(path);
+	m_imguiManager->onFileDrop = [](const std::wstring& path) {
+		ModelManager::GetInstance()->OnFileDropped(path);
 		};
 
 	auto sceneWin = std::make_shared<ImGuiSceneWindow>();
@@ -381,112 +308,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 #pragma endregion
 
-
-#pragma region ドロップ処理とシーン保存処理
-void TUFEngine::OnFileDropped(const std::wstring& path) {
-	std::filesystem::path filePath(path);
-	std::string ext = filePath.extension().string();
-	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-	if (ext == ".png" || ext == ".jpg") {
-		std::string pathStr = ConvertString(path); // パスを文字列に変換する
-		int index = LoadTexture("resources/" + pathStr);
-		OutputDebugStringA(("Texture Loaded: " + pathStr + "\n").c_str());
-	}
-	else if (ext == ".obj" || ext == ".fbx") {
-		std::string dir = filePath.parent_path().string();
-		std::string filename = filePath.filename().string();
-		MeshModel* mesh = LoadModel("resources/" + dir, filename);
-		if (mesh) {
-			std::string modelPath = "resources/" + dir + "/" + filename;
-			Create3DObjectOBB obbCreator;
-			OBB obb = obbCreator.CreateOBBForModel(*mesh, { 0.0f, 0.0f, 0.0f });
-
-			// ローカルAABBをキャッシュ
-			const Vertex* verts = mesh->GetVertexData();
-			UINT vCount = mesh->GetVertexCount();
-			Vector3 lMin = { FLT_MAX, FLT_MAX, FLT_MAX }, lMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
-			for (UINT j = 0; j < vCount; j++) {
-				if (verts[j].position.x < lMin.x) lMin.x = verts[j].position.x;
-				if (verts[j].position.x > lMax.x) lMax.x = verts[j].position.x;
-				if (verts[j].position.y < lMin.y) lMin.y = verts[j].position.y;
-				if (verts[j].position.y > lMax.y) lMax.y = verts[j].position.y;
-				if (verts[j].position.z < lMin.z) lMin.z = verts[j].position.z;
-				if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
-			}
-
-			m_droppedMeshes.push_back({
-				modelPath,
-				mesh,
-				{ 0.0f, 0.0f, 0.0f },
-				{ 0.0f, 0.0f, 0.0f },
-				{ 1.0f, 1.0f, 1.0f },
-				obb,
-				{ lMin, lMax }
-				});
-
-			json data;
-			data["objects"] = json::array();
-
-			for (const auto& object : m_droppedMeshes) {
-				json obj;
-
-				obj["modelPath"] = object.name;
-				obj["position"] = { object.pos.x, object.pos.y, object.pos.z };
-				obj["rotation"] = { object.rot.x, object.rot.y, object.rot.z };
-				obj["scale"] = { object.scale.x, object.scale.y, object.scale.z };
-
-				obj["obb"]["center"] = { object.obb.center.x, object.obb.center.y, object.obb.center.z };
-				obj["obb"]["size"] = { object.obb.size.x, object.obb.size.y, object.obb.size.z };
-				obj["obb"]["orientationX"] = { object.obb.orientations[0].x, object.obb.orientations[0].y, object.obb.orientations[0].z };
-				obj["obb"]["orientationY"] = { object.obb.orientations[1].x, object.obb.orientations[1].y, object.obb.orientations[1].z };
-				obj["obb"]["orientationZ"] = { object.obb.orientations[2].x, object.obb.orientations[2].y, object.obb.orientations[2].z };
-
-				data["objects"].push_back(obj);
-			}
-
-			std::ofstream file("sceneObject.json");
-			file << data.dump(4);
-		}
-
-
-	}
-	else {
-		OutputDebugStringA("Unknown file type dropped\n");
-	}
-}
-
-
-#pragma endregion
-
 #endif // USE_IMGUI
 
-void TUFEngine::SaveSceneObjectsToFile() {
-
-	json data;
-	data["objects"] = json::array();
-
-	for (const auto& object : m_droppedMeshes) {
-		json obj;
-
-		obj["modelPath"] = object.name;
-		obj["position"] = { object.pos.x, object.pos.y, object.pos.z };
-		obj["rotation"] = { object.rot.x, object.rot.y, object.rot.z };
-		obj["scale"] = { object.scale.x, object.scale.y, object.scale.z };
-
-		obj["obb"]["center"] = { object.obb.center.x, object.obb.center.y, object.obb.center.z };
-		obj["obb"]["size"] = { object.obb.size.x, object.obb.size.y, object.obb.size.z };
-		obj["obb"]["orientationX"] = { object.obb.orientations[0].x, object.obb.orientations[0].y, object.obb.orientations[0].z };
-		obj["obb"]["orientationY"] = { object.obb.orientations[1].x, object.obb.orientations[1].y, object.obb.orientations[1].z };
-		obj["obb"]["orientationZ"] = { object.obb.orientations[2].x, object.obb.orientations[2].y, object.obb.orientations[2].z };
-
-		data["objects"].push_back(obj);
-	}
-
-	std::ofstream file("sceneObject.json");
-	file << data.dump(4);
-
-}
 
 #pragma region DirectX 12 初期化関連
 
@@ -870,7 +693,7 @@ void TUFEngine::SetupInfoQueue() {
 
 void TUFEngine::RenderGpuDrivenALLRequests() {
 
-	for (auto& obj : m_droppedMeshes) {
+	for (auto& obj : ModelManager::GetInstance()->GetSceneObjects()) {
 		// 現在のtransformでOBBを更新
 		Vector3 localCenter = (obj.localAABB.min + obj.localAABB.max) * 0.5f;
 		Vector3 localHalf = (obj.localAABB.max - obj.localAABB.min) * 0.5f;
@@ -889,7 +712,16 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		obj.obb.orientations[2] = { rotMat.m[2][0], rotMat.m[2][1], rotMat.m[2][2] };
 		obj.obb.size = { localHalf.x * obj.scale.x, localHalf.y * obj.scale.y, localHalf.z * obj.scale.z };
 
-		RegisterDroppedMesh(obj.mesh, obj.pos, obj.rot, obj.scale);
+		DrawRequest req;
+		req.model = obj.mesh;
+		req.pos = obj.pos;
+		req.rot = obj.rot;
+		req.scale = obj.scale;
+		req.textureIndex = obj.mesh->GetTextureIndex();
+		req.isMesh = true;
+		req.lightId = 0;
+		req.renderOrder = 1;
+		m_drawRequests.push_back(req);
 	}
 
 	// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1232,22 +1064,6 @@ void TUFEngine::DrawMesh(MeshModel* mesh, Vector3 pos, Vector3 rot, Vector3 scal
 	m_drawRequests.push_back(req);
 }
 
-void TUFEngine::RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale) {
-	if (!mesh) return;
-
-
-
-	DrawRequest req;
-	req.model = mesh;
-	req.pos = pos;
-	req.rot = rot;
-	req.scale = scale;
-	req.textureIndex = mesh->GetTextureIndex();
-	req.isMesh = true;
-	req.lightId = 0;
-	req.renderOrder = 1;
-	m_drawRequests.push_back(req);
-}
 
 
 

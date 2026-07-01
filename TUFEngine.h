@@ -87,7 +87,6 @@ public:
 	void OnUpdate();
 
 	int        LoadTexture(const std::string& filePath);
-	MeshModel* LoadModel(const std::string& directoryPath, const std::string& filename);
 
 	void DrawTriangle(const Vector3& pos, const Vector3& rot, const Vector3& scale, const Vector4 color, int textureInd);
 
@@ -97,9 +96,6 @@ public:
 	void DrawSprite(const Vector2& pos, const float width, const float height,
 		const Vector3& rot, const Vector3& scale, const Vector4 color, int textureIndex);
 	void DrawDynamicMeshWithNormal(DynamicMesh& mesh, std::vector<Vector4>& colors, int index);
-
-
-	void RegisterDroppedMesh(MeshModel* mesh, const Vector3& pos, const Vector3& rot, const Vector3& scale);
 
 
 	void PreDraw();
@@ -159,15 +155,6 @@ public:
 	void EndSceneRender();
 
 
-	//std::vector<std::pair<std::string, MeshModel*>>& GetDroppedMeshes() { return m_droppedMeshes; }
-	void RemoveDroppedMesh(int index) {
-		m_droppedMeshes.erase(m_droppedMeshes.begin() + index);
-		SaveSceneObjectsToFile();
-	}
-	void SaveSceneObjectsToFile();
-
-	void OnFileDropped(const std::wstring& path);
-	std::vector<SceneObject>& GetDroppedMeshes() { return m_droppedMeshes; }
 	DynamicMeshModel* GetDynamicMeshModel() const { return m_dynamicMeshModel.get(); }
 
 	void ResizeWindow(int newWidth, int newHeight);
@@ -285,8 +272,6 @@ private://描画物のリソース
 
 	std::unique_ptr<Sphere>       m_temporarySpheres;
 	std::vector<std::unique_ptr<TriangleModel>> m_trianglePool;
-	std::map<std::string, std::unique_ptr<MeshModel>> m_meshes;
-	std::vector<SceneObject> m_droppedMeshes;
 
 
 

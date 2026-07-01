@@ -4,9 +4,8 @@
 MeshModel::MeshModel() = default;
 MeshModel::~MeshModel() = default;
 
-void MeshModel::InitMeshModel(TUFEngine* engine) {
-	m_pEngine = engine;
-	device = engine->GetDevice();
+void MeshModel::InitMeshModel(ID3D12Device* device) {
+	device_ = device;
 
 	m_pMaterialResource = CreateBufferResource(device, Align256(sizeof(Material)));
 	Material* materialData = nullptr;
@@ -22,7 +21,6 @@ bool MeshModel::LoadFromOBJ(
 	const std::string& directoryPath,
 	const std::string& filename
 ) {
-	ID3D12Device* device = m_pEngine->GetDevice();
 	std::ifstream file(directoryPath + "/" + filename);
 	assert(file.is_open());
 
@@ -368,7 +366,7 @@ void MeshModel::CreateBuffers(std::vector<VertexData>& vertices, std::vector<uin
 	m_indexCount = (uint32_t)indices.size();
 
 	// 頂点バッファ
-	m_vertexBuffer = CreateBufferResource(device, sizeof(VertexData) * m_vertexCount);
+	m_vertexBuffer = CreateBufferResource(device_, sizeof(VertexData) * m_vertexCount);
 	void* pData = nullptr;
 	m_vertexBuffer->Map(0, nullptr, &pData);
 	memcpy(pData, vertices.data(), sizeof(VertexData) * m_vertexCount);
@@ -381,7 +379,7 @@ void MeshModel::CreateBuffers(std::vector<VertexData>& vertices, std::vector<uin
 	m_pVertexData = reinterpret_cast<Vertex*>(vertices.data());
 
 	// インデックスバッファ
-	m_indexBuffer = CreateBufferResource(device, sizeof(uint32_t) * m_indexCount);
+	m_indexBuffer = CreateBufferResource(device_, sizeof(uint32_t) * m_indexCount);
 	uint32_t* idxData = nullptr;
 	m_indexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&idxData));
 	memcpy(idxData, indices.data(), sizeof(uint32_t) * m_indexCount);
