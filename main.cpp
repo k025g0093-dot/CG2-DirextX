@@ -48,8 +48,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	DebugCamer* debugCamer_ = new DebugCamer;
 	debugCamer_->Initialize((float)kClineWidth, (float)kClineHeight);
 
-	const int cubeCountX = 250;
-	const int cubeCountZ = 250;
+	const int cubeCountX = 200;
+	const int cubeCountZ = 200;
 
 	WaveGrid waveGrid(cubeCountX, cubeCountZ, ModelManager::GetInstance()->GetSceneObjects());
 

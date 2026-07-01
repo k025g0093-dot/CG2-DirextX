@@ -303,6 +303,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto imGuizmowindow = std::make_shared<ImGuiZmoWindow>();
 	m_imguiManager->addWindow(imGuizmowindow);
 
+	auto imGuiPlayWindow = std::make_shared<ImGuiPlayViewportWindow>();
+	m_imguiManager->addWindow(imGuiPlayWindow);
 
 }
 

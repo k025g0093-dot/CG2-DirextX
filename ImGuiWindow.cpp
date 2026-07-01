@@ -258,3 +258,38 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 #endif
 }
 
+
+
+void ImGuiPlayViewportWindow::update(TUFEngine* engine) {
+#ifdef USE_IMGUI
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
+
+	if (ImGui::Begin("PlayViewport", nullptr,
+		ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_NoScrollWithMouse)) {
+
+		// --- ① シーン（ゲーム画面）の描画 ---
+		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+
+
+		// 🌟重要：タイトルバーを排除した、画像が描画される正確なスクリーン左上座標を取得
+		ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
+
+		ImTextureID sceneTextureId = (ImTextureID)engine->GetSceneSrvGpuHandle().ptr;
+
+		ImGui::Image(
+			sceneTextureId,
+			viewportSize,
+			ImVec2(0.0f, 0.0f),
+			ImVec2(1.0f, 1.0f),
+			ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // Tint（画像の色：白＝そのまま）
+			ImVec4(0.0f, 0.0f, 0.0f, 0.0f)  // 🌟Border（枠線の色：透明。ここが1.0fで黒枠になると1ピクセルズレる原因になります）
+		);
+	}
+
+	ImGui::End();
+	ImGui::PopStyleVar(2);
+#endif
+}
+
