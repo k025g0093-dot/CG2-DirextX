@@ -16,65 +16,8 @@
     <Filter Include="ソース ファイル\TUFengine">
       <UniqueIdentifier>{9321c593-34c3-4ea4-8c30-ba64cc5f1918}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\TUFengine\.h">
-      <UniqueIdentifier>{3c1f6f7c-4735-4bc1-9648-a45e27303166}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\.cpp">
-      <UniqueIdentifier>{210b12b8-3397-4fa6-a9b2-4dc8d80a85c8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\Vector">
-      <UniqueIdentifier>{389704d1-d7ca-40d4-a241-9bfc1e74e7fd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\Input">
-      <UniqueIdentifier>{0fc2a419-30ba-42a5-9b8f-0ff6cd5fd699}</UniqueIdentifier>
-    </Filter>
     <Filter Include="外部から持ってきた関数やファイル">
       <UniqueIdentifier>{aec849b1-0b23-4f6a-8af4-acc16205e6c9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\Camera">
-      <UniqueIdentifier>{5e4f739c-26a8-4327-9dc5-b5fc68d8e825}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\オブジェクトのリリース関数">
-      <UniqueIdentifier>{55dcfd81-49c3-400e-8986-2aab9a04e915}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\サウンドクラス">
-      <UniqueIdentifier>{72ae2431-e364-41c6-a963-213d03830cb2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\Camera\DebugCamera">
-      <UniqueIdentifier>{9a98a508-67eb-410f-bdf5-9dc285d64660}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係">
-      <UniqueIdentifier>{ed6770f1-157c-4cac-b725-8f72395c0a60}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係\Texture">
-      <UniqueIdentifier>{516b4b7d-8391-45b9-8cca-b738370a1872}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係\Texture\専用GUI">
-      <UniqueIdentifier>{d5085894-9bb7-485c-bbb0-34a0af63f468}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係\各種モデル群">
-      <UniqueIdentifier>{2c77130c-4081-4d52-8c77-f08cc33b8792}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係\各種モデル群\3Dmodel">
-      <UniqueIdentifier>{3545f7fb-7e11-4ad9-8fd9-d9dd5e63b925}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係\各種モデル群\各種図形">
-      <UniqueIdentifier>{d1bdb031-4692-41a0-a0c9-af5b0dbeec11}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ">
-      <UniqueIdentifier>{90893312-83cc-4757-83f8-23278a455907}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\ライティングの設定を行うクラス">
-      <UniqueIdentifier>{c1e7bbb4-7929-4348-b8e3-1e6782a46439}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\GPU駆動のための者たち">
-      <UniqueIdentifier>{7a3ef0db-0f35-4bf4-a621-32f765ac06f4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分">
-      <UniqueIdentifier>{0b299a22-f924-491a-9e93-534f7da908ee}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数">
-      <UniqueIdentifier>{2fbf40e5-2405-46e0-964c-67f46fc904e9}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\TUFengine\GUIなどの外部ライブラリ">
       <UniqueIdentifier>{3fa35654-a00a-452f-9e2a-39e9e7f6c50e}</UniqueIdentifier>
@@ -97,6 +40,72 @@
     <Filter Include="ソース ファイル\TUFengine\GUIなどの外部ライブラリ\json">
       <UniqueIdentifier>{27826810-ec8c-4f1d-8a35-34226bd9fcd1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分">
+      <UniqueIdentifier>{a741f665-703b-4755-bcd8-01a827ac64eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\GPU駆動のための者たち">
+      <UniqueIdentifier>{7a3ef0db-0f35-4bf4-a621-32f765ac06f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\Camera">
+      <UniqueIdentifier>{5e4f739c-26a8-4327-9dc5-b5fc68d8e825}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\Camera\DebugCamera">
+      <UniqueIdentifier>{9a98a508-67eb-410f-bdf5-9dc285d64660}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\.h">
+      <UniqueIdentifier>{3c1f6f7c-4735-4bc1-9648-a45e27303166}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\.cpp">
+      <UniqueIdentifier>{210b12b8-3397-4fa6-a9b2-4dc8d80a85c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\Input">
+      <UniqueIdentifier>{0fc2a419-30ba-42a5-9b8f-0ff6cd5fd699}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\Vector">
+      <UniqueIdentifier>{389704d1-d7ca-40d4-a241-9bfc1e74e7fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\オブジェクトのリリース関数">
+      <UniqueIdentifier>{55dcfd81-49c3-400e-8986-2aab9a04e915}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\サウンドクラス">
+      <UniqueIdentifier>{72ae2431-e364-41c6-a963-213d03830cb2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\ライティングの設定を行うクラス">
+      <UniqueIdentifier>{c1e7bbb4-7929-4348-b8e3-1e6782a46439}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\各3Dオブジェクトの当たり判定かしか部分">
+      <UniqueIdentifier>{0b299a22-f924-491a-9e93-534f7da908ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係">
+      <UniqueIdentifier>{ed6770f1-157c-4cac-b725-8f72395c0a60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture">
+      <UniqueIdentifier>{516b4b7d-8391-45b9-8cca-b738370a1872}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture\専用GUI">
+      <UniqueIdentifier>{d5085894-9bb7-485c-bbb0-34a0af63f468}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群">
+      <UniqueIdentifier>{2c77130c-4081-4d52-8c77-f08cc33b8792}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\3Dmodel">
+      <UniqueIdentifier>{3545f7fb-7e11-4ad9-8fd9-d9dd5e63b925}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形">
+      <UniqueIdentifier>{d1bdb031-4692-41a0-a0c9-af5b0dbeec11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\板ポリ">
+      <UniqueIdentifier>{90893312-83cc-4757-83f8-23278a455907}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\Load関数">
+      <UniqueIdentifier>{2fbf40e5-2405-46e0-964c-67f46fc904e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\コンポーネントクラス群">
+      <UniqueIdentifier>{7848e809-764c-4b43-9c43-880963ae7569}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp">
+      <UniqueIdentifier>{54e018a6-2c05-41e0-8c32-148766aade80}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -106,40 +115,40 @@
       <Filter>ソース ファイル\TUFengine</Filter>
     </ClCompile>
     <ClCompile Include="ConvertString.cpp">
-      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.cpp</Filter>
     </ClCompile>
     <ClCompile Include="DXC.cpp">
-      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.cpp</Filter>
     </ClCompile>
     <ClCompile Include="LogSistem.cpp">
-      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.cpp</Filter>
     </ClCompile>
     <ClCompile Include="PSO.cpp">
-      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.cpp</Filter>
     </ClCompile>
     <ClCompile Include="VertexResource.cpp">
-      <Filter>ソース ファイル\TUFengine\.cpp</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.cpp</Filter>
     </ClCompile>
     <ClCompile Include="Vector.cpp">
-      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Vector</Filter>
     </ClCompile>
     <ClCompile Include="Sphere.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\各種図形</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
     </ClCompile>
     <ClCompile Include="Model.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群</Filter>
     </ClCompile>
     <ClCompile Include="TextureManager.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\Texture</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture</Filter>
     </ClCompile>
     <ClCompile Include="MeshModel.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\3Dmodel</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\3Dmodel</Filter>
     </ClCompile>
     <ClCompile Include="TriangleModel.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\各種図形</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
     </ClCompile>
     <ClCompile Include="DynamicMesh.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\板ポリ</Filter>
     </ClCompile>
     <ClCompile Include="WaveGrid.cpp">
       <Filter>外部から持ってきた関数やファイル</Filter>
@@ -172,31 +181,31 @@
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="DynamicMeshModel.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\板ポリ</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
-      <Filter>ソース ファイル\TUFengine\Camera</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiCamera.cpp">
-      <Filter>ソース ファイル\TUFengine\Camera</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiDebug.cpp">
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui\デバック情報をまとめるGUI</Filter>
     </ClCompile>
     <ClCompile Include="Sprite.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\Texture</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture</Filter>
     </ClCompile>
     <ClCompile Include="ResourceObject.cpp">
-      <Filter>ソース ファイル\TUFengine\オブジェクトのリリース関数</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\オブジェクトのリリース関数</Filter>
     </ClCompile>
     <ClCompile Include="Sound.cpp">
-      <Filter>ソース ファイル\TUFengine\サウンドクラス</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\サウンドクラス</Filter>
     </ClCompile>
     <ClCompile Include="DebugCamer.cpp">
-      <Filter>ソース ファイル\TUFengine\Camera\DebugCamera</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera\DebugCamera</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiSpriteUV.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\Texture\専用GUI</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture\専用GUI</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiContentBrowser.cpp">
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui\アセット管理用GUI</Filter>
@@ -205,22 +214,28 @@
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui\imGuiZmo</Filter>
     </ClCompile>
     <ClCompile Include="LightManager.cpp">
-      <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\ライティングの設定を行うクラス</Filter>
     </ClCompile>
     <ClCompile Include="GpuDrivenRenderer.cpp">
-      <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\GPU駆動のための者たち</Filter>
     </ClCompile>
     <ClCompile Include="Create3DObjectOBB.cpp">
-      <Filter>ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\各3Dオブジェクトの当たり判定かしか部分</Filter>
     </ClCompile>
     <ClCompile Include="WaveGridPSO.cpp">
       <Filter>外部から持ってきた関数やファイル</Filter>
     </ClCompile>
     <ClCompile Include="FBXLoader.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\Load関数</Filter>
     </ClCompile>
     <ClCompile Include="ModelManager.cpp">
-      <Filter>ソース ファイル\TUFengine\描画物関係</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityComponent.cpp">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
+    </ClCompile>
+    <ClCompile Include="Component.cpp">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -238,58 +253,58 @@
       <Filter>ソース ファイル\TUFengine</Filter>
     </ClInclude>
     <ClInclude Include="ConvertString.h">
-      <Filter>ソース ファイル\TUFengine\.h</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.h</Filter>
     </ClInclude>
     <ClInclude Include="DXC.h">
-      <Filter>ソース ファイル\TUFengine\.h</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.h</Filter>
     </ClInclude>
     <ClInclude Include="LogSistem.h">
-      <Filter>ソース ファイル\TUFengine\.h</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.h</Filter>
     </ClInclude>
     <ClInclude Include="PSO.h">
-      <Filter>ソース ファイル\TUFengine\.h</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.h</Filter>
     </ClInclude>
     <ClInclude Include="VertexResource.h">
-      <Filter>ソース ファイル\TUFengine\.h</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\.h</Filter>
     </ClInclude>
     <ClInclude Include="Vector.h">
-      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Vector</Filter>
     </ClInclude>
     <ClInclude Include="allVector.h">
-      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Vector</Filter>
     </ClInclude>
     <ClInclude Include="Vector2.h">
-      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Vector</Filter>
     </ClInclude>
     <ClInclude Include="Vector3.h">
-      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Vector</Filter>
     </ClInclude>
     <ClInclude Include="Vector4.h">
-      <Filter>ソース ファイル\TUFengine\Vector</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Vector</Filter>
     </ClInclude>
     <ClInclude Include="Input.h">
-      <Filter>ソース ファイル\TUFengine\Input</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Input</Filter>
     </ClInclude>
     <ClInclude Include="allShapesModel.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\各種図形</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
     </ClInclude>
     <ClInclude Include="Sphere.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\各種図形</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
     </ClInclude>
     <ClInclude Include="Model.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群</Filter>
     </ClInclude>
     <ClInclude Include="TextureManager.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\Texture</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture</Filter>
     </ClInclude>
     <ClInclude Include="MeshModel.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\3Dmodel</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\3Dmodel</Filter>
     </ClInclude>
     <ClInclude Include="TriangleModel.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\各種図形</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
     </ClInclude>
     <ClInclude Include="DynamicMesh.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\板ポリ</Filter>
     </ClInclude>
     <ClInclude Include="WaveGrid.h">
       <Filter>外部から持ってきた関数やファイル</Filter>
@@ -328,31 +343,31 @@
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="DynamicMeshModel.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\板ポリ</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\板ポリ</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
-      <Filter>ソース ファイル\TUFengine\Camera</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiCamera.h">
-      <Filter>ソース ファイル\TUFengine\Camera</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiDebug.h">
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui\デバック情報をまとめるGUI</Filter>
     </ClInclude>
     <ClInclude Include="Sprite.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\Texture</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture</Filter>
     </ClInclude>
     <ClInclude Include="ResourceObject.h">
-      <Filter>ソース ファイル\TUFengine\オブジェクトのリリース関数</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\オブジェクトのリリース関数</Filter>
     </ClInclude>
     <ClInclude Include="Sound.h">
-      <Filter>ソース ファイル\TUFengine\サウンドクラス</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\サウンドクラス</Filter>
     </ClInclude>
     <ClInclude Include="DebugCamer.h">
-      <Filter>ソース ファイル\TUFengine\Camera\DebugCamera</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera\DebugCamera</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiSpriteUV.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\Texture\専用GUI</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\Texture\専用GUI</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiContentBrowser.h">
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui\アセット管理用GUI</Filter>
@@ -364,25 +379,34 @@
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\ImGui\imGuiZmo</Filter>
     </ClInclude>
     <ClInclude Include="LightManager.h">
-      <Filter>ソース ファイル\TUFengine\ライティングの設定を行うクラス</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\ライティングの設定を行うクラス</Filter>
     </ClInclude>
     <ClInclude Include="GpuDrivenRenderer.h">
-      <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\GPU駆動のための者たち</Filter>
     </ClInclude>
     <ClInclude Include="GpuDrivenTypes.h">
-      <Filter>ソース ファイル\TUFengine\GPU駆動のための者たち</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\GPU駆動のための者たち</Filter>
     </ClInclude>
     <ClInclude Include="Create3DObjectOBB.h">
-      <Filter>ソース ファイル\TUFengine\各3Dオブジェクトの当たり判定かしか部分</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\各3Dオブジェクトの当たり判定かしか部分</Filter>
     </ClInclude>
     <ClInclude Include="WaveGridPSO.h">
       <Filter>外部から持ってきた関数やファイル</Filter>
     </ClInclude>
     <ClInclude Include="FBXLoader.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係\各種モデル群\Load関数</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\Load関数</Filter>
     </ClInclude>
     <ClInclude Include="ModelManager.h">
-      <Filter>ソース ファイル\TUFengine\描画物関係</Filter>
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityComponent.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
+    </ClInclude>
+    <ClInclude Include="AllComponent.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,7 @@
 #pragma once
 #include "ConvertString.h"
 #include "LightManager.h"
-
+#include "AllComponent.h"
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_win32.h"
@@ -63,4 +63,13 @@ public:
 	void SetObjectsIndex(int index) { selectedIndex = index; }
 };
 
+
+class ImGuiComponentWindow :public ImGuiUIWindow
+{
+public:
+    //ここにコンポーネントの情報表氏UIを実装していく
+	void update(TUFEngine* engine) override;
+
+
+};
 

@@ -306,6 +306,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto imGuiPlayWindow = std::make_shared<ImGuiPlayViewportWindow>();
 	m_imguiManager->addWindow(imGuiPlayWindow);
 
+	auto componentWin = std::make_shared<ImGuiComponentWindow>();
+	m_imguiManager->addWindow(componentWin);
+
 }
 
 #pragma endregion

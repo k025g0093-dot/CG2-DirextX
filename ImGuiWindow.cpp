@@ -293,3 +293,28 @@ void ImGuiPlayViewportWindow::update(TUFEngine* engine) {
 #endif
 }
 
+
+
+void ImGuiComponentWindow::update(TUFEngine* engine)
+{
+#ifdef USE_IMGUI
+
+	if (begin("Component")) {
+	
+		// 🌟全体のパディング（内側の余白）を少し広げる
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
+		if (ImGui::CollapsingHeader("Component Setting")) {
+			// ここにコンポーネントの情報表示UIを実装していく
+			ImGui::Text("Component information will be displayed here.");
+		}
+		ImGui::PopStyleVar(); // スタイル設定を元に戻す
+	
+	}
+	
+	ImGui::End();
+
+	
+#endif // USE_IMGUI
+
+
+}
