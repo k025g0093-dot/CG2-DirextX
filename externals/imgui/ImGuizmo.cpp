@@ -943,7 +943,11 @@ namespace IMGUIZMO_NAMESPACE
       if (gContext.mAlternativeWindow != nullptr && g.HoveredWindow == gContext.mAlternativeWindow)
          return true;
       if (g.HoveredWindow != NULL)     // Any other window is hovered
+      {
+         if (ImGui::IsMouseHoveringRect(window->InnerRect.Min, window->InnerRect.Max, false))   // Multi-viewport: viewport internal window may be "hovered" instead of the actual window
+            return true;
          return false;
+      }
       if (ImGui::IsMouseHoveringRect(window->InnerRect.Min, window->InnerRect.Max, false))   // Hovering drawlist window rect, while no other window is hovered (for _NoInputs windows)
          return true;
       return false;

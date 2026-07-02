@@ -209,7 +209,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		auto& objects = ModelManager::GetInstance()->GetSceneObjects();
 		if (!objects.empty()) {
 			ImGuizmo::BeginFrame();
-			ImGuizmo::SetDrawlist();
+			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
 
 			// 領域の設定（これは imageScreenPos で正しい）
 			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
@@ -300,7 +300,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 #ifdef USE_IMGUI
 
 	if (begin("Component")) {
-	
+
 		// 🌟全体のパディング（内側の余白）を少し広げる
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 		if (ImGui::CollapsingHeader("Component Setting")) {
@@ -308,12 +308,12 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 			ImGui::Text("Component information will be displayed here.");
 		}
 		ImGui::PopStyleVar(); // スタイル設定を元に戻す
-	
+
 	}
-	
+
 	ImGui::End();
 
-	
+
 #endif // USE_IMGUI
 
 
