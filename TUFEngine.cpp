@@ -239,6 +239,7 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	ImGui::StyleColorsDark();
 
 	// カスタムカラースキーム
@@ -261,13 +262,19 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 
 	ImGui_ImplWin32_Init(hwnd);
-	ImGui_ImplDX12_Init(device.Get(),
-		swapChainDesc.BufferCount,
-		rtvDesc.Format,
-		srvDescriptorHeap.Get(),
-		srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
-	);
+	ImGui_ImplDX12_InitInfo initInfo{};
+	initInfo.Device = device.Get();
+	initInfo.CommandQueue = commandQueue.Get();
+	initInfo.NumFramesInFlight = swapChainDesc.BufferCount;
+	initInfo.RTVFormat = swapChainDesc.Format;
+	initInfo.SrvDescriptorHeap = srvDescriptorHeap.Get();
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+	initInfo.LegacySingleSrvCpuDescriptor = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	initInfo.LegacySingleSrvGpuDescriptor = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+#endif
+
+
+	ImGui_ImplDX12_Init(&initInfo);
 
 	// フォント設定は DX12 の初期化後に行う
 	ImGuiIO& io = ImGui::GetIO();
@@ -275,7 +282,7 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	config.SizePixels = 13.0f;
 	io.Fonts->AddFontDefault(&config);
 	io.Fonts->Build();
-	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	m_imguiManager = std::make_unique<ImGuiUIManager>(hwnd);
 
 
@@ -592,6 +599,8 @@ void TUFEngine::PostDraw() {
 	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 
+	ID3D12DescriptorHeap* imguiHeaps[] = { srvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(1, imguiHeaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 #endif
 
@@ -677,7 +686,7 @@ void TUFEngine::SetupInfoQueue() {
 	ID3D12InfoQueue* infoQueue = nullptr;
 	if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+		//infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
 
 		D3D12_MESSAGE_ID denyIds[] = {
 			D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE

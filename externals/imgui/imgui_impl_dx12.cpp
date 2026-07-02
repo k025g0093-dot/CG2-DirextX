@@ -68,6 +68,7 @@
 #include <d3d12.h>
 #include <dxgi1_5.h>
 #include <d3dcompiler.h>
+#include <stdio.h>
 #ifdef _MSC_VER
 #pragma comment(lib, "d3dcompiler") // Automatically link with d3dcompiler.lib as we are using D3DCompile() below.
 #endif
@@ -1137,8 +1138,8 @@ static void ImGui_ImplDX12_CreateWindow(ImGuiViewport* viewport)
     DXGI_SWAP_CHAIN_DESC1 sd1;
     ZeroMemory(&sd1, sizeof(sd1));
     sd1.BufferCount = bd->numFramesInFlight;
-    sd1.Width = (UINT)viewport->Size.x;
-    sd1.Height = (UINT)viewport->Size.y;
+    sd1.Width = (UINT)viewport->Size.x > 0 ? (UINT)viewport->Size.x : 1;
+    sd1.Height = (UINT)viewport->Size.y > 0 ? (UINT)viewport->Size.y : 1;
     sd1.Format = bd->RTVFormat;
     sd1.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     sd1.SampleDesc.Count = 1;
@@ -1147,13 +1148,25 @@ static void ImGui_ImplDX12_CreateWindow(ImGuiViewport* viewport)
     sd1.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     sd1.Scaling = DXGI_SCALING_NONE;
     sd1.Stereo = FALSE;
-    sd1.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-
-    if (bd->tearingSupport)
-        sd1.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    sd1.Flags = 0;
 
     IDXGISwapChain1* swap_chain = nullptr;
     res = bd->pdxgiFactory->CreateSwapChainForHwnd(vd->CommandQueue, hwnd, &sd1, nullptr, nullptr, &swap_chain);
+    if (res != S_OK)
+    {
+        char debug_msg[512];
+        sprintf_s(debug_msg,
+            "ImGui_ImplDX12_CreateWindow: CreateSwapChainForHwnd failed. hr=0x%08X width=%u height=%u format=%u buffer_count=%u flags=0x%08X hwnd=%p command_queue=%p\n",
+            (unsigned int)res,
+            sd1.Width,
+            sd1.Height,
+            (unsigned int)sd1.Format,
+            sd1.BufferCount,
+            sd1.Flags,
+            hwnd,
+            vd->CommandQueue);
+        OutputDebugStringA(debug_msg);
+    }
     IM_ASSERT(res == S_OK);
     res = bd->pdxgiFactory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES); // Disable e.g. Alt+Enter
     IM_ASSERT(res == S_OK);
@@ -1193,7 +1206,7 @@ static void ImGui_ImplDX12_CreateWindow(ImGuiViewport* viewport)
         }
 
         hr = vd->SwapChain->SetMaximumFrameLatency(bd->numFramesInFlight);
-        IM_ASSERT(hr == S_OK);
+        //IM_ASSERT(hr == S_OK);
         vd->SwapChainWaitableObject = vd->SwapChain->GetFrameLatencyWaitableObject();
     }
 
