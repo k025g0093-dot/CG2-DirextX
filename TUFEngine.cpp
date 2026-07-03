@@ -596,7 +596,7 @@ void TUFEngine::PostDraw() {
 
 	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
 
-	float clearColor[] = { 0.01f, 0.01f, 0.01f, 1.0f };
+	float clearColor[] = { 0.01f, 0.125f, 0.5f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 
 	ID3D12DescriptorHeap* imguiHeaps[] = { srvDescriptorHeap.Get() };

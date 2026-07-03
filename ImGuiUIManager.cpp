@@ -92,6 +92,9 @@ void ImGuiUIManager::update(TUFEngine* engine)
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         ImGui::UpdatePlatformWindows();
+        for (int i = 1; i < ImGui::GetPlatformIO().Viewports.Size; i++) {
+            ImGui::GetPlatformIO().Viewports[i]->Flags |= ImGuiViewportFlags_NoFocusOnClick;
+        }
         ImGui::RenderPlatformWindowsDefault(
             nullptr,
             (void*)engine->GetCommandList()
