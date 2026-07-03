@@ -196,11 +196,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-			//// ========== GPU ベースの波シミュレーション ==========
-			t += 0.01f;
-			waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
-			waveGrid.ReadbackToCPU();
-			waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
+			////// ========== GPU ベースの波シミュレーション ==========
+			//t += 0.01f;
+			//waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
+			//waveGrid.ReadbackToCPU();
+			//waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
 
 			frameIndex++;
 
@@ -210,34 +210,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->PreDraw();
 
+			//{
+			//	// DynamicMeshModel が未初期化なら先に作らせる
+			//	if (!engine->GetDynamicMeshModel())
+			//		engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			//	VertexData* vb = engine->GetDynamicMeshModel()->GetMappedVertexBuffer();
+			//	for (int iz = 0; iz < cubeCountZ; iz++) {
+			//		for (int ix = 0; ix < cubeCountX; ix++) {
+			//			int idx = iz * cubeCountX + ix;
+			//			float h = waveGrid.GetHeightFromCache(ix, iz);
+			//			Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
+			//			vb[idx].position.y = h;
+			//			vb[idx].normal = { n.x, n.y, n.z };
+			//			normalColors[idx] = {
+			//				(n.x + 1.0f) / 2.0f,
+			//				(n.y + 1.0f) / 2.0f,
+			//				(n.z + 1.0f) / 2.0f,
+			//				1.0f
+			//			};
+			//		}
+			//	}
+			//}
 
-			// ========== グリッドのデバッグ線を描画 ==========
-			{
-				const float gridSpacing = 1.0f;
-				const float gridWidth = 200.0f;  // cubeCountX に応じて調整
-				const float gridHeight = 200.0f; // cubeCountZ に応じて調整
-				const float gridStartX = -gridWidth / 2.0f;
-				const float gridStartZ = -gridHeight / 2.0f;
-
-				Vector4 gridColor = { 0.3f, 0.3f, 0.5f, 1.0f };
-
-				// X方向の線（Z方向に並ぶ）
-				for (int z = 0; z <= 200; z += 5) {
-					Vector3 from = { gridStartX, 0.0f, gridStartZ + z * gridSpacing };
-					Vector3 to = { gridStartX + gridWidth, 0.0f, gridStartZ + z * gridSpacing };
-					engine->DrawLine(from, to, gridColor);
-				}
-
-				// Z方向の線（X方向に並ぶ）
-				for (int x = 0; x <= 200; x += 5) {
-					Vector3 from = { gridStartX + x * gridSpacing, 0.0f, gridStartZ };
-					Vector3 to = { gridStartX + x * gridSpacing, 0.0f, gridStartZ + gridHeight };
-					engine->DrawLine(from, to, gridColor);
-				}
-			}
-
-			// ========== 通常の描画処理 ==========
-
+			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(
