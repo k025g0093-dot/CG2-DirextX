@@ -17,6 +17,7 @@ struct VertexData {
 	Vector3 tangent;
 };
 
+class Line;
 
 struct Material {
 	Vector4 color;
@@ -167,6 +168,7 @@ public:
 
 	void DrawDebugOBB(const OBB& obb, const Vector4& color);
 
+	void DrawLine(const Vector3& from, const Vector3& to, const Vector4& color);
 
 private:
 
@@ -218,6 +220,9 @@ private:
 	// --- CSに送るためのシグネチャ関係 ---
 	ComPtr<ID3D12RootSignature> m_computeRootSignature;
 	ComPtr<ID3D12PipelineState> m_computePipelineState;
+
+	ComPtr<ID3D12RootSignature> m_lineRootSignature;
+	ComPtr<ID3D12PipelineState> m_linePipelineState;
 
 
 
@@ -272,6 +277,7 @@ private://描画物のリソース
 
 	std::unique_ptr<Sphere>       m_temporarySpheres;
 	std::vector<std::unique_ptr<TriangleModel>> m_trianglePool;
+	std::unique_ptr<Line>         m_line;
 
 
 

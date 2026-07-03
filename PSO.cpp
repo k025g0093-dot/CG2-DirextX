@@ -524,3 +524,96 @@ ComPtr<ID3D12PipelineState> CreateComputePipelineState(
 
 	return computePipelineState;
 }
+
+// --- Line rendering root signature ---
+ComPtr<ID3D12RootSignature> CreateLineRootSignature(
+	ID3D12Device* device,
+	HRESULT& hr) {
+
+	D3D12_ROOT_SIGNATURE_DESC desc{};
+	desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	D3D12_ROOT_PARAMETER params[1] = {};
+	params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	params[0].Descriptor.ShaderRegister = 0;
+
+	desc.pParameters = params;
+	desc.NumParameters = 1;
+
+	ID3DBlob* sigBlob = nullptr;
+	ID3DBlob* errBlob = nullptr;
+	hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
+	if (FAILED(hr)) {
+		Log(logStream, reinterpret_cast<char*>(errBlob->GetBufferPointer()));
+		assert(false);
+	}
+
+	ComPtr<ID3D12RootSignature> rootSig;
+	hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(rootSig.GetAddressOf()));
+	assert(SUCCEEDED(hr));
+	return rootSig;
+}
+
+// --- Line PSO ---
+ComPtr<ID3D12PipelineState> CreateLinePipelineState(
+	ID3D12Device* device,
+	ComPtr<ID3D12RootSignature>& rootSignature,
+	HRESULT& hr) {
+
+	IDxcUtils* dxcUtils = nullptr;
+	IDxcCompiler3* dxcCompiler = nullptr;
+	IDxcIncludeHandler* includeHandler = nullptr;
+	DxcCompilerInclude(hr, dxcUtils, dxcCompiler, includeHandler);
+
+	IDxcBlob* vertexBlob = CompileShader(L"Line.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob* pixelBlob = CompileShader(L"Line.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+
+	rootSignature = CreateLineRootSignature(device, hr);
+
+	D3D12_INPUT_ELEMENT_DESC inputElements[2] = {};
+	inputElements[0].SemanticName = "POSITION";
+	inputElements[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElements[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElements[1].SemanticName = "COLOR";
+	inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElements[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	D3D12_INPUT_LAYOUT_DESC inputLayout{};
+	inputLayout.pInputElementDescs = inputElements;
+	inputLayout.NumElements = 2;
+
+	D3D12_BLEND_DESC blend{};
+	blend.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	D3D12_RASTERIZER_DESC raster{};
+	raster.CullMode = D3D12_CULL_MODE_NONE;
+	raster.FillMode = D3D12_FILL_MODE_SOLID;
+	raster.FrontCounterClockwise = FALSE;
+
+	D3D12_DEPTH_STENCIL_DESC depth{};
+	depth.DepthEnable = TRUE;
+	depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+	psoDesc.pRootSignature = rootSignature.Get();
+	psoDesc.InputLayout = inputLayout;
+	psoDesc.VS = { vertexBlob->GetBufferPointer(), vertexBlob->GetBufferSize() };
+	psoDesc.PS = { pixelBlob->GetBufferPointer(), pixelBlob->GetBufferSize() };
+	psoDesc.BlendState = blend;
+	psoDesc.RasterizerState = raster;
+	psoDesc.DepthStencilState = depth;
+	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	psoDesc.SampleDesc.Count = 1;
+	psoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	ComPtr<ID3D12PipelineState> pso;
+	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(pso.GetAddressOf()));
+	assert(SUCCEEDED(hr));
+	return pso;
+}

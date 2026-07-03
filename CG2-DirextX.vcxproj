@@ -119,6 +119,7 @@
     <ClCompile Include="ImGuiSpriteUV.cpp" />
     <ClCompile Include="ImGuiUIManager.cpp" />
     <ClCompile Include="ImGuiWindow.cpp" />
+    <ClCompile Include="Line.cpp" />
     <ClCompile Include="LightManager.cpp" />
     <ClCompile Include="LogSistem.cpp" />
     <ClCompile Include="main.cpp" />
@@ -226,6 +227,7 @@
     <ClInclude Include="ImGuiUIManager.h" />
     <ClInclude Include="ImGuiWindow.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="Line.h" />
     <ClInclude Include="LightManager.h" />
     <ClInclude Include="LogSistem.h" />
     <ClInclude Include="MeshModel.h" />

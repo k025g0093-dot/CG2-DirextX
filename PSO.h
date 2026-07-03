@@ -40,6 +40,13 @@ ComPtr<ID3D12PipelineState> CreateComputePipelineState(
     ComPtr<ID3D12RootSignature>& rootSignature,
     HRESULT& hr);
 
+ComPtr<ID3D12RootSignature> CreateLineRootSignature(
+    ID3D12Device* device,
+    HRESULT& hr);
+ComPtr<ID3D12PipelineState> CreateLinePipelineState(
+    ID3D12Device* device,
+    ComPtr<ID3D12RootSignature>& rootSignature,
+    HRESULT& hr);
 
 D3D12_INPUT_LAYOUT_DESC CreateLayout();
 D3D12_BLEND_DESC CreateBlendState();

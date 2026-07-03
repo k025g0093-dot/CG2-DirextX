@@ -2,7 +2,8 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "ImGuiUIManager.h" 
-#include "ImGuiWindow.h" 
+#include "ImGuiWindow.h"
+#include "Line.h" 
 
 TUFEngine* TUFEngine::s_instance = nullptr;
 
@@ -115,6 +116,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	gpuDrivenPipelineState =
 		CreateGpuDrivenPipelineStateDesc(device.Get(), gpuDrivenRootSignature, hr);
 
+	m_linePipelineState =
+		CreateLinePipelineState(device.Get(), m_lineRootSignature, hr);
+
 #ifdef USE_IMGUI
 	InitializeImGui(hwnd);
 #endif
@@ -135,6 +139,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	tri->Initialize(this);
 	m_trianglePool.push_back(std::move(tri));
 
+	auto line = std::make_unique<Line>();
+	line->Initialize(this);
+	m_line = std::move(line);
 
 	// スプライト描画用モデルを初期化する
 
@@ -503,6 +510,7 @@ void TUFEngine::PreDraw() {
 	m_triangleRequestCount = 0;
 	m_cbvIndex = 0;
 	m_drawRequests.clear();
+	if (m_line) m_line->Clear();
 
 	float renderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
 	float renderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
@@ -603,6 +611,17 @@ void TUFEngine::PostDraw() {
 	commandList->SetDescriptorHeaps(1, imguiHeaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 #endif
+
+	// =============================================================
+	// 【ライン描画】
+	// =============================================================
+	if (m_line) {
+		commandList->SetGraphicsRootSignature(m_lineRootSignature.Get());
+		commandList->SetPipelineState(m_linePipelineState.Get());
+		ID3D12DescriptorHeap* lineHeaps[] = { srvDescriptorHeap.Get() };
+		commandList->SetDescriptorHeaps(1, lineHeaps);
+		m_line->Draw(commandList.Get(), viewProjectionMatrix);
+	}
 
 	// =============================================================
 	// 【動的メッシュのバッファ スワップ】
@@ -1114,6 +1133,14 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 
 
 #pragma endregion
+
+void TUFEngine::DrawLine(const Vector3& from, const Vector3& to, const Vector4& color) {
+	if (!m_line) {
+		m_line = std::make_unique<Line>();
+		m_line->Initialize(this);
+	}
+	m_line->Add(from, to, color);
+}
 
 //windowだったりいろいろなものの拡張機能作成場所
 
