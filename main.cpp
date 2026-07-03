@@ -11,6 +11,10 @@
 #include "DebugCamer.h"
 #include "Sound.h"
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imguizmo.h"
+#endif
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
 	SetUnhandledExceptionFilter(ExportDump);
@@ -185,6 +189,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->m_camera.transform.translate.x += Input::GetLeftStickX();
 			engine->m_camera.transform.translate.z += Input::GetLeftStickY();
 
+#ifdef USE_IMGUI
+			if (!ImGuizmo::IsUsing())
+#endif
 			debugCamer_->Update();
 
 			if (debugCamer_->IsDebug()) {
@@ -196,11 +203,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-			////// ========== GPU ベースの波シミュレーション ==========
-			//t += 0.01f;
-			//waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
-			//waveGrid.ReadbackToCPU();
-			//waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
+			//// ========== GPU ベースの波シミュレーション ==========
+			t += 0.01f;
+			waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
+			waveGrid.ReadbackToCPU();
+			waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
 
 			frameIndex++;
 
@@ -210,29 +217,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->PreDraw();
 
-			//{
-			//	// DynamicMeshModel が未初期化なら先に作らせる
-			//	if (!engine->GetDynamicMeshModel())
-			//		engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
-			//	VertexData* vb = engine->GetDynamicMeshModel()->GetMappedVertexBuffer();
-			//	for (int iz = 0; iz < cubeCountZ; iz++) {
-			//		for (int ix = 0; ix < cubeCountX; ix++) {
-			//			int idx = iz * cubeCountX + ix;
-			//			float h = waveGrid.GetHeightFromCache(ix, iz);
-			//			Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
-			//			vb[idx].position.y = h;
-			//			vb[idx].normal = { n.x, n.y, n.z };
-			//			normalColors[idx] = {
-			//				(n.x + 1.0f) / 2.0f,
-			//				(n.y + 1.0f) / 2.0f,
-			//				(n.z + 1.0f) / 2.0f,
-			//				1.0f
-			//			};
-			//		}
-			//	}
-			//}
+			{
+				// DynamicMeshModel が未初期化なら先に作らせる
+				if (!engine->GetDynamicMeshModel())
+					engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+				VertexData* vb = engine->GetDynamicMeshModel()->GetMappedVertexBuffer();
+				for (int iz = 0; iz < cubeCountZ; iz++) {
+					for (int ix = 0; ix < cubeCountX; ix++) {
+						int idx = iz * cubeCountX + ix;
+						float h = waveGrid.GetHeightFromCache(ix, iz);
+						Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
+						vb[idx].position.y = h;
+						vb[idx].normal = { n.x, n.y, n.z };
+						normalColors[idx] = {
+							(n.x + 1.0f) / 2.0f,
+							(n.y + 1.0f) / 2.0f,
+							(n.z + 1.0f) / 2.0f,
+							1.0f
+						};
+					}
+				}
+			}
 
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(

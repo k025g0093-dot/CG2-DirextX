@@ -181,9 +181,12 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
 
-	if (ImGui::Begin("Viewport", nullptr,
-		ImGuiWindowFlags_NoScrollbar |
-		ImGuiWindowFlags_NoScrollWithMouse)) {
+	ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+	if (ImGuizmo::IsOver()) {
+		viewportFlags |= ImGuiWindowFlags_NoMove;
+	}
+
+	if (ImGui::Begin("Viewport", nullptr, viewportFlags)) {
 
 		// --- ① シーン（ゲーム画面）の描画 ---
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
