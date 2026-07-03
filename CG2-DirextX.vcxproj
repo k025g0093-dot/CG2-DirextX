@@ -102,7 +102,9 @@
     <ClCompile Include="DXC.cpp" />
     <ClCompile Include="DynamicMesh.cpp" />
     <ClCompile Include="DynamicMeshModel.cpp" />
+    <ClCompile Include="Entity.cpp" />
     <ClCompile Include="EntityComponent.cpp" />
+    <ClCompile Include="EntityManager.cpp" />
     <ClCompile Include="FBXLoader.cpp" />
     <ClCompile Include="GpuDrivenRenderer.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />

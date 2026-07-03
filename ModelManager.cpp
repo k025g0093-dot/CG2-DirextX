@@ -91,15 +91,11 @@ void ModelManager::OnFileDropped(const std::wstring& path) {
 				if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
 			}
 
-			m_droppedMeshes.push_back({
-				modelPath,
-				mesh,
-				{ 0.0f, 0.0f, 0.0f },
-				{ 0.0f, 0.0f, 0.0f },
-				{ 1.0f, 1.0f, 1.0f },
-				obb,
-				{ lMin, lMax }
-			});
+			Transform t;
+			t.position = { 0.0f, 0.0f, 0.0f };
+			t.rotation = { 0.0f, 0.0f, 0.0f };
+			t.scale = { 1.0f, 1.0f, 1.0f };
+			m_droppedMeshes.push_back({ modelPath, mesh, t, obb, { lMin, lMax } });
 			SaveToFile();
 		}
 
@@ -121,9 +117,9 @@ void ModelManager::SaveToFile() {
 		json obj;
 
 		obj["modelPath"] = object.name;
-		obj["position"] = { object.pos.x, object.pos.y, object.pos.z };
-		obj["rotation"] = { object.rot.x, object.rot.y, object.rot.z };
-		obj["scale"] = { object.scale.x, object.scale.y, object.scale.z };
+		obj["position"] = { object.transform.position.x, object.transform.position.y, object.transform.position.z };
+		obj["rotation"] = { object.transform.rotation.x, object.transform.rotation.y, object.transform.rotation.z };
+		obj["scale"] = { object.transform.scale.x, object.transform.scale.y, object.transform.scale.z };
 
 		obj["obb"]["center"] = { object.obb.center.x, object.obb.center.y, object.obb.center.z };
 		obj["obb"]["size"] = { object.obb.size.x, object.obb.size.y, object.obb.size.z };
@@ -149,7 +145,7 @@ void ModelManager::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* c
 	m_commandList = cmdList;
 }
 
-void ModelManager::AddSceneObject(const std::string& modelPath, const Vector3& pos, const Vector3& rot, const Vector3& scale) {
+void ModelManager::AddSceneObject(const std::string& modelPath, const Transform& transform) {
 	MeshModel* mesh = LoadModel(
 		modelPath.substr(0, modelPath.find_last_of("/")),
 		modelPath.substr(modelPath.find_last_of("/") + 1)
@@ -157,7 +153,7 @@ void ModelManager::AddSceneObject(const std::string& modelPath, const Vector3& p
 	if (!mesh) return;
 
 	Create3DObjectOBB obbCreator;
-	OBB obb = obbCreator.CreateOBBForModel(*mesh, pos);
+	OBB obb = obbCreator.CreateOBBForModel(*mesh, transform.position);
 
 	const Vertex* verts = mesh->GetVertexData();
 	UINT vCount = mesh->GetVertexCount();
@@ -171,7 +167,7 @@ void ModelManager::AddSceneObject(const std::string& modelPath, const Vector3& p
 		if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
 	}
 
-	m_droppedMeshes.push_back({ modelPath, mesh, pos, rot, scale, obb, { lMin, lMax } });
+	m_droppedMeshes.push_back({ modelPath, mesh, transform, obb, { lMin, lMax } });
 	SaveToFile();
 }
 

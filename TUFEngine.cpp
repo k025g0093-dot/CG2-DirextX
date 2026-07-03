@@ -173,7 +173,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 					Vector3	rot = { object["rotation"][0], object["rotation"][1], object["rotation"][2] };
 					Vector3	scale = { object["scale"][0], object["scale"][1], object["scale"][2] };
 
-					ModelManager::GetInstance()->AddSceneObject(modelPath, pos, rot, scale);
+					Transform t;
+					t.position = pos; t.rotation = rot; t.scale = scale;
+					ModelManager::GetInstance()->AddSceneObject(modelPath, t);
 
 				}
 
@@ -736,7 +738,7 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		Vector3 localCenter = (obj.localAABB.min + obj.localAABB.max) * 0.5f;
 		Vector3 localHalf = (obj.localAABB.max - obj.localAABB.min) * 0.5f;
 
-		Matrix4x4 rotMat = Multiply(Multiply(MakeRotateXMatrix(obj.rot.x), MakeRotateYMatrix(obj.rot.y)), MakeRotateZMatrix(obj.rot.z));
+		Matrix4x4 rotMat = Multiply(Multiply(MakeRotateXMatrix(obj.transform.rotation.x), MakeRotateYMatrix(obj.transform.rotation.y)), MakeRotateZMatrix(obj.transform.rotation.z));
 
 		Vector3 rotatedCenter = {
 			localCenter.x * rotMat.m[0][0] + localCenter.y * rotMat.m[1][0] + localCenter.z * rotMat.m[2][0],
@@ -744,17 +746,17 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 			localCenter.x * rotMat.m[0][2] + localCenter.y * rotMat.m[1][2] + localCenter.z * rotMat.m[2][2]
 		};
 
-		obj.obb.center = obj.pos + rotatedCenter;
+		obj.obb.center = obj.transform.position + rotatedCenter;
 		obj.obb.orientations[0] = { rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2] };
 		obj.obb.orientations[1] = { rotMat.m[1][0], rotMat.m[1][1], rotMat.m[1][2] };
 		obj.obb.orientations[2] = { rotMat.m[2][0], rotMat.m[2][1], rotMat.m[2][2] };
-		obj.obb.size = { localHalf.x * obj.scale.x, localHalf.y * obj.scale.y, localHalf.z * obj.scale.z };
+		obj.obb.size = { localHalf.x * obj.transform.scale.x, localHalf.y * obj.transform.scale.y, localHalf.z * obj.transform.scale.z };
 
 		DrawRequest req;
 		req.model = obj.mesh;
-		req.pos = obj.pos;
-		req.rot = obj.rot;
-		req.scale = obj.scale;
+		req.pos = obj.transform.position;
+		req.rot = obj.transform.rotation;
+		req.scale = obj.transform.scale;
 		req.textureIndex = obj.mesh->GetTextureIndex();
 		req.isMesh = true;
 		req.lightId = 0;

@@ -130,9 +130,9 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			// トランスフォーム情報
 			if (ImGui::CollapsingHeader("ObjectTransform")) {
 				ImGui::Dummy(ImVec2(0.0f, 2.0f)); // 内側の微調整
-				ImGui::DragFloat3("Position", &objects[i].pos.x, 0.1f);
-				ImGui::DragFloat3("Rotation", &objects[i].rot.x, 0.01f);
-				ImGui::DragFloat3("Scale", &objects[i].scale.x, 0.01f, 0.01f, 10.0f);
+				ImGui::DragFloat3("Position", &objects[i].transform.position.x, 0.1f);
+				ImGui::DragFloat3("Rotation", &objects[i].transform.rotation.x, 0.01f);
+				ImGui::DragFloat3("Scale", &objects[i].transform.scale.x, 0.01f, 0.01f, 10.0f);
 				ImGui::Dummy(ImVec2(0.0f, 2.0f));
 			}
 
@@ -222,7 +222,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			for (int i = 0; i < (int)objects.size(); i++) {
 				if (!objects[i].isSelected) continue;
 
-				Matrix4x4 transform = MakeAffineMatrix(objects[i].scale, objects[i].rot, objects[i].pos);
+				Matrix4x4 transform = MakeAffineMatrix(objects[i].transform.scale, objects[i].transform.rotation, objects[i].transform.position);
 
 				// 修正：プロジェクション行列の引数を imageScreenPos から viewportSize に変更
 				if (ImGuizmo::Manipulate(
@@ -235,9 +235,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 					float matrixTranslation[3], matrixRotation[3], matrixScale[3];
 					ImGuizmo::DecomposeMatrixToComponents(&transform.m[0][0], matrixTranslation, matrixRotation, matrixScale);
 
-					objects[i].pos = { matrixTranslation[0], matrixTranslation[1], matrixTranslation[2] };
-					objects[i].rot = { matrixRotation[0] * kDegToRad, matrixRotation[1] * kDegToRad, matrixRotation[2] * kDegToRad };
-					objects[i].scale = { matrixScale[0], matrixScale[1], matrixScale[2] };
+					objects[i].transform.position = { matrixTranslation[0], matrixTranslation[1], matrixTranslation[2] };
+					objects[i].transform.rotation = { matrixRotation[0] * kDegToRad, matrixRotation[1] * kDegToRad, matrixRotation[2] * kDegToRad };
+					objects[i].transform.scale = { matrixScale[0], matrixScale[1], matrixScale[2] };
 				}
 			}
 		}

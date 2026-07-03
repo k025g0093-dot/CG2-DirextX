@@ -82,8 +82,8 @@ void WaveGrid::setObjectWall(const std::vector<SceneObject>& objects) {
     for (const auto& object : objects) {
 
         // ---- Y軸交差判定: localAABB + scale を使って正確に ----
-        float worldMinY = object.pos.y + object.localAABB.min.y * object.scale.y;
-        float worldMaxY = object.pos.y + object.localAABB.max.y * object.scale.y;
+        float worldMinY = object.transform.position.y + object.localAABB.min.y * object.transform.scale.y;
+        float worldMaxY = object.transform.position.y + object.localAABB.max.y * object.transform.scale.y;
         if (worldMinY > 0.0f || worldMaxY < 0.0f) {
             continue;
         }

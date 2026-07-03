@@ -1,5 +1,6 @@
 #pragma once
 #include "AllIncludeHeder.h"
+#include "Transform.h"
 #include <wrl.h>
 #include  <algorithm>
 
@@ -67,9 +68,7 @@ struct DrawRequest {
 struct SceneObject {
 	std::string name;
 	MeshModel* mesh = nullptr;
-	Vector3 pos = { 0.0f, 0.0f, 0.0f };
-	Vector3 rot = { 0.0f, 0.0f, 0.0f };
-	Vector3 scale = { 1.0f, 1.0f, 1.0f };
+	Transform transform;
 	OBB obb;
 	AABB localAABB;
 	int lightId{};

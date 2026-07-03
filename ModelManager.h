@@ -17,7 +17,7 @@ public:
     MeshModel* LoadModel(const std::string& directoryPath, const std::string& filename);
 
     // シーンオブジェクト管理
-    void AddSceneObject(const std::string& modelPath, const Vector3& pos, const Vector3& rot, const Vector3& scale);
+    void AddSceneObject(const std::string& modelPath, const Transform& transform);
     void RemoveSceneObject(int index);
     std::vector<SceneObject>& GetSceneObjects() { return m_droppedMeshes; }
 
