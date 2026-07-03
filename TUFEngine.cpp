@@ -590,6 +590,19 @@ void TUFEngine::PostDraw() {
 
 	RenderGpuDrivenALLRequests();
 
+	// =============================================================
+	// 【ライン描画】（シーンテクスチャに直接描画 → 両ビューポートに表示）
+	// =============================================================
+	if (m_line) {
+		commandList->SetGraphicsRootSignature(m_lineRootSignature.Get());
+		commandList->SetPipelineState(m_linePipelineState.Get());
+		ID3D12DescriptorHeap* lineHeaps[] = { srvDescriptorHeap.Get() };
+		commandList->SetDescriptorHeaps(1, lineHeaps);
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandleLine = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+		commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &dsvHandleLine);
+		m_line->Draw(commandList.Get(), viewProjectionMatrix);
+	}
+
 #ifdef USE_IMGUI
 	// =============================================================
 	// デバッグ時のみ：シーンテクスチャ → スワップチェーンへの切り替えと ImGui 描画
@@ -611,17 +624,6 @@ void TUFEngine::PostDraw() {
 	commandList->SetDescriptorHeaps(1, imguiHeaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 #endif
-
-	// =============================================================
-	// 【ライン描画】
-	// =============================================================
-	if (m_line) {
-		commandList->SetGraphicsRootSignature(m_lineRootSignature.Get());
-		commandList->SetPipelineState(m_linePipelineState.Get());
-		ID3D12DescriptorHeap* lineHeaps[] = { srvDescriptorHeap.Get() };
-		commandList->SetDescriptorHeaps(1, lineHeaps);
-		m_line->Draw(commandList.Get(), viewProjectionMatrix);
-	}
 
 	// =============================================================
 	// 【動的メッシュのバッファ スワップ】
@@ -1140,6 +1142,29 @@ void TUFEngine::DrawLine(const Vector3& from, const Vector3& to, const Vector4& 
 		m_line->Initialize(this);
 	}
 	m_line->Add(from, to, color);
+}
+
+void TUFEngine::DrawDebugOBB(const OBB& obb, const Vector4& color) {
+	Vector3 corners[8];
+	for (int i = 0; i < 8; i++) {
+		Vector3 offset = {
+			obb.size.x * ((i & 1) ? 1.0f : -1.0f),
+			obb.size.y * ((i & 2) ? 1.0f : -1.0f),
+			obb.size.z * ((i & 4) ? 1.0f : -1.0f)
+		};
+		corners[i] = obb.center
+			+ obb.orientations[0] * offset.x
+			+ obb.orientations[1] * offset.y
+			+ obb.orientations[2] * offset.z;
+	}
+	const int edges[12][2] = {
+		{0,1},{2,3},{4,5},{6,7},
+		{0,2},{1,3},{4,6},{5,7},
+		{0,4},{1,5},{2,6},{3,7}
+	};
+	for (int i = 0; i < 12; i++) {
+		DrawLine(corners[edges[i][0]], corners[edges[i][1]], color);
+	}
 }
 
 //windowだったりいろいろなものの拡張機能作成場所

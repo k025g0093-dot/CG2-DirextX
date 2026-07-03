@@ -204,12 +204,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 			//// ========== GPU ベースの波シミュレーション ==========
-			t += 0.01f;
-			waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
-			waveGrid.ReadbackToCPU();
-			waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
+			//t += 0.01f;
+			//waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
+			//waveGrid.ReadbackToCPU();
+			//waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
 
-			frameIndex++;
+			//frameIndex++;
 
 			////================================================================================================================
 			////描画処理ここから
@@ -217,29 +217,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->PreDraw();
 
-			{
-				// DynamicMeshModel が未初期化なら先に作らせる
-				if (!engine->GetDynamicMeshModel())
-					engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
-				VertexData* vb = engine->GetDynamicMeshModel()->GetMappedVertexBuffer();
-				for (int iz = 0; iz < cubeCountZ; iz++) {
-					for (int ix = 0; ix < cubeCountX; ix++) {
-						int idx = iz * cubeCountX + ix;
-						float h = waveGrid.GetHeightFromCache(ix, iz);
-						Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
-						vb[idx].position.y = h;
-						vb[idx].normal = { n.x, n.y, n.z };
-						normalColors[idx] = {
-							(n.x + 1.0f) / 2.0f,
-							(n.y + 1.0f) / 2.0f,
-							(n.z + 1.0f) / 2.0f,
-							1.0f
-						};
-					}
-				}
-			}
+			//{
+			//	// DynamicMeshModel が未初期化なら先に作らせる
+			//	if (!engine->GetDynamicMeshModel())
+			//		engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			//	VertexData* vb = engine->GetDynamicMeshModel()->GetMappedVertexBuffer();
+			//	for (int iz = 0; iz < cubeCountZ; iz++) {
+			//		for (int ix = 0; ix < cubeCountX; ix++) {
+			//			int idx = iz * cubeCountX + ix;
+			//			float h = waveGrid.GetHeightFromCache(ix, iz);
+			//			Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
+			//			vb[idx].position.y = h;
+			//			vb[idx].normal = { n.x, n.y, n.z };
+			//			normalColors[idx] = {
+			//				(n.x + 1.0f) / 2.0f,
+			//				(n.y + 1.0f) / 2.0f,
+			//				(n.z + 1.0f) / 2.0f,
+			//				1.0f
+			//			};
+			//		}
+			//	}
+			//}
 
-			engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
+			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(
@@ -260,6 +260,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					triScale,
 					triColor,
 					uvChecker);
+			}
+
+			// Grid
+			//{
+			//	const float gridSize = 100.0f;
+			//	const float step = 10.0f;
+			//	Vector4 gridColor = { 0.3f, 0.3f, 0.3f, 1.0f };
+			//	for (float i = -gridSize; i <= gridSize; i += step) {
+			//		engine->DrawLine({ i, 0.0f, -gridSize }, { i, 0.0f, gridSize }, gridColor);
+			//		engine->DrawLine({ -gridSize, 0.0f, i }, { gridSize, 0.0f, i }, gridColor);
+			//	}
+			//}
+
+			// OBB
+			{
+				Vector4 obbColor = { 1.0f, 1.0f, 0.0f, 1.0f };
+				for (auto& obj : ModelManager::GetInstance()->GetSceneObjects()) {
+					engine->DrawDebugOBB(obj.obb, obbColor);
+				}
 			}
 
 			engine->PostDraw();

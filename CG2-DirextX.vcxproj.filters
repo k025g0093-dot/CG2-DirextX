@@ -237,6 +237,9 @@
     <ClCompile Include="Component.cpp">
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
     </ClCompile>
+    <ClCompile Include="Line.cpp">
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -247,6 +250,8 @@
     <FxCompile Include="GpuDrivenIndirectArgs.CS.hlsl" />
     <FxCompile Include="GpuDrivenIndirectArgsNonIndexed.CS.hlsl" />
     <FxCompile Include="WaveGrid.CS.hlsl" />
+    <FxCompile Include="Line.PS.hlsl" />
+    <FxCompile Include="Line.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TUFEngine.h">
@@ -407,6 +412,9 @@
     </ClInclude>
     <ClInclude Include="AllComponent.h">
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
+    </ClInclude>
+    <ClInclude Include="Line.h">
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
