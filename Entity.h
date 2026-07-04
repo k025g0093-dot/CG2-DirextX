@@ -32,10 +32,14 @@ public:
         return nullptr;
     }
 
+
+
     std::string name;
     Transform transform;
 
 	bool isSelected = false;
+
+    const std::vector<Component*>& GetComponents() const { return m_components; }
 
     // Entity.h に追加
     OBB obb;

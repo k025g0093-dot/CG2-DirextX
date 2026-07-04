@@ -138,7 +138,8 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 
 			ImGui::Spacing(); // 削除ボタンの前に余白
 			if (ImGui::Button("Delete")) {
-				ModelManager::GetInstance()->RemoveSceneObject(i);
+				EntityManager::GetInstance()->DestroyEntity(objects[i].get());
+				ModelManager::GetInstance()->SaveToFile();
 				ImGui::PopID();
 				break;
 			}
@@ -161,7 +162,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 //ギズモの仮実装。まだまだいらないものとか将来的に自由にアイテムを選択できるようにしたりしていきたい
 void ImGuiZmoWindow::update(TUFEngine* engine) {
 #ifdef _DEBUG
-	auto& objects = ModelManager::GetInstance()->GetSceneObjects();
+	auto& objects =EntityManager::GetInstance()->GetEntities();
 	if (objects.empty()) return; // オブジェクトがなければ何もしない
 
 	// キー入力による切り替え判定だけを行う
@@ -301,14 +302,26 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 	if (begin("Component")) {
 
-		// 🌟全体のパディング（内側の余白）を少し広げる
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
-		if (ImGui::CollapsingHeader("Component Setting")) {
-			// ここにコンポーネントの情報表示UIを実装していく
-			ImGui::Text("Component information will be displayed here.");
-		}
-		ImGui::PopStyleVar(); // スタイル設定を元に戻す
+		for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
+		
+			if (!entity->isSelected) continue;
+			
+			// 選択中の entity のコンポーネントを表示
+			for (auto* c : entity->GetComponents()) {
+				const char* typeName = typeid(*c).name();   // "class MeshFilter" 等
 
+				if (ImGui::CollapsingHeader(typeName)) {
+					// MeshFilter 固有
+					if (auto* mf = dynamic_cast<MeshFilter*>(c)) {
+						ImGui::Text("Model: %s", mf->model ? "loaded" : "null");
+					}
+					// LearnComponent 固有
+					else if (auto* lc = dynamic_cast<LearnComponent*>(c)) {
+						ImGui::Text("Status: Running");
+					}
+				}
+			}
+		}
 	}
 
 	ImGui::End();
