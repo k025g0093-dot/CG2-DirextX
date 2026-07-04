@@ -134,23 +134,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-				if (ImGui::Begin("SceneSettingsModel")) {
+				if (ImGui::Begin("シーン設定")) {
 
-					if (ImGui::CollapsingHeader("Wave Settings")) {
-						ImGui::DragFloat("Wave Strength", &waveStrength, 0.1f, 0.0f, 50.0f);
+					if (ImGui::CollapsingHeader("ウェーブ設定")) {
+						ImGui::DragFloat("波形の強さ", &waveStrength, 0.1f, 0.0f, 50.0f);
 					}
 
-					if (ImGui::CollapsingHeader("Sphere Settings")) {
+					if (ImGui::CollapsingHeader("球体設定")) {
 						for (int i = 0; i < 2; ++i) {
 							int lightId = i + 1;
 							ImGui::PushID(i);
-							ImGui::Text("Sphere %d", i);
-							ImGui::DragFloat3("Position", &spherePos[i].x, 0.1f);
-							ImGui::DragFloat3("Rotation", &sphereRot[i].x, 0.01f);
-							ImGui::DragFloat3("Scale", &sphereScale[i].x, 0.01f, 0.01f, 10.0f);
-							ImGui::Checkbox("MonsterBall", &sphereUseMonsterBall[i]);
+							ImGui::Text("球体 %d", i);
+							ImGui::DragFloat3("位置", &spherePos[i].x, 0.1f);
+							ImGui::DragFloat3("回転", &sphereRot[i].x, 0.01f);
+							ImGui::DragFloat3("拡大", &sphereScale[i].x, 0.01f, 0.01f, 10.0f);
+							ImGui::Checkbox("モンスターボール", &sphereUseMonsterBall[i]);
 
-							ImGui::SeparatorText("Light");
+							ImGui::SeparatorText("ライト");
 							DirectionalLight light = LightManager::GetInstance()->GetPerObjectLight(lightId);
 							bool changed = false;
 							changed |= ImGui::ColorEdit4("##Color", &light.color.x);
@@ -164,29 +164,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 						}
 					}
 
-					if (ImGui::CollapsingHeader("Mesh Settings")) {
-						ImGui::DragFloat3("Position", &meshPos.x, 0.1f);
-						ImGui::DragFloat3("Rotation", &meshRot.x, 0.01f);
-						ImGui::DragFloat3("Scale", &meshScale.x, 0.01f, 0.01f, 10.0f);
+					if (ImGui::CollapsingHeader("メッシュ設定")) {
+						ImGui::DragFloat3("位置", &meshPos.x, 0.1f);
+						ImGui::DragFloat3("回転", &meshRot.x, 0.01f);
+						ImGui::DragFloat3("拡大", &meshScale.x, 0.01f, 0.01f, 10.0f);
 					}
 
-					if (ImGui::CollapsingHeader("Triangle Settings")) {
-						ImGui::DragFloat3("Base Position", &triBasePos.x, 0.1f);
-						ImGui::DragFloat3("Rotation", &triRot.x, 0.01f);
-						ImGui::DragFloat3("Scale", &triScale.x, 0.01f, 0.01f, 10.0f);
-						ImGui::ColorEdit4("Color", &triColor.x);
+					if (ImGui::CollapsingHeader("三角形設定")) {
+						ImGui::DragFloat3("基準位置", &triBasePos.x, 0.1f);
+						ImGui::DragFloat3("回転", &triRot.x, 0.01f);
+						ImGui::DragFloat3("拡大", &triScale.x, 0.01f, 0.01f, 10.0f);
+						ImGui::ColorEdit4("色", &triColor.x);
 					}
 
-					if (ImGui::CollapsingHeader("Sprite Settings")) {
-						ImGui::DragFloat2("Position", &spritePos.x, 1.0f, -1280.0f, 1280.0f);
-						ImGui::DragFloat2("Scale", &spriteScale.x, 0.1f, 0.01f, 20.0f);
-						ImGui::SliderAngle("Rotate", &spriteRot.z);
+					if (ImGui::CollapsingHeader("スプライト設定")) {
+						ImGui::DragFloat2("位置", &spritePos.x, 1.0f, -1280.0f, 1280.0f);
+						ImGui::DragFloat2("拡大", &spriteScale.x, 0.1f, 0.01f, 20.0f);
+						ImGui::SliderAngle("回転", &spriteRot.z);
 					}
 
-					if (ImGui::CollapsingHeader("Sprite UV Settings")) {
-						ImGui::DragFloat2("UV Translate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-						ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-						ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
+					if (ImGui::CollapsingHeader("スプライトUV設定")) {
+						ImGui::DragFloat2("UV移動", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+						ImGui::DragFloat2("UV拡大", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+						ImGui::SliderAngle("UV回転", &uvTransformSprite.rotate.z);
 					}
 					ImGui::End();
 				}

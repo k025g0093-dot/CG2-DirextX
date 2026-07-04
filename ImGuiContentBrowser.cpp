@@ -30,11 +30,11 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 
 	if (!show) return;
 
-	if (begin("Content Browser")) {
+	if (begin("コンテンツブラウザ")) {
 
 		if (m_CurrentDirectory != std::filesystem::path(s_AssetsPath))
 		{
-			if (ImGui::Button("<-")) {
+			if (ImGui::Button("←戻る")) {
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
 			}
 
@@ -125,8 +125,8 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 
 		ImGui::Columns(1);
 
-		ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
-		ImGui::SliderFloat("Padding", &padding, 0, 32);
+		ImGui::SliderFloat("サムネイルサイズ", &thumbnailSize, 16, 512);
+		ImGui::SliderFloat("パディング", &padding, 0, 32);
 
 		end();
 	}
