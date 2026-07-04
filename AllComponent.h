@@ -5,3 +5,5 @@
 #include "Component.h"
 #include "EntityComponent.h"
 #include "MonoBehaviour.h"
+#include "MeshFilter.h"
+#include "LearnComponent.h"

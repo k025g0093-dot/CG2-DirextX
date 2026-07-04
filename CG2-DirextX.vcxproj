@@ -128,6 +128,7 @@
     <ClCompile Include="ModelManager.cpp" />
     <ClCompile Include="MeshModel.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="MonoBehaviour.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="ResourceObject.cpp" />
     <ClCompile Include="Sound.cpp" />
@@ -237,12 +238,15 @@
     <ClInclude Include="ImGuiUIManager.h" />
     <ClInclude Include="ImGuiWindow.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="LearnComponent.h" />
     <ClInclude Include="Line.h" />
     <ClInclude Include="LightManager.h" />
     <ClInclude Include="LogSistem.h" />
+    <ClInclude Include="MeshFilter.h" />
     <ClInclude Include="MeshModel.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelManager.h" />
+    <ClInclude Include="MonoBehaviour.h" />
     <ClInclude Include="PSO.h" />
     <ClInclude Include="ResourceObject.h" />
     <ClInclude Include="Sound.h" />

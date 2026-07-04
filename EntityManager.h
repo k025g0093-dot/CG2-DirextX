@@ -16,7 +16,7 @@ public:
     void Clear();
 
     const std::vector<std::unique_ptr<Entity>>& GetEntities() const { return m_entities; }
-
+    bool isSelected;
 private:
     EntityManager() = default;
     ~EntityManager() = default;

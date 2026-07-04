@@ -11,6 +11,8 @@
 #include "DebugCamer.h"
 #include "Sound.h"
 
+#include "LearnComponent.h"
+
 #ifdef USE_IMGUI
 #include "externals/imgui/imguizmo.h"
 #endif
@@ -108,6 +110,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	LightManager::GetInstance()->SetPerObjectLight(1, { {1,1,1,1}, {0,-1,0}, 1.0f });
 	LightManager::GetInstance()->SetPerObjectLight(2, { {1,1,1,1}, {0,-1,0}, 1.0f });
 
+
+
 	MSG msg{};
 	while (msg.message != WM_QUIT) {
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -122,8 +126,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->OnUpdate();
 
+			//auto* entity = EntityManager::GetInstance()->CreateEntity("test");
+			//entity->AddComponent<LearnComponent>();
+
 #ifdef USE_IMGUI
 			engine->GetImGuiManager()->onDrawGUI = [&]() {
+
+
 
 				if (ImGui::Begin("SceneSettingsModel")) {
 
@@ -203,13 +212,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-			//// ========== GPU ベースの波シミュレーション ==========
-			//t += 0.01f;
-			//waveGrid.DispatchWaveSimulation(t, 30.0f, waveStrength);
-			//waveGrid.ReadbackToCPU();
-			//waveGrid.setObjectWall(ModelManager::GetInstance()->GetSceneObjects());
-
-			//frameIndex++;
+	
 
 			////================================================================================================================
 			////描画処理ここから
@@ -217,29 +220,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			engine->PreDraw();
 
-			//{
-			//	// DynamicMeshModel が未初期化なら先に作らせる
-			//	if (!engine->GetDynamicMeshModel())
-			//		engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
-			//	VertexData* vb = engine->GetDynamicMeshModel()->GetMappedVertexBuffer();
-			//	for (int iz = 0; iz < cubeCountZ; iz++) {
-			//		for (int ix = 0; ix < cubeCountX; ix++) {
-			//			int idx = iz * cubeCountX + ix;
-			//			float h = waveGrid.GetHeightFromCache(ix, iz);
-			//			Vector4 n = waveGrid.GetNormalFromCache(ix, iz);
-			//			vb[idx].position.y = h;
-			//			vb[idx].normal = { n.x, n.y, n.z };
-			//			normalColors[idx] = {
-			//				(n.x + 1.0f) / 2.0f,
-			//				(n.y + 1.0f) / 2.0f,
-			//				(n.z + 1.0f) / 2.0f,
-			//				1.0f
-			//			};
-			//		}
-			//	}
-			//}
-
-			//engine->DrawDynamicMeshWithNormal(mesh, normalColors, umi);
 
 			for (int i = 0; i < 2; ++i) {
 				engine->DrawSphere(

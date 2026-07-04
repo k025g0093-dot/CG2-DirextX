@@ -3,6 +3,8 @@
 #include "TextureManager.h"
 #include "ImGuiUIManager.h" 
 #include "ImGuiWindow.h"
+#include "EntityManager.h"
+#include "MeshFilter.h"
 #include "Line.h" 
 
 TUFEngine* TUFEngine::s_instance = nullptr;
@@ -157,32 +159,43 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	std::ifstream f("sceneObject.json");
 	if (f.is_open()) {
 		json modelData = json::parse(f);
-		{
+		for (const auto& object : modelData["objects"]) {
+			std::string modelPath = object["modelPath"];
+			std::string directory = modelPath.substr(0, modelPath.find_last_of("/"));
+			std::string filename = modelPath.substr(modelPath.find_last_of("/") + 1);
 
-			for (const auto& object : modelData["objects"])
-			{
+			MeshModel* mesh = ModelManager::GetInstance()->LoadModel(directory, filename);
+			if (!mesh) continue;
 
-				std::string modelPath = object["modelPath"];
-				std::string directory = modelPath.substr(0, modelPath.find_last_of("/"));
-				std::string filename = modelPath.substr(modelPath.find_last_of("/") + 1);
+			Vector3 pos = { object["position"][0], object["position"][1], object["position"][2] };
+			Vector3 rot = { object["rotation"][0], object["rotation"][1], object["rotation"][2] };
+			Vector3 scale = { object["scale"][0], object["scale"][1], object["scale"][2] };
 
-				MeshModel* mesh = ModelManager::GetInstance()->LoadModel(directory, filename);
+			Transform t;
+			t.position = pos; t.rotation = rot; t.scale = scale;
 
-				if (mesh) {
-					Vector3	pos = { object["position"][0], object["position"][1], object["position"][2] };
-					Vector3	rot = { object["rotation"][0], object["rotation"][1], object["rotation"][2] };
-					Vector3	scale = { object["scale"][0], object["scale"][1], object["scale"][2] };
+			auto* entity = EntityManager::GetInstance()->CreateEntity(modelPath);
+			auto* mf = entity->AddComponent<MeshFilter>();
+			mf->model = mesh;
+			entity->transform = t;
 
-					Transform t;
-					t.position = pos; t.rotation = rot; t.scale = scale;
-					ModelManager::GetInstance()->AddSceneObject(modelPath, t);
+			Create3DObjectOBB obbCreator;
+			entity->obb = obbCreator.CreateOBBForModel(*mesh, t.position);
 
-				}
-
-
-			}
+			//// localAABB
+			//const Vertex* verts = mesh->GetVertexData();
+			//UINT vCount = mesh->GetVertexCount();
+			//Vector3 lMin = { FLT_MAX, FLT_MAX, FLT_MAX }, lMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+			//for (UINT j = 0; j < vCount; j++) {
+			//	if (verts[j].position.x < lMin.x) lMin.x = verts[j].position.x;
+			//	if (verts[j].position.x > lMax.x) lMax.x = verts[j].position.x;
+			//	if (verts[j].position.y < lMin.y) lMin.y = verts[j].position.y;
+			//	if (verts[j].position.y > lMax.y) lMax.y = verts[j].position.y;
+			//	if (verts[j].position.z < lMin.z) lMin.z = verts[j].position.z;
+			//	if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
+			//}
+			//entity->localAABB = { lMin, lMax };
 		}
-
 	}
 }
 
@@ -199,6 +212,7 @@ int TUFEngine::LoadTexture(const std::string& filePath) {
 
 void TUFEngine::OnUpdate() {
 	Input::Update();
+	EntityManager::GetInstance()->UpdateAll(0.016f);
 	//SaveSceneObjectsToFile();
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
@@ -327,6 +341,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 	auto componentWin = std::make_shared<ImGuiComponentWindow>();
 	m_imguiManager->addWindow(componentWin);
+
+
 
 }
 
@@ -758,6 +774,41 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 		req.rot = obj.transform.rotation;
 		req.scale = obj.transform.scale;
 		req.textureIndex = obj.mesh->GetTextureIndex();
+		req.isMesh = true;
+		req.lightId = 0;
+		req.renderOrder = 1;
+		m_drawRequests.push_back(req);
+	}
+
+	// Entity（MeshFilter）からの描画リクエスト
+	for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
+		auto* mf = entity->GetComponent<MeshFilter>();
+		if (!mf || !mf->model) continue;
+
+		// OBB更新
+		Vector3 localCenter = (entity->localAABB.min + entity->localAABB.max) * 0.5f;
+		Vector3 localHalf = (entity->localAABB.max - entity->localAABB.min) * 0.5f;
+		Matrix4x4 rotMat = Multiply(
+			Multiply(MakeRotateXMatrix(entity->transform.rotation.x),
+				MakeRotateYMatrix(entity->transform.rotation.y)),
+			MakeRotateZMatrix(entity->transform.rotation.z));
+		Vector3 rotatedCenter = {
+			localCenter.x * rotMat.m[0][0] + localCenter.y * rotMat.m[1][0] + localCenter.z * rotMat.m[2][0],
+			localCenter.x * rotMat.m[0][1] + localCenter.y * rotMat.m[1][1] + localCenter.z * rotMat.m[2][1],
+			localCenter.x * rotMat.m[0][2] + localCenter.y * rotMat.m[1][2] + localCenter.z * rotMat.m[2][2]
+		};
+		entity->obb.center = entity->transform.position + rotatedCenter;
+		entity->obb.orientations[0] = { rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2] };
+		entity->obb.orientations[1] = { rotMat.m[1][0], rotMat.m[1][1], rotMat.m[1][2] };
+		entity->obb.orientations[2] = { rotMat.m[2][0], rotMat.m[2][1], rotMat.m[2][2] };
+		entity->obb.size = { localHalf.x * entity->transform.scale.x, localHalf.y * entity->transform.scale.y, localHalf.z * entity->transform.scale.z };
+
+		DrawRequest req;
+		req.model = mf->model;
+		req.pos = entity->transform.position;
+		req.rot = entity->transform.rotation;
+		req.scale = entity->transform.scale;
+		req.textureIndex = mf->model->GetTextureIndex();
 		req.isMesh = true;
 		req.lightId = 0;
 		req.renderOrder = 1;

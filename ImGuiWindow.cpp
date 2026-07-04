@@ -102,12 +102,12 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
 		// オブジェクト一覧
-		auto& objects = ModelManager::GetInstance()->GetSceneObjects();
+		auto& objects = EntityManager::GetInstance()->GetEntities();
 		for (int i = 0; i < (int)objects.size(); i++) {
 			ImGui::PushID(i);
 
 			// オブジェクト名（パスからファイル名のみ抽出）
-			std::string objName = objects[i].name;
+			std::string objName = objects[i]->name;
 			size_t sep = objName.find_last_of("/\\");
 			if (sep != std::string::npos) objName = objName.substr(sep + 1);
 			ImGui::Text("%s", objName.c_str());
@@ -116,13 +116,13 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			// 選択ボタン
 			if (ImGui::Button("Select")) {
 				for (int j = 0; j < (int)objects.size(); j++) {
-					objects[j].isSelected = false;
+					objects[j]->isSelected = false;
 				}
-				objects[i].isSelected = true;
+				objects[i]->isSelected = true;
 			}
 
 			// 選択状態のバッジ表示
-			if (objects[i].isSelected) {
+			if (objects[i]->isSelected) {
 				ImGui::SameLine();
 				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Selected]");
 			}
@@ -130,9 +130,9 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			// トランスフォーム情報
 			if (ImGui::CollapsingHeader("ObjectTransform")) {
 				ImGui::Dummy(ImVec2(0.0f, 2.0f)); // 内側の微調整
-				ImGui::DragFloat3("Position", &objects[i].transform.position.x, 0.1f);
-				ImGui::DragFloat3("Rotation", &objects[i].transform.rotation.x, 0.01f);
-				ImGui::DragFloat3("Scale", &objects[i].transform.scale.x, 0.01f, 0.01f, 10.0f);
+				ImGui::DragFloat3("Position", &objects[i]->transform.position.x, 0.1f);
+				ImGui::DragFloat3("Rotation", &objects[i]->transform.rotation.x, 0.01f);
+				ImGui::DragFloat3("Scale", &objects[i]->transform.scale.x, 0.01f, 0.01f, 10.0f);
 				ImGui::Dummy(ImVec2(0.0f, 2.0f));
 			}
 
@@ -209,7 +209,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 		// --- ② ギズモ（ImGuizmo）の描画 ---
 #ifdef _DEBUG
-		auto& objects = ModelManager::GetInstance()->GetSceneObjects();
+		auto& objects = EntityManager::GetInstance()->GetEntities();
 		if (!objects.empty()) {
 			ImGuizmo::BeginFrame();
 			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
@@ -220,9 +220,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			constexpr float kDegToRad = 3.1415926535f / 180.0f;
 
 			for (int i = 0; i < (int)objects.size(); i++) {
-				if (!objects[i].isSelected) continue;
+				if (!objects[i]->isSelected) continue;
 
-				Matrix4x4 transform = MakeAffineMatrix(objects[i].transform.scale, objects[i].transform.rotation, objects[i].transform.position);
+				Matrix4x4 transform = MakeAffineMatrix(objects[i]->transform.scale, objects[i]->transform.rotation, objects[i]->transform.position);
 
 				// 修正：プロジェクション行列の引数を imageScreenPos から viewportSize に変更
 				if (ImGuizmo::Manipulate(
@@ -235,9 +235,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 					float matrixTranslation[3], matrixRotation[3], matrixScale[3];
 					ImGuizmo::DecomposeMatrixToComponents(&transform.m[0][0], matrixTranslation, matrixRotation, matrixScale);
 
-					objects[i].transform.position = { matrixTranslation[0], matrixTranslation[1], matrixTranslation[2] };
-					objects[i].transform.rotation = { matrixRotation[0] * kDegToRad, matrixRotation[1] * kDegToRad, matrixRotation[2] * kDegToRad };
-					objects[i].transform.scale = { matrixScale[0], matrixScale[1], matrixScale[2] };
+					objects[i]->transform.position = { matrixTranslation[0], matrixTranslation[1], matrixTranslation[2] };
+					objects[i]->transform.rotation = { matrixRotation[0] * kDegToRad, matrixRotation[1] * kDegToRad, matrixRotation[2] * kDegToRad };
+					objects[i]->transform.scale = { matrixScale[0], matrixScale[1], matrixScale[2] };
 				}
 			}
 		}

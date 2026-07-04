@@ -240,6 +240,15 @@
     <ClCompile Include="Line.cpp">
       <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
     </ClCompile>
+    <ClCompile Include="MonoBehaviour.cpp">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityManager.cpp">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity.cpp">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -415,6 +424,15 @@
     </ClInclude>
     <ClInclude Include="Line.h">
       <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\各種図形</Filter>
+    </ClInclude>
+    <ClInclude Include="MonoBehaviour.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
+    </ClInclude>
+    <ClInclude Include="LearnComponent.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshFilter.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

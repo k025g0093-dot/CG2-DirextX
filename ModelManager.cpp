@@ -95,7 +95,15 @@ void ModelManager::OnFileDropped(const std::wstring& path) {
 			t.position = { 0.0f, 0.0f, 0.0f };
 			t.rotation = { 0.0f, 0.0f, 0.0f };
 			t.scale = { 1.0f, 1.0f, 1.0f };
-			m_droppedMeshes.push_back({ modelPath, mesh, t, obb, { lMin, lMax } });
+
+			auto* entity = EntityManager::GetInstance()->CreateEntity(modelPath);
+			auto* meshComponent = entity->AddComponent<MeshFilter>();
+			meshComponent->model = mesh;
+			entity->transform = t;
+			entity->obb = obb;
+			entity->localAABB = { lMin, lMax };
+
+
 			SaveToFile();
 		}
 
@@ -113,19 +121,19 @@ void ModelManager::SaveToFile() {
 	json data;
 	data["objects"] = json::array();
 
-	for (const auto& object : m_droppedMeshes) {
+	for (auto& entity : EntityManager::GetInstance()->GetEntities()){
 		json obj;
 
-		obj["modelPath"] = object.name;
-		obj["position"] = { object.transform.position.x, object.transform.position.y, object.transform.position.z };
-		obj["rotation"] = { object.transform.rotation.x, object.transform.rotation.y, object.transform.rotation.z };
-		obj["scale"] = { object.transform.scale.x, object.transform.scale.y, object.transform.scale.z };
+		obj["modelPath"] = entity->name;
+		obj["position"] = { entity->transform.position.x, entity->transform.position.y, entity->transform.position.z };
+		obj["rotation"] = { entity->transform.rotation.x, entity->transform.rotation.y, entity->transform.rotation.z };
+		obj["scale"] = { entity->transform.scale.x, entity->transform.scale.y, entity->transform.scale.z };
 
-		obj["obb"]["center"] = { object.obb.center.x, object.obb.center.y, object.obb.center.z };
-		obj["obb"]["size"] = { object.obb.size.x, object.obb.size.y, object.obb.size.z };
-		obj["obb"]["orientationX"] = { object.obb.orientations[0].x, object.obb.orientations[0].y, object.obb.orientations[0].z };
-		obj["obb"]["orientationY"] = { object.obb.orientations[1].x, object.obb.orientations[1].y, object.obb.orientations[1].z };
-		obj["obb"]["orientationZ"] = { object.obb.orientations[2].x, object.obb.orientations[2].y, object.obb.orientations[2].z };
+		obj["obb"]["center"] = { entity->obb.center.x, entity->obb.center.y, entity->obb.center.z };
+		obj["obb"]["size"] = { entity->obb.size.x, entity->obb.size.y, entity->obb.size.z };
+		obj["obb"]["orientationX"] = { entity->obb.orientations[0].x, entity->obb.orientations[0].y, entity->obb.orientations[0].z };
+		obj["obb"]["orientationY"] = { entity->obb.orientations[1].x, entity->obb.orientations[1].y, entity->obb.orientations[1].z };
+		obj["obb"]["orientationZ"] = { entity->obb.orientations[2].x, entity->obb.orientations[2].y, entity->obb.orientations[2].z };
 
 		data["objects"].push_back(obj);
 	}

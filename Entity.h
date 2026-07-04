@@ -4,9 +4,15 @@
 #include <memory>
 #include "Component.h"
 #include "Transform.h"
+#include "Create3DObjectOBB.h"
+
+
 
 class Entity {
 public:
+
+
+
     Entity() = default;
     ~Entity();
 
@@ -28,6 +34,12 @@ public:
 
     std::string name;
     Transform transform;
+
+	bool isSelected = false;
+
+    // Entity.h に追加
+    OBB obb;
+    AABB localAABB;
 
 private:
     friend class EntityManager;
