@@ -49,10 +49,7 @@ void ImGuiUIWindow::end()
 //ここも似た感じの者です将来的にはもっといろんな情報であったりほかのクラスと連動していろんなことができるようにしていきたいですね
 void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
-	if (begin("Scene")) {
-
-		// 🌟全体のパディング（内側の余白）を少し広げる
-		//ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
+	if (begin("シーン")) {
 
 		// オブジェクト一覧
 		auto& objects = EntityManager::GetInstance()->GetEntities();
@@ -67,7 +64,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			ImGui::SameLine();
 
 			// 選択ボタン
-			if (ImGui::Button("Select")) {
+			if (ImGui::Button("選択")) {
 				for (int j = 0; j < (int)objects.size(); j++) {
 					objects[j]->isSelected = false;
 				}
@@ -77,7 +74,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			// 選択状態のバッジ表示
 			if (objects[i]->isSelected) {
 				ImGui::SameLine();
-				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Selected]");
+				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[選択中]");
 			}
 
 			// 🌟オブジェクトごとの区切りをゆったりさせる
@@ -122,7 +119,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		viewportFlags |= ImGuiWindowFlags_NoMove;
 	}
 
-	if (ImGui::Begin("Viewport", nullptr, viewportFlags)) {
+	if (ImGui::Begin("ビューポート", nullptr, viewportFlags)) {
 
 		// --- ① シーン（ゲーム画面）の描画 ---
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
@@ -204,7 +201,7 @@ void ImGuiPlayViewportWindow::update(TUFEngine* engine) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
 
-	if (ImGui::Begin("PlayViewport", nullptr,
+	if (ImGui::Begin("プレイビューポート", nullptr,
 		ImGuiWindowFlags_NoScrollbar |
 		ImGuiWindowFlags_NoScrollWithMouse)) {
 
@@ -239,29 +236,27 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 
 
-	if (begin("Component")) {
+	if (begin("コンポーネント")) {
 
-		if (ImGui::CollapsingHeader("Light Setting")) {
+		if (ImGui::CollapsingHeader("ライト設定")) {
 			LightManager* lm = LightManager::GetInstance();
 
-			// ライト設定の内側に少し余白
 			ImGui::Dummy(ImVec2(0.0f, 2.0f));
 
-			if (ImGui::CollapsingHeader("Global Light")) {
+			if (ImGui::CollapsingHeader("グローバルライト")) {
 				DirectionalLight global = lm->GetGlobalLight();
 				bool changed = false;
-				changed |= ImGui::ColorEdit4("Color", &global.color.x);
-				changed |= ImGui::DragFloat3("Direction", &global.direction.x, 0.01f, -1.0f, 1.0f);
-				changed |= ImGui::DragFloat("Intensity", &global.intensity, 0.01f, 0.0f, 10.0f);
+				changed |= ImGui::ColorEdit4("色", &global.color.x);
+				changed |= ImGui::DragFloat3("方向", &global.direction.x, 0.01f, -1.0f, 1.0f);
+				changed |= ImGui::DragFloat("強度", &global.intensity, 0.01f, 0.0f, 10.0f);
 				if (changed) lm->SetGlobalLight(global);
 			}
 
-			ImGui::Spacing(); // グローバルと個別ライトの間に隙間
+			ImGui::Spacing();
 
-			// 個別ライト一覧
 			auto ids = lm->GetPerObjectIds();
 			for (int id : ids) {
-				std::string label = "Object Light " + std::to_string(id);
+				std::string label = "オブジェクトライト " + std::to_string(id);
 				if (ImGui::CollapsingHeader(label.c_str())) {
 					ImGui::PushID(id);
 					DirectionalLight light = lm->GetPerObjectLight(id);
@@ -271,8 +266,8 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 					changed |= ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
 					if (changed) lm->SetPerObjectLight(id, light);
 
-					ImGui::Spacing(); // ボタンの前に少し隙間
-					if (ImGui::Button("Reset to Global")) {
+					ImGui::Spacing();
+					if (ImGui::Button("グローバルにリセット")) {
 						lm->ClearPerObjectLight(id);
 						ImGui::PopID();
 						break;
@@ -280,40 +275,36 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 					ImGui::PopID();
 				}
 			}
-			ImGui::Dummy(ImVec2(0.0f, 4.0f)); // ヘッダーが閉じる前の余白
+			ImGui::Dummy(ImVec2(0.0f, 4.0f));
 		}
 
-		// 🌟ライト設定とオブジェクト一覧の境界をはっきりさせる大きな余白
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
-
-
 		for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
 			if (!entity->isSelected) continue;
+
+			if (ImGui::CollapsingHeader("トランスフォーム")) {
+				ImGui::DragFloat3("位置", &entity->transform.position.x, 0.1f);
+				ImGui::DragFloat3("回転", &entity->transform.rotation.x, 0.01f);
+				ImGui::DragFloat3("拡大", &entity->transform.scale.x, 0.01f, 0.01f, 10.0f);
+			}
 
 			for (auto* c : entity->GetComponents()) {
 				const char* typeName = typeid(*c).name();
 				if (ImGui::CollapsingHeader(typeName)) {
 					if (auto* mf = dynamic_cast<MeshFilter*>(c)) {
-						ImGui::Text("Model: %s", mf->model ? "loaded" : "null");
-						if (ImGui::CollapsingHeader("Transform")) {
-							ImGui::DragFloat3("Position", &entity->transform.position.x, 0.1f);
-							ImGui::DragFloat3("Rotation", &entity->transform.rotation.x, 0.01f);
-							ImGui::DragFloat3("Scale", &entity->transform.scale.x, 0.01f, 0.01f, 10.0f);
-						}
-
-						// その後 for (auto* c : entity->GetComponents()) ...
+						ImGui::Text("モデル: %s", mf->model ? "読み込み済み" : "なし");
 					}
 					else if (auto* lc = dynamic_cast<LearnComponent*>(c)) {
-						ImGui::Text("Status: Running");
+						ImGui::Text("ステータス: 実行中");
 					}
 				}
 			}
 
 			ImGui::Separator();
-			if (ImGui::Button("+ Add Component")) {
+			if (ImGui::Button("+ コンポーネント追加")) {
 				ImGui::OpenPopup("AddComponentPopup");
 			}
 			if (ImGui::BeginPopup("AddComponentPopup")) {
@@ -324,17 +315,13 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				ImGui::EndPopup();
 			}
 
-			// ── Delete ──
 			ImGui::Spacing();
-			if (ImGui::Button("Delete")) {
+			if (ImGui::Button("削除")) {
 				EntityManager::GetInstance()->DestroyEntity(entity.get());
 				ModelManager::GetInstance()->SaveToFile();
 				break;
 			}
-
 		}
-
-
 	}
 
 	ImGui::PopStyleVar(); // スタイル設定を元に戻す

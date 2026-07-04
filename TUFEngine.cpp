@@ -304,6 +304,10 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	ImFontConfig config;
 	config.SizePixels = 13.0f;
 	io.Fonts->AddFontDefault(&config);
+	ImFontConfig jpConfig;
+	jpConfig.MergeMode = true;
+	jpConfig.SizePixels = 13.0f;
+	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msgothic.ttc", 13.0f, &jpConfig, io.Fonts->GetGlyphRangesJapanese());
 	io.Fonts->Build();
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	m_imguiManager = std::make_unique<ImGuiUIManager>(hwnd);
