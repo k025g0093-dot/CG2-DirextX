@@ -243,15 +243,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 			// Grid
-			//{
-			//	const float gridSize = 100.0f;
-			//	const float step = 10.0f;
-			//	Vector4 gridColor = { 0.3f, 0.3f, 0.3f, 1.0f };
-			//	for (float i = -gridSize; i <= gridSize; i += step) {
-			//		engine->DrawLine({ i, 0.0f, -gridSize }, { i, 0.0f, gridSize }, gridColor);
-			//		engine->DrawLine({ -gridSize, 0.0f, i }, { gridSize, 0.0f, i }, gridColor);
-			//	}
-			//}
+			{
+				const float gridSize = 100.0f;
+				const float step = 10.0f;
+				Vector4 gridColor = { 0.3f, 0.3f, 0.3f, 1.0f };
+				for (float i = -gridSize; i <= gridSize; i += step) {
+					engine->DrawLine({ i, 0.0f, -gridSize }, { i, 0.0f, gridSize }, gridColor);
+					engine->DrawLine({ -gridSize, 0.0f, i }, { gridSize, 0.0f, i }, gridColor);
+				}
+			}
 
 			// OBB
 			{
