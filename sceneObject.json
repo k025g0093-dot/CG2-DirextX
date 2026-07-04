@@ -1,12 +1,12 @@
 {
     "objects": [
         {
-            "modelPath": "resources/asset\\cube/cube.obj",
+            "modelPath": "resources/asset\\monster/Alien Animal.obj",
             "obb": {
                 "center": [
                     0.0,
-                    0.0,
-                    0.0
+                    9.812165260314941,
+                    -2.5535573959350586
                 ],
                 "orientationX": [
                     1.0,
@@ -24,9 +24,9 @@
                     1.0
                 ],
                 "size": [
-                    1.0,
-                    1.0,
-                    1.0
+                    8.969828605651855,
+                    9.781031608581543,
+                    19.650840759277344
                 ]
             },
             "position": [
