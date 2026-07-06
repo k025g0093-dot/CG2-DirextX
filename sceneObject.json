@@ -1,3 +1,49 @@
 {
-    "objects": []
+    "objects": [
+        {
+            "modelPath": "resources/asset\\cube/cube.obj",
+            "obb": {
+                "center": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "orientationX": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "orientationY": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "orientationZ": [
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "size": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        }
+    ]
 }

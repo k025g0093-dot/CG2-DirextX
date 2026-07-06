@@ -16,7 +16,7 @@ namespace GameScriptC
         [UnmanagedCallersOnly(EntryPoint = "Update")]
         public static void Update()
         {
-            Console.WriteLine("【C#】Update関数がC++から呼び出されました！ループ成功！");
+            Console.WriteLine("【C#】再度確認");
         }
     }
 }

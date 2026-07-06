@@ -126,10 +126,15 @@ public:
                 "\"externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj\"",
                 NULL, SW_SHOWNORMAL);
         }
-        system("dotnet build ...");
-        LoadCSharpRuntime();
-        if (csharp_start) csharp_start();
+        ReloadScript(); // 最初のビルド＆起動もこれでOK
     }
+
+	void ReloadScript() {
+
+        system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug -o bin\\Debug\\net10.0_script");
+        LoadCSharpRuntime();
+		if (csharp_start) csharp_start();
+	}
 
     void Update() override {
         if (csharp_update) { csharp_update(); };

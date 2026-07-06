@@ -319,8 +319,10 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 						// テスト用のUpdate呼び出しボタンも分けておくと安全です
 						if (ImGui::Button("C#のビルド")) {
+							gs->ReloadScript();
 							gs->Update();
 						}
+
 					}
 				}
 			}
