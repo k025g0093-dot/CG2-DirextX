@@ -11,6 +11,6 @@ public:
     virtual void Update();
     virtual void FixedUpdate();
 
-private:
+public:
     bool m_isStarted;
 };

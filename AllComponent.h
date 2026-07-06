@@ -7,3 +7,4 @@
 #include "MonoBehaviour.h"
 #include "MeshFilter.h"
 #include "LearnComponent.h"
+#include "GameScript.h"

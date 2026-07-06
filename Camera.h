@@ -8,7 +8,7 @@ public:
         transform.rotate = { 0.0f, 0.0f,  0.0f };
         transform.translate = { 0.0f, 0.0f, -10.0f };
         m_nearPlane = 0.1f;
-        m_farPlane = 1000.0f;
+        m_farPlane = 10000.0f;
     }
 
     Vector3 scale;

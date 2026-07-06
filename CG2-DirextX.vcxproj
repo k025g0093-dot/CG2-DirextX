@@ -218,6 +218,7 @@
     <ClInclude Include="DynamicMesh.h" />
     <ClInclude Include="DynamicMeshModel.h" />
     <ClInclude Include="EntityComponent.h" />
+    <ClInclude Include="EntityManager.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\ImGuizmo.h" />
@@ -228,7 +229,10 @@
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="externals\nlohmann\json.hpp" />
+    <ClInclude Include="externals\scripting\coreclr_delegates.h" />
+    <ClInclude Include="externals\scripting\hostfxr.h" />
     <ClInclude Include="FBXLoader.h" />
+    <ClInclude Include="GameScript.h" />
     <ClInclude Include="GpuDrivenRenderer.h" />
     <ClInclude Include="GpuDrivenTypes.h" />
     <ClInclude Include="ImGuiCamera.h" />

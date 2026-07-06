@@ -295,10 +295,32 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				const char* typeName = typeid(*c).name();
 				if (ImGui::CollapsingHeader(typeName)) {
 					if (auto* mf = dynamic_cast<MeshFilter*>(c)) {
+					
+						ImGui::Spacing();
 						ImGui::Text("モデル: %s", mf->model ? "読み込み済み" : "なし");
+						ImGui::Spacing();
+
 					}
 					else if (auto* lc = dynamic_cast<LearnComponent*>(c)) {
+						ImGui::Spacing();
 						ImGui::Text("ステータス: 実行中");
+						ImGui::Spacing();
+
+					}
+					else if (auto* gs = dynamic_cast<GameScript*>(c)) {
+						ImGui::Spacing();
+
+						if (ImGui::Button("C#スクリプトを初期化＆起動")) {
+
+							gs->Start(); // ボタンを押した時に1回だけ初期化されるので安全！
+						}
+
+						ImGui::Spacing();
+
+						// テスト用のUpdate呼び出しボタンも分けておくと安全です
+						if (ImGui::Button("C#のビルド")) {
+							gs->Update();
+						}
 					}
 				}
 			}
@@ -312,6 +334,10 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 					entity->AddComponent<MeshFilter>();
 				if (!entity->GetComponent<LearnComponent>() && ImGui::MenuItem("LearnComponent"))
 					entity->AddComponent<LearnComponent>();
+
+				if (!entity->GetComponent<GameScript>() && ImGui::MenuItem("C#スクリプト"))
+					entity->AddComponent<GameScript>();
+
 				ImGui::EndPopup();
 			}
 

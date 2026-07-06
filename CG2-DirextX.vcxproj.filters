@@ -106,6 +106,9 @@
     <Filter Include="ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp">
       <UniqueIdentifier>{54e018a6-2c05-41e0-8c32-148766aade80}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの">
+      <UniqueIdentifier>{0ade99f5-7990-4276-ba15-eceb23901ff5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -429,9 +432,21 @@
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群</Filter>
     </ClInclude>
     <ClInclude Include="LearnComponent.h">
-      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの</Filter>
     </ClInclude>
     <ClInclude Include="MeshFilter.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScript.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\scripting\coreclr_delegates.h">
+      <Filter>外部から持ってきた関数やファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\scripting\hostfxr.h">
+      <Filter>外部から持ってきた関数やファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityManager.h">
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
     </ClInclude>
   </ItemGroup>

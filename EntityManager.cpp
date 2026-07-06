@@ -1,5 +1,6 @@
 #include "EntityManager.h"
 #include "TUFEngine.h"
+#include "MonoBehaviour.h"
 
 Entity* EntityManager::CreateEntity(const std::string& name) {
     auto entity = std::make_unique<Entity>();
@@ -18,9 +19,17 @@ void EntityManager::DestroyEntity(Entity* entity) {
 }
 
 void EntityManager::UpdateAll(float dt) {
+
+
     for (auto& entity : m_entities) {
         for (auto* c : entity->m_components) {
             if (!c) continue;
+
+            if (auto* mb = dynamic_cast<MonoBehaviour*>(c)) {
+				if (!mb->m_isStarted) {
+					mb->Start();
+				}
+			} 
             c->Update();
         }
     }
