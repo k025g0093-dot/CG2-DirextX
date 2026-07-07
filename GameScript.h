@@ -68,7 +68,7 @@ public:
             return;
         }
 
-        const wchar_t* config_path = L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.runtimeconfig.json";
+        const wchar_t* config_path = L"bin/Debug/net10.0_script/GameScriptC.runtimeconfig.json";
 
         int rc = init_fptr(config_path, nullptr, &m_runtime_handle);
         if (rc != 0 || m_runtime_handle == nullptr) {
@@ -84,7 +84,7 @@ public:
         }
 
         // Full path to the compiled C# DLL
-        const wchar_t* assembly_path = L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.dll";
+        const wchar_t* assembly_path = L"bin/Debug/net10.0_script/GameScriptC.dll";
 
         // Get the Start function
         rc = get_csharp_fptr(

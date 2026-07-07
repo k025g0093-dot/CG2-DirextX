@@ -321,8 +321,8 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						if (ImGui::Button("C#のビルド")) {
 							gs->ReloadScript();
 							gs->Update();
+							
 						}
-
 					}
 				}
 			}
