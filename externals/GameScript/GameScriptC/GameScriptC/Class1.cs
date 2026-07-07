@@ -16,7 +16,7 @@ namespace GameScriptC
         [UnmanagedCallersOnly(EntryPoint = "Update")]
         public static void Update()
         {
-            Console.WriteLine("【C#】再度確認これでいけすか確認");
+           // Console.WriteLine("【C#】再度確認これでいけすか確認");
         }
     }
 }
