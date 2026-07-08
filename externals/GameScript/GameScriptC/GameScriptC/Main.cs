@@ -23,9 +23,9 @@ namespace GameScriptC
             while (true)
             {
 
-                if (Keyboard.IsKeyTriger(ConsoleKey.W))
+                if (Keyboard.IsKeyTriger(ConsoleKey.Q))
                 {
-                    Console.WriteLine("Wが押されてる");
+                    Console.WriteLine("Qが押されてる");
                 }
                 if (Keyboard.IsKeyTriger(ConsoleKey.A))
                 {

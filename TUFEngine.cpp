@@ -58,17 +58,17 @@ void TUFEngine::InitWindow(std::wstring name) {
 	// 3. ウィンドウを作成する
 	// 作成したハンドルはメンバー変数 hwnd に保存する
 	hwnd = CreateWindow(
-		wc.lpszClassName,
-		name.c_str(),
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		wrc.right - wrc.left,
-		wrc.bottom - wrc.top,
-		nullptr,
-		nullptr,
-		wc.hInstance,
-		nullptr
+		wc.lpszClassName,//利用するクラス
+		name.c_str(),//体ろるばーの文字
+		WS_OVERLAPPEDWINDOW,//よく見るwindowスタイル
+		CW_USEDEFAULT,//表示座標X
+		CW_USEDEFAULT,//Y
+		wrc.right - wrc.left,//window横幅
+		wrc.bottom - wrc.top,//windowの縦幅
+		nullptr,//親windowハンドル
+		nullptr,//メニューハンドル
+		wc.hInstance,//インスタンスハンドル
+		nullptr//オプション
 	);
 
 	assert(hwnd != nullptr); // 作成に失敗していないか確認する
