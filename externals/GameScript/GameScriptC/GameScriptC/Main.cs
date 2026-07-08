@@ -51,7 +51,7 @@ namespace GameScriptC
             }
 
             //基本はいらない
-            Console.ReadLine();
+            //Console.ReadLine();
         }
 
         private static void Start()
