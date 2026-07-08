@@ -39,6 +39,7 @@ public:
 
     ~GameScript() {
         TerminateProcess(m_pi.hProcess, 0);
+		CloseHandle(m_hPipe);
         CloseHandle(m_pi.hProcess);
         CloseHandle(m_pi.hThread);
     }
@@ -48,34 +49,75 @@ public:
 
     void Start() override {
         MonoBehaviour::Start();
+        ReloadScript();
+    }
+
+    void StartScript() {
+        MonoBehaviour::Start();
+
         if (!m_vsOpened) {
             m_vsOpened = true;
             ShellExecuteA(NULL, "open", "devenv.exe",
                 "\"externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj\"",
                 NULL, SW_SHOWNORMAL);
+
+
+
         }
         ReloadScript();
+
     }
 
     PROCESS_INFORMATION m_pi = {};
+    HANDLE m_hPipe = INVALID_HANDLE_VALUE;
+
 
     void ReloadScript() {
         if (m_pi.hProcess) {
             TerminateProcess(m_pi.hProcess, 0);
+            CloseHandle(m_hPipe);
             CloseHandle(m_pi.hProcess);
             CloseHandle(m_pi.hThread);
             m_pi = {};
         }
-        system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug");
+
+		//C#のプロジェクトをビルドする
+        system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
+        //C#のプロセスと通信するためのパイプを作成する
+        m_hPipe = CreateNamedPipe
+        (
+            L"\\\\.\\pipe\\GameScriptPipe",
+            PIPE_ACCESS_DUPLEX,
+            PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+            1,
+            1024 * 16,
+            1024 * 16,
+            NMPWAIT_USE_DEFAULT_WAIT,
+            NULL
+        );
+
+		//C#のプロセスを起動する
         STARTUPINFOW si = { sizeof(si) };
         CreateProcessW(
             L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.exe",
             NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &m_pi);
+        
+		//C#のプロセスがパイプに接続するのを待つ
+        ConnectNamedPipe(m_hPipe, NULL);
+
+		
+
     }
 
     void Update() override {
        
+        //float scenData[4] = {  }
+
     }
+
+
+	
+
 
 private:
 

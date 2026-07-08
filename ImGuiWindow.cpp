@@ -312,7 +312,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 						if (ImGui::Button("C#スクリプトを初期化＆起動")) {
 
-							gs->Start(); // ボタンを押した時に1回だけ初期化されるので安全！
+							gs->StartScript(); // ボタンを押した時に1回だけ初期化されるので安全！
 						}
 
 						ImGui::Spacing();
@@ -337,8 +337,8 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				if (!entity->GetComponent<LearnComponent>() && ImGui::MenuItem("LearnComponent"))
 					entity->AddComponent<LearnComponent>();
 
-				if (!entity->GetComponent<GameScript>() && ImGui::MenuItem("C#スクリプト"))
-					entity->AddComponent<GameScript>();
+					if (!entity->GetComponent<GameScript>() && ImGui::MenuItem("C#スクリプト"))
+						entity->AddComponent<GameScript>();
 
 				ImGui::EndPopup();
 			}

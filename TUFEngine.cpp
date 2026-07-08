@@ -1275,7 +1275,7 @@ void TUFEngine::ResizeWindow(int newWidth, int newHeight) {
 		2,
 		width,
 		height,
-		DXGI_FORMAT_R8G8B8A8_UNORM,
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 		0
 	);
 
