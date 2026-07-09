@@ -15,13 +15,18 @@ namespace GameScriptC
         public static void Main(string[] args)
         {
             // C++からのメッセージを受信するためのNamedPipeClientStreamを作成
-            var pipeClient = new NamedPipeClientStream(".", "GameScriptPipe", PipeDirection.InOut);
-            pipeClient.Connect();
+            var server = new NamedPipeServerStream("GameScriptPipe", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances);
 
             // C++からのメッセージを受信するループ
             byte[] buffer = new byte[1024];
             while (true)
             {
+
+                server.WaitForConnection();
+                var temp = server;
+                Task.Run(() => HandleEntity(temp));
+                server = new NamedPipeServerStream("GameScriptPipe", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances);
+
 
                 if (Keyboard.IsKeyTriger(ConsoleKey.Q))
                 {
@@ -54,20 +59,19 @@ namespace GameScriptC
             //Console.ReadLine();
         }
 
-        private static void Start()
+        static void HandleEntity(NamedPipeServerStream pipe)
         {
-            //Console.WriteLine("【C#】Start関数がC++から呼び出されました！ああいったがそれは嘘だ");
+            while (true)
+            {
+                byte[] buffer = new byte[1024];
+                int bytesRead = pipe.Read(buffer, 0, buffer.Length);
+                // C++ から受け取ったデータ（float[4]: pos + dt）を処理
+                // ...
+
+                // C++ に返すデータ（float[3]: 新しい位置）を送信
+                // pipe.Write(...)
+            }
         }
-
-
-        private static void Update()
-        {
-            // Console.WriteLine("【C#】再度確認これでいけすか確認");
-        }
-
-
-        public static void DemoFunction()
-        { }
 
 
     }
