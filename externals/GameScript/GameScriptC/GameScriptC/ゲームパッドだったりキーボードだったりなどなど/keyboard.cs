@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 //ここは特殊キー（WASDとは別）のなんか異常者たちの宣言方法
 //ここからコピッテ使って下さい
 //{
-//ConsoleKey.asdasdSpacebar;    // スペース
+//ConsoleKey.asdasdwSpacebar;    // スペース
 //ConsoleKey.Escape;      // ESC
 //ConsoleKey.Enter;       // Enter
 //ConsoleKey.Tab;         // Tab

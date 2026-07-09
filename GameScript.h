@@ -98,31 +98,43 @@ public:
 
             //C#のプロセスを起動する
             STARTUPINFOW si = { sizeof(si) };
-            CreateProcessW(
+            if (!CreateProcessW(
                 L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.exe",
                 NULL, NULL, NULL, FALSE,
-                CREATE_NEW_CONSOLE, NULL, NULL, &si, &m_pi);
+                0, NULL, NULL, &si, &m_pi)) {
+                DWORD err = GetLastError();
+                std::cout << "[GameScript] CreateProcessW failed: " << err << std::endl;
+            }
+            s_csStarted = true;
+            Sleep(2000);
         }
 
         std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe";
 
-        // パイプができるのを最大5秒待つ
+        std::cout << "[GameScript] Connecting..." << std::endl;
         if (WaitNamedPipeW(pipeName.c_str(), 5000)) {
             m_hPipe = CreateFileW(
                 pipeName.c_str(),
                 GENERIC_READ | GENERIC_WRITE,
                 0, NULL, OPEN_EXISTING, 0, NULL);
+            if (m_hPipe == INVALID_HANDLE_VALUE)
+                std::cout << "[GameScript] CreateFileW failed: " << GetLastError() << std::endl;
+            else
+                std::cout << "[GameScript] Connected!" << std::endl;
+        } else {
+            std::cout << "[GameScript] WaitNamedPipeW timed out" << std::endl;
         }
 
     }
 
-    void Update() override {
-       
+void Update() override {
         if (m_hPipe == INVALID_HANDLE_VALUE) return;
         DWORD written;
-        float dummy[4] = { 0 };
-        WriteFile(m_hPipe, dummy, sizeof(dummy), &written, NULL);
-
+        float sendData[4] = { 0 };
+        WriteFile(m_hPipe, sendData, sizeof(sendData), &written, NULL);
+        float recvData[3];
+        DWORD read;
+        ReadFile(m_hPipe, recvData, sizeof(recvData), &read, NULL);
     }
 
 
