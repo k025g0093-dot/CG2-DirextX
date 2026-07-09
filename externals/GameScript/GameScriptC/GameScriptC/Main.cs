@@ -28,6 +28,18 @@ namespace GameScriptC
                 server = new NamedPipeServerStream("GameScriptPipe", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances);
 
 
+
+            }
+
+        }
+
+        static void HandleEntity(NamedPipeServerStream pipe)
+        {
+            byte[] buffer = new byte[1024];
+            while (true)
+            {
+                int bytesRead = pipe.Read(buffer, 0, buffer.Length);
+
                 if (Keyboard.IsKeyTriger(ConsoleKey.Q))
                 {
                     Console.WriteLine("Qが押されてる");
@@ -50,29 +62,10 @@ namespace GameScriptC
                     Console.WriteLine("いざジャンプ");
                 }
 
-
-                
+                pipe.Write(new byte[12], 0, 12);
 
             }
-
-            //基本はいらない
-            //Console.ReadLine();
+            pipe.Close();
         }
-
-        static void HandleEntity(NamedPipeServerStream pipe)
-        {
-            while (true)
-            {
-                byte[] buffer = new byte[1024];
-                int bytesRead = pipe.Read(buffer, 0, buffer.Length);
-                // C++ から受け取ったデータ（float[4]: pos + dt）を処理
-                // ...
-
-                // C++ に返すデータ（float[3]: 新しい位置）を送信
-                // pipe.Write(...)
-            }
-        }
-
-
     }
 }

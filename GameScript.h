@@ -100,14 +100,15 @@ public:
             STARTUPINFOW si = { sizeof(si) };
             CreateProcessW(
                 L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.exe",
-                NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &m_pi);
+                NULL, NULL, NULL, FALSE,
+                CREATE_NEW_CONSOLE, NULL, NULL, &si, &m_pi);
         }
 
         std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe";
 
         // パイプができるのを最大5秒待つ
         if (WaitNamedPipeW(pipeName.c_str(), 5000)) {
-            HANDLE hPipe = CreateFileW(
+            m_hPipe = CreateFileW(
                 pipeName.c_str(),
                 GENERIC_READ | GENERIC_WRITE,
                 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -117,7 +118,10 @@ public:
 
     void Update() override {
        
-        //float scenData[4] = {  }
+        if (m_hPipe == INVALID_HANDLE_VALUE) return;
+        DWORD written;
+        float dummy[4] = { 0 };
+        WriteFile(m_hPipe, dummy, sizeof(dummy), &written, NULL);
 
     }
 
