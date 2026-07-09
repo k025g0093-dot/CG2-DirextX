@@ -26,6 +26,12 @@ private:
     bool m_loaded = false;
     Entity* entity = nullptr;
 public:
+
+    std::string m_scriptName = "PlayerController"; // デフォルトのスクリプト名(未設定時の初期値)
+    char m_scriptNameBuf[256] = {};
+
+
+
     GameScript() {
         // Show a console even in GUI apps so std::cout / Console.WriteLine is visible
         if (!AllocConsole()) {
@@ -37,11 +43,12 @@ public:
         freopen_s(&fp, "CONOUT$", "w", stderr);
         setvbuf(stdout, nullptr, _IONBF, 0);
         std::cout << "=== C# Script Console ===" << std::endl;
+        strcpy_s(m_scriptNameBuf, m_scriptName.c_str());
     }
 
     ~GameScript() {
         TerminateProcess(m_pi.hProcess, 0);
-		CloseHandle(m_hPipe);
+        CloseHandle(m_hPipe);
         CloseHandle(m_pi.hProcess);
         CloseHandle(m_pi.hThread);
     }
@@ -89,7 +96,7 @@ public:
             m_pi = {};
         }
 
-		//C#のプロジェクトをビルドする
+        //C#のプロジェクトをビルドする
         system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
 
 
@@ -109,7 +116,7 @@ public:
             Sleep(2000);
         }
 
-        std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe";
+        std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe" + std::to_wstring(entity->name.begin()+entity->name.end());
 
         std::cout << "[GameScript] Connecting..." << std::endl;
         if (WaitNamedPipeW(pipeName.c_str(), 5000)) {
@@ -121,13 +128,14 @@ public:
                 std::cout << "[GameScript] CreateFileW failed: " << GetLastError() << std::endl;
             else
                 std::cout << "[GameScript] Connected!" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "[GameScript] WaitNamedPipeW timed out" << std::endl;
         }
 
     }
 
-void Update() override {
+    void Update() override {
         if (m_hPipe == INVALID_HANDLE_VALUE) return;
         DWORD written;
         float sendData[4] = { 0 };
@@ -138,7 +146,7 @@ void Update() override {
     }
 
 
-	
+
 
 
 private:

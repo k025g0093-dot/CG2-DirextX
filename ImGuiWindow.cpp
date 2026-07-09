@@ -323,6 +323,20 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 							gs->Update();
 							
 						}
+
+						if (gs->m_scriptNameBuf[0] == '\0' && !gs->m_scriptName.empty()) {
+							strcpy_s(gs->m_scriptNameBuf, gs->m_scriptName.c_str());
+						}
+
+						static char buf[256];
+						strcpy_s(buf, gs->m_scriptName.c_str());
+						if (ImGui::InputText("検索するスクリプトの名前", buf, sizeof(buf))) {
+							gs->m_scriptName = buf;
+						}
+						if (ImGui::Button("リロード")) {
+							gs->ReloadScript();
+						}
+
 					}
 				}
 			}
