@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class #SCRIPTNAME# : Templet
+public class BoxEntity : Templet
 {
     public int Id { get; set; }
     public string Name { get; set; }

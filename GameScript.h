@@ -43,7 +43,7 @@ public:
 
 	~GameScript() {
 		TerminateProcess(m_pi.hProcess, 0);
-		CloseHandle(m_hPipe);
+		//CloseHandle(m_hPipe);
 		CloseHandle(m_pi.hProcess);
 		CloseHandle(m_pi.hThread);
 	}
@@ -112,12 +112,15 @@ public:
 	}
 
 	void ReloadScript() {
+		static bool s_csStarted = false;
+
 		if (m_pi.hProcess) {
 			TerminateProcess(m_pi.hProcess, 0);
 			CloseHandle(m_hPipe);
 			CloseHandle(m_pi.hProcess);
 			CloseHandle(m_pi.hThread);
 			m_pi = {};
+			s_csStarted = false;
 		}
 
 		CreateScript(m_scriptName);
@@ -125,7 +128,6 @@ public:
 		system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
 
 
-		static bool s_csStarted = false;
 		if (!s_csStarted) {
 
 			//C#のプロセスを起動する

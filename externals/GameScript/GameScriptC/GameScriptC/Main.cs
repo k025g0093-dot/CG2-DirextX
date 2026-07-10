@@ -40,7 +40,12 @@ namespace GameScriptC
             Console.WriteLine($"Script:{scriptName}");
 
             Type type = Assembly.GetExecutingAssembly().GetType(scriptName);
-            if (type == null) { Console.WriteLine("Script not found"); return; }
+            if (type == null) {
+                Console.WriteLine($"Script '{scriptName}' not found. Loaded types:");
+                foreach (var t in Assembly.GetExecutingAssembly().GetTypes())
+                    Console.WriteLine($"  {t.FullName}");
+                return;
+            }
             Templet script = (Templet)Activator.CreateInstance(type);
             script.OnStart();
 
@@ -55,8 +60,22 @@ namespace GameScriptC
                 pipe.Write(new byte[12], 0, 12);
             }
             pipe.Close();
-        }
-
-
     }
+}
+
+public static class KeyboardHelper
+{
+    [DllImport("user32.dll")]
+    static extern short GetAsyncKeyState(int vKey);
+
+    public static bool IsKeyDown(ConsoleKey key)
+    {
+        return (GetAsyncKeyState((int)key) & 0x8000) != 0;
+    }
+
+    public static bool IsKeyPressed(ConsoleKey key)
+    {
+        return (GetAsyncKeyState((int)key) & 0x0001) != 0;
+    }
+}
 }
