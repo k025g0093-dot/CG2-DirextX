@@ -315,8 +315,13 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 					}
 					else if (auto* gs = dynamic_cast<GameScript*>(c)) {
+
+						ImGui::Text("ここはC#のスクリプトの作成から実行までを行っています");
+
 						ImGui::Spacing();
 
+						
+						ImGui::Text("これはからスクリプトの初期化またヴィジュアルスタジオを起動します");
 						if (ImGui::Button("C#スクリプトを初期化＆起動")) {
 
 							gs->StartScript(); // ボタンを押した時に1回だけ初期化されるので安全！
@@ -324,10 +329,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 						ImGui::Spacing();
 
-						static char debugBuf[256] = "PlayerController";
-						ImGui::InputText("debug", debugBuf, 256);
-
-						// テスト用のUpdate呼び出しボタンも分けておくと安全です
+						ImGui::Text("これは実際に書いたスクリプトののビルドを行います");
 						if (ImGui::Button("C#のビルド")) {
 							gs->ReloadScript();
 							gs->Update();
@@ -335,6 +337,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						}			
 
 						
+						ImGui::Text("現在の.csのクラス名を決めるところです");
 
 						ImGui::Text("test: %s", gs->m_scriptNameBuf);
 						if (ImGui::InputText("作成するスクリプトの名前（.csクラス）##script",
@@ -342,8 +345,9 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 							gs->m_scriptName = gs->m_scriptNameBuf;
 						}
 
-						if (ImGui::Button("リロード")) {
-							gs->ReloadScript();
+						if (ImGui::Button("スクリプト作成")) {
+							//ここで新しいスクリプトと同時にヴィジュアルスタジオを立ち上げる
+							gs->StartScript();
 						}
 
 					}

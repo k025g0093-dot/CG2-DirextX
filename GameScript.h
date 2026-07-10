@@ -14,7 +14,8 @@
 #ifndef UNMANAGEDCALLERSONLY_METHOD
 #define UNMANAGEDCALLERSONLY_METHOD ((const char_t*)-1)
 #endif
-
+// GameScript.h の先頭あたりに追加
+#define LOG(msg) { OutputDebugStringA(msg); OutputDebugStringA("\n"); }
 
 
 using component_start_fn = void(*)();
@@ -34,14 +35,7 @@ public:
 
 
 	GameScript() {
-		// Show a console even in GUI apps so std::cout / Console.WriteLine is visible
-		if (!AllocConsole()) {
-			// If one already exists, try AttachConsole instead
-			AttachConsole(ATTACH_PARENT_PROCESS);
-		}
-		FILE* fp;
-		freopen_s(&fp, "CONOUT$", "w", stdout);
-		freopen_s(&fp, "CONOUT$", "w", stderr);
+
 		setvbuf(stdout, nullptr, _IONBF, 0);
 		std::cout << "=== C# Script Console ===" << std::endl;
 		strcpy_s(m_scriptNameBuf, m_scriptName.c_str());
@@ -83,8 +77,7 @@ public:
 
 		std::ifstream tmpl(tmplPath);
 		if (!tmpl) {
-			std::cout << "[GameScript] Template not found: " << tmplPath << std::endl;
-			return;
+			LOG("[GameScript] Template not found: ");
 		}
 		std::string content((std::istreambuf_iterator<char>(tmpl)), std::istreambuf_iterator<char>());
 		tmpl.close();
@@ -97,7 +90,7 @@ public:
 		std::ofstream file(outPath);
 		file << content;
 		file.close();
-		std::cout << "[GameScript] Created: " << outPath << std::endl;
+		LOG("[GameScript] Connected!");
 	}
 
 
@@ -132,7 +125,7 @@ public:
 		system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
 
 
-		bool s_csStarted = false;
+		static bool s_csStarted = false;
 		if (!s_csStarted) {
 
 			//C#のプロセスを起動する
@@ -142,7 +135,7 @@ public:
 				NULL, NULL, NULL, FALSE,
 				0, NULL, NULL, &si, &m_pi)) {
 				DWORD err = GetLastError();
-				std::cout << "[GameScript] CreateProcessW failed: " << err << std::endl;
+				LOG("[GameScript] CreateProcessW failed: " );
 			}
 			s_csStarted = true;
 			Sleep(2000);
@@ -150,7 +143,7 @@ public:
 
 		std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe";
 
-		std::cout << "[GameScript] Connecting..." << std::endl;
+		LOG("[GameScript] Connected!");
 		if (WaitNamedPipeW(pipeName.c_str(), 5000)) {
 			m_hPipe = CreateFileW(
 				pipeName.c_str(),
@@ -159,12 +152,12 @@ public:
 			if (m_hPipe == INVALID_HANDLE_VALUE)
 				std::cout << "[GameScript] CreateFileW failed: " << GetLastError() << std::endl;
 			else
-				std::cout << "[GameScript] Connected!" << std::endl;
+				LOG("[GameScript] Connected!");
 			DWORD written;
 			WriteFile(m_hPipe, m_scriptName.c_str(), (DWORD)m_scriptName.size() + 1, &written, NULL);
 		}
 		else {
-			std::cout << "[GameScript] WaitNamedPipeW timed out" << std::endl;
+			LOG( "[GameScript] WaitNamedPipeW timed out" );
 		}
 
 	}

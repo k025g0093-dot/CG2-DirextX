@@ -74,8 +74,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	const auto& droppedMeshes = ModelManager::GetInstance()->GetSceneObjects();
 
 	engine->m_camera.transform.translate.x = 0.0f;
-	engine->m_camera.transform.translate.y = 200.0f;
-	engine->m_camera.transform.translate.z = -300.0f;
+	engine->m_camera.transform.translate.y = 0.0f;
+	engine->m_camera.transform.translate.z = 0.0f;
 	engine->m_camera.transform.rotate.x = 0.6f;
 
 	bool  useMonsterBall = true;
