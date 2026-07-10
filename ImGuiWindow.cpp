@@ -232,11 +232,15 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 {
 #ifdef USE_IMGUI
 
+
 	// 🌟全体のパディング（内側の余白）を少し広げる
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 
 
 	if (begin("コンポーネント")) {
+
+	
+
 
 		if (ImGui::CollapsingHeader("ライト設定")) {
 			LightManager* lm = LightManager::GetInstance();
@@ -282,6 +286,8 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
+
+
 		for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
 			if (!entity->isSelected) continue;
 
@@ -304,6 +310,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 					else if (auto* lc = dynamic_cast<LearnComponent*>(c)) {
 						ImGui::Spacing();
 						ImGui::Text("ステータス: 実行中");
+					
 						ImGui::Spacing();
 
 					}
@@ -317,22 +324,24 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 						ImGui::Spacing();
 
+						static char debugBuf[256] = "PlayerController";
+						ImGui::InputText("debug", debugBuf, 256);
+
 						// テスト用のUpdate呼び出しボタンも分けておくと安全です
 						if (ImGui::Button("C#のビルド")) {
 							gs->ReloadScript();
 							gs->Update();
 							
+						}			
+
+						
+
+						ImGui::Text("test: %s", gs->m_scriptNameBuf);
+						if (ImGui::InputText("作成するスクリプトの名前（.csクラス）##script",
+							gs->m_scriptNameBuf, sizeof(gs->m_scriptNameBuf))) {
+							gs->m_scriptName = gs->m_scriptNameBuf;
 						}
 
-						if (gs->m_scriptNameBuf[0] == '\0' && !gs->m_scriptName.empty()) {
-							strcpy_s(gs->m_scriptNameBuf, gs->m_scriptName.c_str());
-						}
-
-						static char buf[256];
-						strcpy_s(buf, gs->m_scriptName.c_str());
-						if (ImGui::InputText("検索するスクリプトの名前", buf, sizeof(buf))) {
-							gs->m_scriptName = buf;
-						}
 						if (ImGui::Button("リロード")) {
 							gs->ReloadScript();
 						}
@@ -351,8 +360,8 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				if (!entity->GetComponent<LearnComponent>() && ImGui::MenuItem("LearnComponent"))
 					entity->AddComponent<LearnComponent>();
 
-					if (!entity->GetComponent<GameScript>() && ImGui::MenuItem("C#スクリプト"))
-						entity->AddComponent<GameScript>();
+				if (!entity->GetComponent<GameScript>() && ImGui::MenuItem("C#スクリプト"))
+					entity->AddComponent<GameScript>();
 
 				ImGui::EndPopup();
 			}
@@ -364,7 +373,9 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				break;
 			}
 		}
+
 	}
+
 
 	ImGui::PopStyleVar(); // スタイル設定を元に戻す
 

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
+#include <fstream> 
 #include "externals/scripting/hostfxr.h"
 #include "externals/scripting/coreclr_delegates.h"
 #include "MonoBehaviour.h"
@@ -21,129 +22,162 @@ using component_start_fn = void(*)();
 class GameScript : public MonoBehaviour {
 
 private:
-    hostfxr_close_fn    m_close_fptr = nullptr;
-    hostfxr_handle      m_runtime_handle = nullptr;
-    bool m_loaded = false;
-    Entity* entity = nullptr;
+	hostfxr_close_fn    m_close_fptr = nullptr;
+	hostfxr_handle      m_runtime_handle = nullptr;
+	bool m_loaded = false;
+	Entity* entity = nullptr;
 public:
 
-    std::string m_scriptName = "PlayerController"; // デフォルトのスクリプト名(未設定時の初期値)
-    char m_scriptNameBuf[256] = {};
+	std::string m_scriptName = "PlayerController"; // デフォルトのスクリプト名(未設定時の初期値)
+	char m_scriptNameBuf[256] = {};
+	std::string scriptName = {};
+
+
+	GameScript() {
+		// Show a console even in GUI apps so std::cout / Console.WriteLine is visible
+		if (!AllocConsole()) {
+			// If one already exists, try AttachConsole instead
+			AttachConsole(ATTACH_PARENT_PROCESS);
+		}
+		FILE* fp;
+		freopen_s(&fp, "CONOUT$", "w", stdout);
+		freopen_s(&fp, "CONOUT$", "w", stderr);
+		setvbuf(stdout, nullptr, _IONBF, 0);
+		std::cout << "=== C# Script Console ===" << std::endl;
+		strcpy_s(m_scriptNameBuf, m_scriptName.c_str());
+	}
+
+	~GameScript() {
+		TerminateProcess(m_pi.hProcess, 0);
+		CloseHandle(m_hPipe);
+		CloseHandle(m_pi.hProcess);
+		CloseHandle(m_pi.hThread);
+	}
+
+
+	bool m_vsOpened = false;
+
+	void Start() override {
+		MonoBehaviour::Start();
+		//ReloadScript();
+	}
 
 
 
-    GameScript() {
-        // Show a console even in GUI apps so std::cout / Console.WriteLine is visible
-        if (!AllocConsole()) {
-            // If one already exists, try AttachConsole instead
-            AttachConsole(ATTACH_PARENT_PROCESS);
-        }
-        FILE* fp;
-        freopen_s(&fp, "CONOUT$", "w", stdout);
-        freopen_s(&fp, "CONOUT$", "w", stderr);
-        setvbuf(stdout, nullptr, _IONBF, 0);
-        std::cout << "=== C# Script Console ===" << std::endl;
-        strcpy_s(m_scriptNameBuf, m_scriptName.c_str());
-    }
-
-    ~GameScript() {
-        TerminateProcess(m_pi.hProcess, 0);
-        CloseHandle(m_hPipe);
-        CloseHandle(m_pi.hProcess);
-        CloseHandle(m_pi.hThread);
-    }
+	PROCESS_INFORMATION m_pi = {};
+	HANDLE m_hPipe = INVALID_HANDLE_VALUE;
 
 
-    bool m_vsOpened = false;
+	//csファイルがない場合に作成する
+	void CreateScript(const std::string& name) {
+		std::string tmplPath = "externals/GameScript/GameScriptC/GameScriptC/GameScript/Templet.cs.txt";
+		std::string outPath = "externals/GameScript/GameScriptC/GameScriptC/Scripts/" + name + ".cs";
+		//テンプレートなどのパスの取得
 
-    void Start() override {
-        MonoBehaviour::Start();
-        ReloadScript();
-    }
+		//パスがそもそもあるかの確認
+		if (std::filesystem::exists(outPath)) return;
 
-    void StartScript() {
-        MonoBehaviour::Start();
+		//ファイルシステム
+		std::filesystem::create_directories(
+			"externals/GameScript/GameScriptC/GameScriptC/Scripts");
 
-        if (!m_vsOpened) {
-            m_vsOpened = true;
+		std::ifstream tmpl(tmplPath);
+		if (!tmpl) {
+			std::cout << "[GameScript] Template not found: " << tmplPath << std::endl;
+			return;
+		}
+		std::string content((std::istreambuf_iterator<char>(tmpl)), std::istreambuf_iterator<char>());
+		tmpl.close();
 
-            for (auto& e : EntityManager::GetInstance()->GetEntities()) {
-                if (e->GetComponent<GameScript>() == this) {
-                    entity = e.get();
-                    break;
-                }
-            }
+		//スクリプトの名前を新しくできるクラスに変更
+		size_t pos = content.find("#SCRIPTNAME#");
+		if (pos != std::string::npos)
+			content.replace(pos, 12, name);
 
-            ShellExecuteA(NULL, "open", "devenv.exe",
-                "\"externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj\"",
-                NULL, SW_SHOWNORMAL);
-
-        }
-        ReloadScript();
-
-    }
-
-    PROCESS_INFORMATION m_pi = {};
-    HANDLE m_hPipe = INVALID_HANDLE_VALUE;
-
-
-    void ReloadScript() {
-        if (m_pi.hProcess) {
-            TerminateProcess(m_pi.hProcess, 0);
-            CloseHandle(m_hPipe);
-            CloseHandle(m_pi.hProcess);
-            CloseHandle(m_pi.hThread);
-            m_pi = {};
-        }
-
-        //C#のプロジェクトをビルドする
-        system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
+		std::ofstream file(outPath);
+		file << content;
+		file.close();
+		std::cout << "[GameScript] Created: " << outPath << std::endl;
+	}
 
 
-        static bool s_csStarted = false;
-        if (!s_csStarted) {
+	void StartScript() {
+		MonoBehaviour::Start();
+		if (!m_vsOpened) {
+			m_vsOpened = true;
+			for (auto& e : EntityManager::GetInstance()->GetEntities()) {
+				if (e->GetComponent<GameScript>() == this) {
+					entity = e.get();
+					break;
+				}
+			}
+			ShellExecuteA(NULL, "open", "devenv.exe",
+				"\"externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj\"",
+				NULL, SW_SHOWNORMAL);
+		}
+		ReloadScript();
+	}
 
-            //C#のプロセスを起動する
-            STARTUPINFOW si = { sizeof(si) };
-            if (!CreateProcessW(
-                L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.exe",
-                NULL, NULL, NULL, FALSE,
-                0, NULL, NULL, &si, &m_pi)) {
-                DWORD err = GetLastError();
-                std::cout << "[GameScript] CreateProcessW failed: " << err << std::endl;
-            }
-            s_csStarted = true;
-            Sleep(2000);
-        }
+	void ReloadScript() {
+		if (m_pi.hProcess) {
+			TerminateProcess(m_pi.hProcess, 0);
+			CloseHandle(m_hPipe);
+			CloseHandle(m_pi.hProcess);
+			CloseHandle(m_pi.hThread);
+			m_pi = {};
+		}
 
-        std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe" + std::to_wstring(entity->name.begin()+entity->name.end());
+		CreateScript(m_scriptName);
+		//C#のプロジェクトをビルドする
+		system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
 
-        std::cout << "[GameScript] Connecting..." << std::endl;
-        if (WaitNamedPipeW(pipeName.c_str(), 5000)) {
-            m_hPipe = CreateFileW(
-                pipeName.c_str(),
-                GENERIC_READ | GENERIC_WRITE,
-                0, NULL, OPEN_EXISTING, 0, NULL);
-            if (m_hPipe == INVALID_HANDLE_VALUE)
-                std::cout << "[GameScript] CreateFileW failed: " << GetLastError() << std::endl;
-            else
-                std::cout << "[GameScript] Connected!" << std::endl;
-        }
-        else {
-            std::cout << "[GameScript] WaitNamedPipeW timed out" << std::endl;
-        }
 
-    }
+		bool s_csStarted = false;
+		if (!s_csStarted) {
 
-    void Update() override {
-        if (m_hPipe == INVALID_HANDLE_VALUE) return;
-        DWORD written;
-        float sendData[4] = { 0 };
-        WriteFile(m_hPipe, sendData, sizeof(sendData), &written, NULL);
-        float recvData[3];
-        DWORD read;
-        ReadFile(m_hPipe, recvData, sizeof(recvData), &read, NULL);
-    }
+			//C#のプロセスを起動する
+			STARTUPINFOW si = { sizeof(si) };
+			if (!CreateProcessW(
+				L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.exe",
+				NULL, NULL, NULL, FALSE,
+				0, NULL, NULL, &si, &m_pi)) {
+				DWORD err = GetLastError();
+				std::cout << "[GameScript] CreateProcessW failed: " << err << std::endl;
+			}
+			s_csStarted = true;
+			Sleep(2000);
+		}
+
+		std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe";
+
+		std::cout << "[GameScript] Connecting..." << std::endl;
+		if (WaitNamedPipeW(pipeName.c_str(), 5000)) {
+			m_hPipe = CreateFileW(
+				pipeName.c_str(),
+				GENERIC_READ | GENERIC_WRITE,
+				0, NULL, OPEN_EXISTING, 0, NULL);
+			if (m_hPipe == INVALID_HANDLE_VALUE)
+				std::cout << "[GameScript] CreateFileW failed: " << GetLastError() << std::endl;
+			else
+				std::cout << "[GameScript] Connected!" << std::endl;
+			DWORD written;
+			WriteFile(m_hPipe, m_scriptName.c_str(), (DWORD)m_scriptName.size() + 1, &written, NULL);
+		}
+		else {
+			std::cout << "[GameScript] WaitNamedPipeW timed out" << std::endl;
+		}
+
+	}
+
+	void Update() override {
+		if (m_hPipe == INVALID_HANDLE_VALUE) return;
+		DWORD written;
+		float sendData[4] = { 0 };
+		WriteFile(m_hPipe, sendData, sizeof(sendData), &written, NULL);
+		float recvData[3];
+		DWORD read;
+		ReadFile(m_hPipe, recvData, sizeof(recvData), &read, NULL);
+	}
 
 
 

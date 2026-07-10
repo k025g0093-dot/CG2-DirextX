@@ -3,6 +3,9 @@ using System.Runtime.InteropServices;
 using System.IO.Pipes;
 using System.Threading.Tasks;
 using Vortice.XInput;
+using System.Text;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace GameScriptC
 {
@@ -31,29 +34,29 @@ namespace GameScriptC
 
         static void HandleEntity(NamedPipeServerStream pipe)
         {
-            Console.WriteLine("HandleEntity Start");
-            byte[] buffer = new byte[16];
+            byte[] nameBuffer = new byte[1024];
+            int nameLen = pipe.Read(nameBuffer, 0, nameBuffer.Length);
+            string scriptName = Encoding.UTF8.GetString(nameBuffer, 0, nameLen).TrimEnd('\0');
+            Console.WriteLine($"Script:{scriptName}");
+
+            Type type = Assembly.GetExecutingAssembly().GetType(scriptName);
+            if (type == null) { Console.WriteLine("Script not found"); return; }
+            Templet script = (Templet)Activator.CreateInstance(type);
+            script.OnStart();
+
+            byte[] buffer = new byte[1024];
             while (true)
             {
                 int bytesRead = pipe.Read(buffer, 0, buffer.Length);
-                //Console.WriteLine("受信: " + bytesRead + " bytes");
                 if (bytesRead <= 0) break;
 
-                if (Keyboard.IsKeyTriger(ConsoleKey.Q))
-                    Console.WriteLine("Qが押されてる");
-                if (Keyboard.IsKeyTriger(ConsoleKey.A))
-                    Console.WriteLine("Aが押されてる");
-                if (Keyboard.IsKeyTriger(ConsoleKey.S))
-                    Console.WriteLine("Sが押されてる");
-                if (Keyboard.IsKeyTriger(ConsoleKey.D))
-                    Console.WriteLine("Dが押されてる");
-                if (Keyboard.IsKeyTriger(ConsoleKey.Spacebar))
-                    Console.WriteLine("いざジャンプ");
+                script.Update();
 
                 pipe.Write(new byte[12], 0, 12);
             }
             pipe.Close();
-            Console.WriteLine("HandleEntity End");
         }
+
+
     }
 }
