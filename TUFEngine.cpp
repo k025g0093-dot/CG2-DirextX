@@ -254,9 +254,6 @@ Matrix4x4 TUFEngine::GetSpriteUVTransformMatrix() const {
 
 #pragma region ImGuiの初期化関数基本的に ImGui を初期化していくつかのウィンドウを作成している
 
-
-
-
 #ifdef USE_IMGUI
 void TUFEngine::InitializeImGui(HWND hwnd) {
 	IMGUI_CHECKVERSION();
@@ -349,10 +346,10 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 
 }
+#endif // USE_IMGUI
 
 #pragma endregion
 
-#endif // USE_IMGUI
 
 
 #pragma region DirectX 12 初期化関連
@@ -468,6 +465,9 @@ void TUFEngine::InitializeDXGI(HWND hwnd) {
 }
 #pragma endregion
 
+//深度バッファー
+
+#pragma region	深度バッファーについてです
 
 ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 	int32_t width,
@@ -521,6 +521,7 @@ ID3D12Resource* TUFEngine::CreateDepthStencilTextureResource(
 	return depthStencilResource.Get();
 }
 
+#pragma endregion
 
 
 #pragma region 描画コマンド
@@ -1075,7 +1076,7 @@ void TUFEngine::RenderSprites2D(const std::vector<DrawRequest>& requests2D) {
 
 // --- TUFEngine.cpp ---
 
-#pragma region 各モデルの描画呼び出し
+#pragma region 各モデルの描画リクエスト処理
 
 void TUFEngine::DrawSphere(const Vector3& pos, const Vector3& rot, const Vector3& scale,
 	int textureIndex, int lightId) {
@@ -1191,7 +1192,6 @@ void TUFEngine::DrawDynamicMeshWithNormal(
 
 
 
-#pragma endregion
 
 void TUFEngine::DrawLine(const Vector3& from, const Vector3& to, const Vector4& color) {
 	if (!m_line) {
@@ -1224,9 +1224,12 @@ void TUFEngine::DrawDebugOBB(const OBB& obb, const Vector4& color) {
 	}
 }
 
+#pragma endregion
+
+
 //windowだったりいろいろなものの拡張機能作成場所
 
-#pragma region 現在はその他機能として実装しています
+#pragma region 現在はその他機能として実装しています、ここは時期に削ったり移動する予定です
 void TUFEngine::GrowConstantBuffer() {
 	m_maxDrawCount *= 2;
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
