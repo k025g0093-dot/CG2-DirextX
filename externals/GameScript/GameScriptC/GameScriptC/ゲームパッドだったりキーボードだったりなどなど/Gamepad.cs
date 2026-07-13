@@ -3,54 +3,95 @@ using Vortice.XInput;
 
 public static class Gamepad
 {
-    static int? _index;
+    // 認識済みのゲームパッド番号を保持(全エンティティ・全スクリプトで共有される状態)
+    public static int? GamepadIndex { get; private set; }
 
-    static Gamepad GetState()
+    // XInputのボタンビット配置は仕様で固定なので、定数として直接持っておく
+    // (enum側のメンバー名に依存しないため、型名の不確実性を回避できる)
+    private const ushort BTN_DPAD_UP = 0x0001;
+    private const ushort BTN_DPAD_DOWN = 0x0002;
+    private const ushort BTN_DPAD_LEFT = 0x0004;
+    private const ushort BTN_DPAD_RIGHT = 0x0008;
+    private const ushort BTN_START = 0x0010;
+    private const ushort BTN_BACK = 0x0020;
+    private const ushort BTN_LEFT_THUMB = 0x0040;
+    private const ushort BTN_RIGHT_THUMB = 0x0080;
+    private const ushort BTN_LEFT_SHOULDER = 0x0100;
+    private const ushort BTN_RIGHT_SHOULDER = 0x0200;
+    private const ushort BTN_A = 0x1000;
+    private const ushort BTN_B = 0x2000;
+    private const ushort BTN_X = 0x4000;
+    private const ushort BTN_Y = 0x8000;
+
+    // 他クラスから毎フレーム呼んでもらう更新関数
+    public static State? GetKeystate()
     {
-        if (_index != null && XInput.GetState(_index.Value, out var state))
-            return state.Gamepad;
-        for (int i = 0; i < 4; i++)
-            if (XInput.GetState(i, out var state))
-            { _index = i; return state.Gamepad; }
-        _index = null;
-        return default;
+        if (GamepadIndex != null)
+        {
+            if (XInput.GetState((uint)GamepadIndex.Value, out var keystate))
+                return keystate;
+            else
+                GamepadIndex = null;
+        }
+        else
+        {
+            for (var i = 0; i < 4; ++i)
+            {
+                if (XInput.GetState((uint)i, out var keystate))
+                {
+                    GamepadIndex = i;
+                    return keystate;
+                }
+            }
+        }
+        return null;
     }
 
-    public static bool IsConnected()
+    // マスク値を直接指定して判定する汎用ヘルパー
+    // (ushortにキャストしてからビット演算するので、enum型のメンバー名の有無に左右されない)
+    public static bool IsButtonDown(ushort mask)
     {
-        var gp = GetState();
-        return gp.Buttons != GamePadButtons.None || gp.LeftThumbX != 0 || gp.LeftThumbY != 0;
+        var state = GetKeystate();
+        if (state == null) return false;
+        return ((ushort)state.Value.Gamepad.Buttons & mask) != 0;
     }
 
-    public static bool IsButtonDown(GamePadButtons button)
-    {
-        return GetState().Buttons.HasFlag(button);
-    }
+    // よく使うボタンはショートカット関数にしておくと、他クラスから呼びやすい
+    public static bool IsA() => IsButtonDown(BTN_A);
+    public static bool IsB() => IsButtonDown(BTN_B);
+    public static bool IsX() => IsButtonDown(BTN_X);
+    public static bool IsY() => IsButtonDown(BTN_Y);
+    public static bool IsLB() => IsButtonDown(BTN_LEFT_SHOULDER);
+    public static bool IsRB() => IsButtonDown(BTN_RIGHT_SHOULDER);
+    public static bool IsStart() => IsButtonDown(BTN_START);
 
-    public static float LeftX() => GetState().LeftThumbX / 32768f;
-    public static float LeftY() => GetState().LeftThumbY / 32768f;
-    public static float RightX() => GetState().RightThumbX / 32768f;
-    public static float RightY() => GetState().RightThumbY / 32768f;
-
+    // デバッグ表示用(元のGamePadUpdateの役割はこちらに統合)
     public static void DebugPrintState()
     {
-        var gp = GetState();
+        var state = GetKeystate();
+        if (state == null) return;
 
-        if (gp.Buttons.HasFlag(GamePadButtons.A)) Console.WriteLine("A");
-        if (gp.Buttons.HasFlag(GamePadButtons.B)) Console.WriteLine("B");
-        if (gp.Buttons.HasFlag(GamePadButtons.X)) Console.WriteLine("X");
-        if (gp.Buttons.HasFlag(GamePadButtons.Y)) Console.WriteLine("Y");
-        if (gp.Buttons.HasFlag(GamePadButtons.LeftShoulder)) Console.WriteLine("LB");
-        if (gp.Buttons.HasFlag(GamePadButtons.RightShoulder)) Console.WriteLine("RB");
-        if (gp.Buttons.HasFlag(GamePadButtons.Start)) Console.WriteLine("Start");
+        var gp = state.Value.Gamepad;
+        ushort b = (ushort)gp.Buttons; // ここで一度だけキャストしておく
 
-        if (gp.LeftThumbX > 0) Console.WriteLine("Left stick right");
-        else if (gp.LeftThumbX < 0) Console.WriteLine("Left stick left");
-        if (gp.LeftThumbY > 0) Console.WriteLine("Left stick up");
-        else if (gp.LeftThumbY < 0) Console.WriteLine("Left stick down");
-        if (gp.RightThumbX > 0) Console.WriteLine("Right stick right");
-        else if (gp.RightThumbX < 0) Console.WriteLine("Right stick left");
-        if (gp.RightThumbY > 0) Console.WriteLine("Right stick up");
-        else if (gp.RightThumbY < 0) Console.WriteLine("Right stick down");
+        if ((b & BTN_A) != 0) Console.WriteLine("Aボタンが押されました");
+        if ((b & BTN_B) != 0) Console.WriteLine("Bボタンが押されました");
+        if ((b & BTN_X) != 0) Console.WriteLine("Xボタンが押されました");
+        if ((b & BTN_Y) != 0) Console.WriteLine("Yボタンが押されました");
+        if ((b & BTN_LEFT_SHOULDER) != 0) Console.WriteLine("LBボタンが押されました");
+        if ((b & BTN_RIGHT_SHOULDER) != 0) Console.WriteLine("RBボタンが押されました");
+        if ((b & BTN_START) != 0) Console.WriteLine("Startボタンが押されました");
+
+        if (gp.LeftThumbX > 0) Console.WriteLine("左スティックが右に倒されました");
+        else if (gp.LeftThumbX < 0) Console.WriteLine("左スティックが左に倒されました");
+
+        if (gp.LeftThumbY > 0) Console.WriteLine("左スティックが上に倒されました");
+        else if (gp.LeftThumbY < 0) Console.WriteLine("左スティックが下に倒されました");
+
+        if (gp.RightThumbX > 0) Console.WriteLine("右スティックが右に倒されました");
+        else if (gp.RightThumbX < 0) Console.WriteLine("右スティックが左に倒されました");
+
+        if (gp.RightThumbY > 0) Console.WriteLine("右スティックが上に倒されました");
+        else if (gp.RightThumbY < 0) Console.WriteLine("右スティックが下に倒されました");
     }
 }
