@@ -78,14 +78,20 @@ public:
 		std::ifstream tmpl(tmplPath);
 		if (!tmpl) {
 			LOG("[GameScript] Template not found: ");
+			return;
 		}
 		std::string content((std::istreambuf_iterator<char>(tmpl)), std::istreambuf_iterator<char>());
 		tmpl.close();
 
 		//スクリプトの名前を新しくできるクラスに変更
-		size_t pos = content.find("#SCRIPTNAME#");
-		if (pos != std::string::npos)
-			content.replace(pos, 12, name);
+		{
+			size_t pos = 0;
+			const std::string placeholder = "#SCRIPTNAME#";
+			while ((pos = content.find(placeholder, pos)) != std::string::npos) {
+				content.replace(pos, placeholder.size(), name);
+				pos += name.size();
+			}
+		}
 
 		std::ofstream file(outPath);
 		file << content;

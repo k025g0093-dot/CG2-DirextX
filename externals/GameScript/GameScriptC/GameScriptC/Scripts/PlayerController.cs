@@ -1,20 +1,19 @@
 ﻿using System;
-using Vortice.XInput;
 
 // ==============================================
 // PlayerController スクリプトテンプレート
 // ==============================================
-// このクラスはC++側から「#SCRIPTNAME#」という名前で呼び出されます。
+// このクラスはC++側から「PlayerController」という名前で呼び出されます。
 // Update() が毎フレーム呼ばれるので、ここにキャラクターの挙動を書いてください。
 //
 // 使えるAPI一覧:
-//   キーボード(押しっぱなし判定)  → KeyboardHelper.IsKeyDown(ConsoleKey.任意のキー)
+//   キーボード(押しっぱなし判定)  → IsKeyDown(ConsoleKey.任意のキー)
 //   キーボード(押した瞬間だけ判定) → GameScriptC.Keyboard.IsKeyTriger(ConsoleKey.任意のキー)
 //   ゲームパッド(ボタン単体)      → Gamepad.IsA() / IsB() / IsX() / IsY() / IsLB() / IsRB() / IsStart()
 //   ゲームパッド(任意のボタン)     → Gamepad.IsButtonDown(0x1000 のようなビットマスク値)
 //   ゲームパッド(スティック等の生値) → Gamepad.GetKeystate() でState構造体を直接取得
 // ==============================================
-public class #SCRIPTNAME# : Templet
+public class PlayerController : Templet
 {
     // ゲーム開始時に1回だけ呼ばれます。初期化処理をここに書いてください。
     public override void OnStart() { }
@@ -23,13 +22,13 @@ public class #SCRIPTNAME# : Templet
     public override void Update()
     {
         // --- キーボード: 押しっぱなし判定の例(W/A/S/Dで移動したい時など) ---
-        if (KeyboardHelper.IsKeyDown(ConsoleKey.W))
+        if (IsKeyDown(ConsoleKey.W))
             Console.WriteLine("W is held");
-        if (KeyboardHelper.IsKeyDown(ConsoleKey.A))
+        if (IsKeyDown(ConsoleKey.A))
             Console.WriteLine("A is held");
-        if (KeyboardHelper.IsKeyDown(ConsoleKey.S))
+        if (IsKeyDown(ConsoleKey.S))
             Console.WriteLine("S is held");
-        if (KeyboardHelper.IsKeyDown(ConsoleKey.D))
+        if (IsKeyDown(ConsoleKey.D))
             Console.WriteLine("D is held");
 
         // --- キーボード: 「押した瞬間」だけ反応させたい場合(ジャンプなど連打防止したい時) ---
