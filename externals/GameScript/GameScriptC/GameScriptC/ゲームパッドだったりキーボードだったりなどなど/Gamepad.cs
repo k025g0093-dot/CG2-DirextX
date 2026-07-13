@@ -1,127 +1,56 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Text;
-//using Vortice.XInput;
+﻿using System;
+using Vortice.XInput;
 
-//ゲームパット管理クラスです
-//主な使い方は下のとうりです、確認してみてね！
+public static class Gamepad
+{
+    static int? _index;
 
+    static Gamepad GetState()
+    {
+        if (_index != null && XInput.GetState(_index.Value, out var state))
+            return state.Gamepad;
+        for (int i = 0; i < 4; i++)
+            if (XInput.GetState(i, out var state))
+            { _index = i; return state.Gamepad; }
+        _index = null;
+        return default;
+    }
 
+    public static bool IsConnected()
+    {
+        var gp = GetState();
+        return gp.Buttons != GamePadButtons.None || gp.LeftThumbX != 0 || gp.LeftThumbY != 0;
+    }
 
-//namespace GameScriptC
-//{
-//    internal class GamepadClass
-//    {
+    public static bool IsButtonDown(GamePadButtons button)
+    {
+        return GetState().Buttons.HasFlag(button);
+    }
 
-//        public int? GamepadIndex { get; set; }
+    public static float LeftX() => GetState().LeftThumbX / 32768f;
+    public static float LeftY() => GetState().LeftThumbY / 32768f;
+    public static float RightX() => GetState().RightThumbX / 32768f;
+    public static float RightY() => GetState().RightThumbY / 32768f;
 
-//        public State? GetKeystate()
-//        {
-//            // 認識済みの場合、認識済みのゲームパッドを使う
-//            if (GamepadIndex != null)
-//            {
-//                if (XInput.GetState(GamepadIndex.Value, out var keystate))
-//                    return keystate;
-//                else
-//                    // 認識済みのゲームパッドが無効になったとみなす
-//                    GamepadIndex = null;
-//            }
-//            else
-//                // 未認識の場合、0 ～ 3 の順で有効なゲームパッドを探す
-//                for (var i = 0; i < 4; ++i)
-//                    if (XInput.GetState(i, out var keystate))
-//                    {
-//                        GamepadIndex = i;
-//                        return keystate;
-//                    }
+    public static void DebugPrintState()
+    {
+        var gp = GetState();
 
-//            return null;
-//        }
+        if (gp.Buttons.HasFlag(GamePadButtons.A)) Console.WriteLine("A");
+        if (gp.Buttons.HasFlag(GamePadButtons.B)) Console.WriteLine("B");
+        if (gp.Buttons.HasFlag(GamePadButtons.X)) Console.WriteLine("X");
+        if (gp.Buttons.HasFlag(GamePadButtons.Y)) Console.WriteLine("Y");
+        if (gp.Buttons.HasFlag(GamePadButtons.LeftShoulder)) Console.WriteLine("LB");
+        if (gp.Buttons.HasFlag(GamePadButtons.RightShoulder)) Console.WriteLine("RB");
+        if (gp.Buttons.HasFlag(GamePadButtons.Start)) Console.WriteLine("Start");
 
-
-//        public static void GamePadUpdate()
-//        {
-//            // XInputの状態を取得
-//            var state = GamePad.GetState(0);
-//            // ボタンの状態を確認
-//            if (state.IsConnected)
-//            {
-//                if (state.Buttons.HasFlag(GamePadButtonFlags.A))
-//                {
-//                    Console.WriteLine("Aボタンが押されました");
-//                }
-//                if (state.Buttons.HasFlag(GamePadButtonFlags.B))
-//                {
-//                    Console.WriteLine("Bボタンが押されました");
-//                }
-//                if (state.Buttons.HasFlag(GamePadButtonFlags.X))
-//                {
-//                    Console.WriteLine("Xボタンが押されました");
-//                }
-//                if (state.Buttons.HasFlag(GamePadButtonFlags.Y))
-//                {
-//                    Console.WriteLine("Yボタンが押されました");
-//                }
-
-//                //RLボタン関係
-//                if (state.Buttons.HasFlag(GamePadButtonFlags.LeftShoulder))
-//                {
-//                    Console.WriteLine("LBボタンが押されました");
-//                }
-//                if (state.Buttons.HasFlag(GamePadButtonFlags.RightShoulder))
-//                {
-//                    Console.WriteLine("LBボタンが押されました");
-//                }
-
-//                //特殊ボタンの状態を確認
-//                if (state.Buttons.HasFlag(GamePadButtonFlags.Start))
-//                {
-//                    Console.WriteLine("Startボタンが押されました");
-//                }
-
-//            }
-
-//            // 左スティックの状態を確認
-//            if (state.LeftThumbX>0)
-//            {
-//                Console.WriteLine("左スティックが右に倒されました");
-//            }
-//            else if (state.LeftThumbX < 0)
-//            {
-//                Console.WriteLine("左スティックが左に倒されました");
-//            }
-
-//            if (state.LeftThumbY>0)
-//            {
-//                Console.WriteLine("左スティックが上に倒されました");
-//            }
-//            else if (state.LeftThumbY < 0)
-//            {
-//                Console.WriteLine("左スティックが下に倒されました");
-//            }
-
-
-//            // 右スティックの状態を確認
-//            if (state.RightThumbX>0)
-//            {
-//                Console.WriteLine("右スティックが右に倒されました");
-
-//            }
-//            else if (state.RightThumbX < 0)
-//            {
-//                Console.WriteLine("右スティックが左に倒されました");
-//            }
-
-//            if (state.RightThumbY>0)
-//            {
-//                Console.WriteLine("右スティックが上に倒されました");
-//            }
-//            else if (state.RightThumbY < 0)
-//            {
-//                Console.WriteLine("右スティックが下に倒されました");
-//            }
-
-//        }
-
-//    }
-//}
+        if (gp.LeftThumbX > 0) Console.WriteLine("Left stick right");
+        else if (gp.LeftThumbX < 0) Console.WriteLine("Left stick left");
+        if (gp.LeftThumbY > 0) Console.WriteLine("Left stick up");
+        else if (gp.LeftThumbY < 0) Console.WriteLine("Left stick down");
+        if (gp.RightThumbX > 0) Console.WriteLine("Right stick right");
+        else if (gp.RightThumbX < 0) Console.WriteLine("Right stick left");
+        if (gp.RightThumbY > 0) Console.WriteLine("Right stick up");
+        else if (gp.RightThumbY < 0) Console.WriteLine("Right stick down");
+    }
+}

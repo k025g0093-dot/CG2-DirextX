@@ -113,7 +113,7 @@ public:
 
 	void ReloadScript() {
 		static bool s_csStarted = false;
-
+		system("taskkill /f /im GameScriptC.exe 2>nul");
 		if (m_pi.hProcess) {
 			TerminateProcess(m_pi.hProcess, 0);
 			CloseHandle(m_hPipe);

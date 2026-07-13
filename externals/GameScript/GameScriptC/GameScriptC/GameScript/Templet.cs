@@ -11,9 +11,16 @@ public class Templet
         return (GetAsyncKeyState((int)key) & 0x8000) != 0;
     }
 
-    public static bool IsKeyPressed(ConsoleKey key)
+
+    static Dictionary<ConsoleKey, bool> prev = new();
+    public static bool IsKeyTriger(ConsoleKey key)
     {
-        return (GetAsyncKeyState((int)key) & 0x0001) != 0;
+        bool now = (GetAsyncKeyState((int)key) & 0x8000)!=0;
+
+        prev.TryGetValue(key, out bool was);
+        prev[key]=now;
+        return now&&!was;
+
     }
 
     public virtual void OnStart() { }

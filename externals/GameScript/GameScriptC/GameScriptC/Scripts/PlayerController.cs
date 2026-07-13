@@ -1,4 +1,5 @@
 ﻿using System;
+using Vortice.XInput;
 
 public class PlayerController : Templet
 {
@@ -17,8 +18,12 @@ public class PlayerController : Templet
             Console.WriteLine("S is held");
         if (IsKeyDown(ConsoleKey.D))
             Console.WriteLine("D is held");
-        if (IsKeyPressed(ConsoleKey.Spacebar))
+        if (IsKeyDown(ConsoleKey.Spacebar))
             Console.WriteLine("Space pressed");
+        if (Gamepad.IsButtonDown(GamepadButtons.A))
+        {
+            Console.WriteLine("Aボタンが押されている");
+        }
     }
 
 //キーボードの処理について説明します
