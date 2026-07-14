@@ -15,33 +15,35 @@
 #define UNMANAGEDCALLERSONLY_METHOD ((const char_t*)-1)
 #endif
 // GameScript.h の先頭あたりに追加
-#define LOG(msg) { OutputDebugStringA(msg); OutputDebugStringA("\n"); }
+#define LOG(msg) { OutputDebugStringA(msg); OutputDebugStringA("\n"); } // デバッグ出力用の簡易ログマクロ
 
 
 using component_start_fn = void(*)();
 
+// C#スクリプトをホストしてEntityの座標をやり取りするコンポーネント
 class GameScript : public MonoBehaviour {
 
 private:
-	hostfxr_close_fn    m_close_fptr = nullptr;
-	hostfxr_handle      m_runtime_handle = nullptr;
-	bool m_loaded = false;
-	Entity* entity = nullptr;
+	hostfxr_close_fn    m_close_fptr = nullptr; // hostfxrのクローズ関数ポインタ(現状未使用)
+	hostfxr_handle      m_runtime_handle = nullptr; // .NETランタイムのハンドル(現状未使用)
+	bool m_loaded = false; // ロード済みフラグ(現状未使用)
+	Entity* entity = nullptr; // 座標同期対象のEntity
 public:
 
 	std::string m_scriptName = "PlayerController"; // デフォルトのスクリプト名(未設定時の初期値)
-	char m_scriptNameBuf[256] = {};
-	std::string scriptName = {};
+	char m_scriptNameBuf[256] = {}; // スクリプト名編集用バッファ(UI等で使用想定)
+	std::string scriptName = {}; // 予備の変数(現状未使用)
 
 
 	GameScript() {
-
+		// コンソール出力をバッファリングなしに設定(即座に表示するため)
 		setvbuf(stdout, nullptr, _IONBF, 0);
 		std::cout << "=== C# Script Console ===" << std::endl;
 		strcpy_s(m_scriptNameBuf, m_scriptName.c_str());
 	}
 
 	~GameScript() {
+		// C#プロセスと関連ハンドルを終了・解放
 		TerminateProcess(m_pi.hProcess, 0);
 		//CloseHandle(m_hPipe);
 		CloseHandle(m_pi.hProcess);
@@ -49,7 +51,7 @@ public:
 	}
 
 
-	bool m_vsOpened = false;
+	bool m_vsOpened = false; // Visual Studioを既に開いたかどうかのフラグ
 
 	void Start() override {
 		MonoBehaviour::Start();
@@ -58,8 +60,8 @@ public:
 
 
 
-	PROCESS_INFORMATION m_pi = {};
-	HANDLE m_hPipe = INVALID_HANDLE_VALUE;
+	PROCESS_INFORMATION m_pi = {}; // 起動したC#プロセスの情報
+	HANDLE m_hPipe = INVALID_HANDLE_VALUE; // C#プロセスとの名前付きパイプハンドル
 
 
 	//csファイルがない場合に作成する
@@ -75,6 +77,7 @@ public:
 		std::filesystem::create_directories(
 			"externals/GameScript/GameScriptC/GameScriptC/Scripts");
 
+		// テンプレートファイルを開いて読み込む
 		std::ifstream tmpl(tmplPath);
 		if (!tmpl) {
 			LOG("[GameScript] Template not found: ");
@@ -85,6 +88,7 @@ public:
 
 		//スクリプトの名前を新しくできるクラスに変更
 		{
+			// プレースホルダーをスクリプト名に全置換
 			size_t pos = 0;
 			const std::string placeholder = "#SCRIPTNAME#";
 			while ((pos = content.find(placeholder, pos)) != std::string::npos) {
@@ -93,6 +97,7 @@ public:
 			}
 		}
 
+		// 置換後の内容を出力先ファイルに書き込む
 		std::ofstream file(outPath);
 		file << content;
 		file.close();
@@ -104,12 +109,14 @@ public:
 		MonoBehaviour::Start();
 		if (!m_vsOpened) {
 			m_vsOpened = true;
+			// このコンポーネントを持つEntityを探して保持しておく
 			for (auto& e : EntityManager::GetInstance()->GetEntities()) {
 				if (e->GetComponent<GameScript>() == this) {
 					entity = e.get();
 					break;
 				}
 			}
+			// Visual Studioでcsprojを開く
 			ShellExecuteA(NULL, "open", "devenv.exe",
 				"\"externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj\"",
 				NULL, SW_SHOWNORMAL);
@@ -119,8 +126,10 @@ public:
 
 	void ReloadScript() {
 		static bool s_csStarted = false;
+		// 既存のC#プロセスを強制終了
 		system("taskkill /f /im GameScriptC.exe 2>nul");
 		if (m_pi.hProcess) {
+			// 前回起動したプロセス・ハンドルを後始末
 			TerminateProcess(m_pi.hProcess, 0);
 			CloseHandle(m_hPipe);
 			CloseHandle(m_pi.hProcess);
@@ -143,15 +152,16 @@ public:
 				NULL, NULL, NULL, FALSE,
 				0, NULL, NULL, &si, &m_pi)) {
 				DWORD err = GetLastError();
-				LOG("[GameScript] CreateProcessW failed: " );
+				LOG("[GameScript] CreateProcessW failed: ");
 			}
 			s_csStarted = true;
-			Sleep(2000);
+			Sleep(2000); // C#プロセスの起動待ち
 		}
 
 		std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe";
 
 		LOG("[GameScript] Connected!");
+		// パイプが使えるようになるまで待って接続
 		if (WaitNamedPipeW(pipeName.c_str(), 5000)) {
 			m_hPipe = CreateFileW(
 				pipeName.c_str(),
@@ -162,18 +172,20 @@ public:
 			else
 				LOG("[GameScript] Connected!");
 			DWORD written;
+			// 接続直後にスクリプト名をC#側へ送信
 			WriteFile(m_hPipe, m_scriptName.c_str(), (DWORD)m_scriptName.size() + 1, &written, NULL);
 		}
 		else {
-			LOG( "[GameScript] WaitNamedPipeW timed out" );
+			LOG("[GameScript] WaitNamedPipeW timed out");
 		}
 
 	}
 
 	void Update() override {
 		if (m_hPipe == INVALID_HANDLE_VALUE || !entity) return;
-		float dt = 0.016f;
+		float dt = 0.016f; // 固定デルタタイム
 		DWORD written;
+		// 現在の座標とdtをC#側に送信
 		float sendData[4] = {
 			entity->transform.position.x,
 			entity->transform.position.y,
@@ -183,17 +195,12 @@ public:
 		WriteFile(m_hPipe, sendData, sizeof(sendData), &written, NULL);
 		float recvData[3];
 		DWORD read;
+		// C#側で更新された座標を受信して反映
 		if (ReadFile(m_hPipe, recvData, sizeof(recvData), &read, NULL) && read == sizeof(recvData)) {
 			entity->transform.position.x = recvData[0];
 			entity->transform.position.y = recvData[1];
 			entity->transform.position.z = recvData[2];
 		}
 	}
-
-
-
-
-
 private:
-
 };
