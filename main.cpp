@@ -244,6 +244,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					uvChecker);
 			}
 
+		engine->DrawSprite(
+			spritePos,        // 表示位置
+			120, 70,              // 幅・高さ
+			spriteRot,     // 回転（なし）
+			Vector3(spriteScale.x, spriteScale.y, 1.0f),     // スケール（等倍）
+			Vector4(1, 1, 1, 1),  // 色（白＝そのまま表示）
+			uvChecker          // 使いたいテクスチャのインデックス
+		);
 			// Grid
 			{
 				const float gridSize = 100.0f;

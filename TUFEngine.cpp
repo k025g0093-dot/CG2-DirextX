@@ -1033,8 +1033,8 @@ void TUFEngine::RenderSprites2D(const std::vector<DrawRequest>& requests2D) {
 
 		// 正射影行列を構築（画面座標系）
 		Matrix4x4 ortho = MakeOrthographicMatrix(
-			0.0f, static_cast<float>(width),
-			static_cast<float>(height), 0.0f,  // ← Y反転（上が0）
+			0.0f, 0.0f,
+			static_cast<float>(width), static_cast<float>(height),
 			0.1f, 100.0f
 		);
 

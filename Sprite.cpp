@@ -21,11 +21,11 @@ void Sprite::InitSprite(TUFEngine* engine, int textureIndex, float w, float h) {
     m_vertexBufferView.StrideInBytes = sizeof(Vertex);
     m_vertexBufferView.SizeInBytes = sizeof(Vertex) * 4;
 
-    // ピクセル座標で頂点を初期化
-    UpdateVertices({ 0.0f, h,    0.0f }, { 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f }, 0); // 左上
-    UpdateVertices({ w,    h,    0.0f }, { 1.0f, 0.0f }, { 0.0f, 0.0f, -1.0f }, 1); // 右上
-    UpdateVertices({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, 2); // 左下
-    UpdateVertices({ w,    0.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, 3); // 右下
+    // ピクセル座標で頂点を初期化 (Y-down, (0,0)が左上)
+    UpdateVertices({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f }, 0); // 左上
+    UpdateVertices({ w,    0.0f, 0.0f }, { 1.0f, 0.0f }, { 0.0f, 0.0f, -1.0f }, 1); // 右上
+    UpdateVertices({ 0.0f, h,    0.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, 2); // 左下
+    UpdateVertices({ w,    h,    0.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }, 3); // 右下
 
     m_pVertexResource->Unmap(0, nullptr);
 
@@ -43,9 +43,8 @@ void Sprite::InitSprite(TUFEngine* engine, int textureIndex, float w, float h) {
     m_pWvpResource = CreateBufferResource(device, Align256(sizeof(TransformationMatrix)));
     TransformationMatrix* wvpData = nullptr;
     m_pWvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
-    // 正射影行列をセット（左上が原点の画面座標系）
-    // y の範囲を h → 0 にすることでy反転（左上が(0,0)になる）
-    wvpData->WVP = MakeOrthographicMatrix(0.0f, w, h, 0.0f, 0.1f, 100.0f);
+    // 正射影行列をセット（左上が原点の画面座標系、Y-down）
+    wvpData->WVP = MakeOrthographicMatrix(0.0f, 0.0f, w, h, 0.1f, 100.0f);
     wvpData->World = MakeIdentity4x4();
     m_pWvpResource->Unmap(0, nullptr);
 }
@@ -88,11 +87,11 @@ void Sprite::Resize(float w, float h) {
     Vertex* data = nullptr;
     m_pVertexResource->Map(0, nullptr, reinterpret_cast<void**>(&data));
 
-    // InitSprite と完全に同じ並び順にする！
-    data[0].position = { 0.0f, h,    0.0f, 1.0f }; data[0].texcoord = { 0.0f, 0.0f }; data[0].normal = { 0.0f, 0.0f, -1.0f }; data[0].tangent = { 1.0f, 0.0f, 0.0f };
-    data[1].position = { w,    h,    0.0f, 1.0f }; data[1].texcoord = { 1.0f, 0.0f }; data[1].normal = { 0.0f, 0.0f, -1.0f }; data[1].tangent = { 1.0f, 0.0f, 0.0f };
-    data[2].position = { 0.0f, 0.0f, 0.0f, 1.0f }; data[2].texcoord = { 0.0f, 1.0f }; data[2].normal = { 0.0f, 0.0f, -1.0f }; data[2].tangent = { 1.0f, 0.0f, 0.0f };
-    data[3].position = { w,    0.0f, 0.0f, 1.0f }; data[3].texcoord = { 1.0f, 1.0f }; data[3].normal = { 0.0f, 0.0f, -1.0f }; data[3].tangent = { 1.0f, 0.0f, 0.0f };
+    // InitSprite と完全に同じ並び順にする！(Y-down, (0,0)が左上)
+    data[0].position = { 0.0f, 0.0f, 0.0f, 1.0f }; data[0].texcoord = { 0.0f, 0.0f }; data[0].normal = { 0.0f, 0.0f, -1.0f }; data[0].tangent = { 1.0f, 0.0f, 0.0f };
+    data[1].position = { w,    0.0f, 0.0f, 1.0f }; data[1].texcoord = { 1.0f, 0.0f }; data[1].normal = { 0.0f, 0.0f, -1.0f }; data[1].tangent = { 1.0f, 0.0f, 0.0f };
+    data[2].position = { 0.0f, h,    0.0f, 1.0f }; data[2].texcoord = { 0.0f, 1.0f }; data[2].normal = { 0.0f, 0.0f, -1.0f }; data[2].tangent = { 1.0f, 0.0f, 0.0f };
+    data[3].position = { w,    h,    0.0f, 1.0f }; data[3].texcoord = { 1.0f, 1.0f }; data[3].normal = { 0.0f, 0.0f, -1.0f }; data[3].tangent = { 1.0f, 0.0f, 0.0f };
 
     m_pVertexResource->Unmap(0, nullptr);
 }
