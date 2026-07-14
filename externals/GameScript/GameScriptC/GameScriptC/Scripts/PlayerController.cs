@@ -75,16 +75,8 @@ public class PlayerController : Templet
         if (IsKeyDown(ConsoleKey.A)) x -= speed * dt;
         if (IsKeyDown(ConsoleKey.D)) x += speed * dt;
         if (Gamepad.IsA() || IsKeyTriger(ConsoleKey.Spacebar))
-            y +=( speed * dt)*1.5f;
-        if (y<=0) {
-            y=0;
-        }
-        else
-        {
-            y -= 0.98f; 
-        }
-
-            var state = Gamepad.GetKeystate();
+            y = 3.0f;
+        var state = Gamepad.GetKeystate();
         if (state.HasValue)
         {
             var gp = state.Value.Gamepad;
@@ -95,12 +87,12 @@ public class PlayerController : Templet
                 z -= (gp.LeftThumbY / 32768f) * speed * dt;
 
             if (Gamepad.IsA() || IsKeyTriger(ConsoleKey.Spacebar))
-                y += speed * dt;
+                y = 3.0f;
         }
         else
         {
             if (IsKeyTriger(ConsoleKey.Spacebar))
-                y += speed * dt;
+                y = 3.0f;
         }
     }
 }

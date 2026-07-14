@@ -184,9 +184,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					}
 
 					if (ImGui::CollapsingHeader("スプライトUV設定")) {
-						ImGui::DragFloat2("UV移動", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-						ImGui::DragFloat2("UV拡大", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-						ImGui::SliderAngle("UV回転", &uvTransformSprite.rotate.z);
+						Vector2 uvScale = engine->GetSpriteUVScale();
+						Vector2 uvTranslate = engine->GetSpriteUVTranslate();
+						float uvRotate = engine->GetSpriteUVRotate();
+						bool uvChanged = false;
+						uvChanged |= ImGui::DragFloat2("UV移動", &uvTranslate.x, 0.01f, -10.0f, 10.0f);
+						uvChanged |= ImGui::DragFloat2("UV拡大", &uvScale.x, 0.01f, -10.0f, 10.0f);
+						uvChanged |= ImGui::SliderAngle("UV回転", &uvRotate);
+						if (uvChanged) {
+							engine->SetSpriteUVScale(uvScale);
+							engine->SetSpriteUVTranslate(uvTranslate);
+							engine->SetSpriteUVRotate(uvRotate);
+						}
+						if (ImGui::Button("UVリセット")) {
+							engine->ResetSpriteUVTransform();
+						}
 					}
 					ImGui::End();
 				}
