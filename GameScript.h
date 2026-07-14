@@ -171,13 +171,23 @@ public:
 	}
 
 	void Update() override {
-		if (m_hPipe == INVALID_HANDLE_VALUE) return;
+		if (m_hPipe == INVALID_HANDLE_VALUE || !entity) return;
+		float dt = 0.016f;
 		DWORD written;
-		float sendData[4] = { 0 };
+		float sendData[4] = {
+			entity->transform.position.x,
+			entity->transform.position.y,
+			entity->transform.position.z,
+			dt
+		};
 		WriteFile(m_hPipe, sendData, sizeof(sendData), &written, NULL);
 		float recvData[3];
 		DWORD read;
-		ReadFile(m_hPipe, recvData, sizeof(recvData), &read, NULL);
+		if (ReadFile(m_hPipe, recvData, sizeof(recvData), &read, NULL) && read == sizeof(recvData)) {
+			entity->transform.position.x = recvData[0];
+			entity->transform.position.y = recvData[1];
+			entity->transform.position.z = recvData[2];
+		}
 	}
 
 

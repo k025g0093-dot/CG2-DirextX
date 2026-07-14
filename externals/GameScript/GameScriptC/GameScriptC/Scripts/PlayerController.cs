@@ -1,4 +1,5 @@
 ﻿using System;
+using Vortice.XInput;
 
 // ==============================================
 // PlayerController スクリプトテンプレート
@@ -64,5 +65,34 @@ public class PlayerController : Templet
     //       if (Math.Abs((float)gp.LeftThumbY) > deadZone)
     //           z += (gp.LeftThumbY / 32768f) * speed * dt;
     //   }
-    public override void InPostion(ref float x, ref float y, ref float z, float dt) { }
+
+    public override void InPostion(ref float x, ref float y, ref float z, float dt)
+    {
+        float speed = 5.0f;
+
+        if (IsKeyDown(ConsoleKey.W)) z += speed * dt;
+        if (IsKeyDown(ConsoleKey.S)) z -= speed * dt;
+        if (IsKeyDown(ConsoleKey.A)) x -= speed * dt;
+        if (IsKeyDown(ConsoleKey.D)) x += speed * dt;
+        if (Gamepad.IsA() || IsKeyTriger(ConsoleKey.Spacebar))
+            y = 3.0f;
+        var state = Gamepad.GetKeystate();
+        if (state.HasValue)
+        {
+            var gp = state.Value.Gamepad;
+            const float deadZone = 8000f;
+            if (Math.Abs((float)gp.LeftThumbX) > deadZone)
+                x += (gp.LeftThumbX / 32768f) * speed * dt;
+            if (Math.Abs((float)gp.LeftThumbY) > deadZone)
+                z -= (gp.LeftThumbY / 32768f) * speed * dt;
+
+            if (Gamepad.IsA() || IsKeyTriger(ConsoleKey.Spacebar))
+                y = 3.0f;
+        }
+        else
+        {
+            if (IsKeyTriger(ConsoleKey.Spacebar))
+                y = 3.0f;
+        }
+    }
 }

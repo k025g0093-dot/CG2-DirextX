@@ -49,15 +49,24 @@ namespace GameScriptC
             Templet script = (Templet)Activator.CreateInstance(type);
             script.OnStart();
 
-            byte[] buffer = new byte[1024];
+            byte[] buf = new byte[16];
             while (true)
             {
-                int bytesRead = pipe.Read(buffer, 0, buffer.Length);
-                if (bytesRead <= 0) break;
+                int bytesRead = pipe.Read(buf, 0, buf.Length);
+                if (bytesRead < 16) break;
 
-                script.Update();
+                float x = BitConverter.ToSingle(buf, 0);
+                float y = BitConverter.ToSingle(buf, 4);
+                float z = BitConverter.ToSingle(buf, 8);
+                float dt = BitConverter.ToSingle(buf, 12);
 
-                pipe.Write(new byte[12], 0, 12);
+                script.InPostion(ref x, ref y, ref z, dt);
+
+                byte[] outBuf = new byte[12];
+                Buffer.BlockCopy(BitConverter.GetBytes(x), 0, outBuf, 0, 4);
+                Buffer.BlockCopy(BitConverter.GetBytes(y), 0, outBuf, 4, 4);
+                Buffer.BlockCopy(BitConverter.GetBytes(z), 0, outBuf, 8, 4);
+                pipe.Write(outBuf, 0, 12);
             }
             pipe.Close();
     }

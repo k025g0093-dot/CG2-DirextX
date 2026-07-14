@@ -1229,7 +1229,7 @@ void TUFEngine::DrawDebugOBB(const OBB& obb, const Vector4& color) {
 
 //windowだったりいろいろなものの拡張機能作成場所
 
-#pragma region 現在はその他機能として実装しています、ここは時期に削ったり移動する予定です
+#pragma region 現在はその他機能として実装していますここは時期に削ったり移動する予定です
 void TUFEngine::GrowConstantBuffer() {
 	m_maxDrawCount *= 2;
 	UINT cbSize = (sizeof(TransformationMatrix) + 255) & ~255;
