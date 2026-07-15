@@ -133,9 +133,8 @@ public:
 			}
 		}
 
-		static bool s_csStarted = false;
-		// 既存のC#プロセスを強制終了
-		system("taskkill /f /im GameScriptC.exe 2>nul");
+		static bool s_built = false;
+
 		if (m_pi.hProcess) {
 			// 前回起動したプロセス・ハンドルを後始末
 			TerminateProcess(m_pi.hProcess, 0);
@@ -143,30 +142,30 @@ public:
 			CloseHandle(m_pi.hProcess);
 			CloseHandle(m_pi.hThread);
 			m_pi = {};
-			s_csStarted = false;
 		}
 
 		CreateScript(m_scriptName);
 		//C#のプロジェクトをビルドする
-		system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
-
-
-		if (!s_csStarted) {
-
-			//C#のプロセスを起動する
-			STARTUPINFOW si = { sizeof(si) };
-			if (!CreateProcessW(
-				L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.exe",
-				NULL, NULL, NULL, FALSE,
-				0, NULL, NULL, &si, &m_pi)) {
-				DWORD err = GetLastError();
-				LOG("[GameScript] CreateProcessW failed: ");
-			}
-			s_csStarted = true;
-			Sleep(2000); // C#プロセスの起動待ち
+		if (!s_built) {
+			system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
+			s_built = true;
 		}
+		std::wstring cmdLine = L"GameScriptC.exe " + std::wstring(m_scriptName.begin(), m_scriptName.end());
 
-		std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe";
+
+		//C#のプロセスを起動する
+		STARTUPINFOW si = { sizeof(si) };
+		if (!CreateProcessW(
+			L"externals/GameScript/GameScriptC/GameScriptC/bin/Debug/net10.0/GameScriptC.exe",
+			&cmdLine[0], NULL, NULL, FALSE,
+			0, NULL, NULL, &si, &m_pi)) {
+			DWORD err = GetLastError();
+			LOG("[GameScript] CreateProcessW failed: ");
+		}
+		Sleep(2000); // C#プロセスの起動待ち
+
+
+		std::wstring pipeName = L"\\\\.\\pipe\\GameScriptPipe_" + std::wstring(m_scriptName.begin(), m_scriptName.end());
 
 		LOG("[GameScript] Connected!");
 		// パイプが使えるようになるまで待って接続

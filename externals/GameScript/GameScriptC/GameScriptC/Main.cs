@@ -18,18 +18,12 @@ namespace GameScriptC
         {
             AllocConsole();
             Console.WriteLine("C# Start");
-
-            var server = new NamedPipeServerStream("GameScriptPipe", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances);
-            byte[] buffer = new byte[1024];
-            while (true)
-            {
-                Console.WriteLine("接続待機中...");
-                server.WaitForConnection();
-                Console.WriteLine("接続されました");
-                var temp = server;
-                Task.Run(() => HandleEntity(temp));
-                server = new NamedPipeServerStream("GameScriptPipe", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances);
-            }
+            string pipeName = "GameScriptPipe_" + args[0];
+            var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut);
+            Console.WriteLine("接続待機中...");
+            server.WaitForConnection();
+            Console.WriteLine("接続されました");
+            HandleEntity(server);
         }
 
         static void HandleEntity(NamedPipeServerStream pipe)
