@@ -182,19 +182,14 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 			Create3DObjectOBB obbCreator;
 			entity->obb = obbCreator.CreateOBBForModel(*mesh, t.position);
 
-			//// localAABB
-			//const Vertex* verts = mesh->GetVertexData();
-			//UINT vCount = mesh->GetVertexCount();
-			//Vector3 lMin = { FLT_MAX, FLT_MAX, FLT_MAX }, lMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
-			//for (UINT j = 0; j < vCount; j++) {
-			//	if (verts[j].position.x < lMin.x) lMin.x = verts[j].position.x;
-			//	if (verts[j].position.x > lMax.x) lMax.x = verts[j].position.x;
-			//	if (verts[j].position.y < lMin.y) lMin.y = verts[j].position.y;
-			//	if (verts[j].position.y > lMax.y) lMax.y = verts[j].position.y;
-			//	if (verts[j].position.z < lMin.z) lMin.z = verts[j].position.z;
-			//	if (verts[j].position.z > lMax.z) lMax.z = verts[j].position.z;
-			//}
-			//entity->localAABB = { lMin, lMax };
+			//スクリプトがある場合それらを割り当てる
+			if (object.contains("scriptName")) {
+				auto* gs = entity->AddComponent<GameScript>();
+				gs->m_scriptName = object["scriptName"];
+				gs->ReloadScript();
+			
+			}
+			
 		}
 	}
 }
@@ -213,7 +208,6 @@ int TUFEngine::LoadTexture(const std::string& filePath) {
 void TUFEngine::OnUpdate() {
 	Input::Update();
 	EntityManager::GetInstance()->UpdateAll(0.016f);
-	//SaveSceneObjectsToFile();
 #ifdef USE_IMGUI
 	if (m_imguiManager) {
 		m_imguiManager->update(this);

@@ -105,6 +105,10 @@ void ImGuiUIManager::update(TUFEngine* engine)
 
 void ImGuiUIManager::ViewportRenderCallback(ImGuiViewport* vp, void* /*render_arg*/)
 {
+#ifdef USE_IMGUI
+
+
+
     auto* vd = (VPDataReader*)vp->RendererUserData;
     auto& sync = s_instance->m_viewportSync[vp];
 
@@ -168,7 +172,7 @@ void ImGuiUIManager::ViewportRenderCallback(ImGuiViewport* vp, void* /*render_ar
     vd->CommandQueue->Signal(sync.fence, sync.lastSignaledValue);
     fc->FenceValue = sync.lastSignaledValue;
     vd->SwapChain->Present(0, 0);
-
+#endif // USE_IMGUI
 }
 
 void ImGuiUIManager::ViewportSwapCallback(ImGuiViewport* vp, void* /*render_arg*/)

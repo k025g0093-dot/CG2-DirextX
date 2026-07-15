@@ -449,6 +449,9 @@
     <ClInclude Include="EntityManager.h">
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
     </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Object3d.hlsli" />

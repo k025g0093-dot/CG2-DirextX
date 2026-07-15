@@ -2,9 +2,9 @@
 using Vortice.XInput;
 
 // ==============================================
-// PlayerController スクリプトテンプレート
+// testobject スクリプトテンプレート
 // ==============================================
-// このクラスはC++側から「PlayerController」という名前で呼び出されます。
+// このクラスはC++側から「testobject」という名前で呼び出されます。
 // Update() が毎フレーム呼ばれるので、ここにキャラクターの挙動を書いてください。
 //
 // 使えるAPI一覧:
@@ -14,7 +14,7 @@ using Vortice.XInput;
 //   ゲームパッド(任意のボタン)     → Gamepad.IsButtonDown(0x1000 のようなビットマスク値)
 //   ゲームパッド(スティック等の生値) → Gamepad.GetKeystate() でState構造体を直接取得
 // ==============================================
-public class PlayerController : Templet
+public class testobject : Templet
 {
     // ゲーム開始時に1回だけ呼ばれます。初期化処理をここに書いてください。
     public override void OnStart() { }
@@ -50,7 +50,6 @@ public class PlayerController : Templet
     }
 
     // 座標をC++側と同期するための関数です。
-    // 追記：この関数をアップデートにはもっていかないでください。
     // x, y, z は「ref」なので、この関数内で書き換えた値がそのままC++側に反映されます。
     // dt (デルタタイム) は前フレームからの経過時間(秒)なので、速度計算に使ってください。
     //
@@ -77,7 +76,7 @@ public class PlayerController : Templet
         if (IsKeyDown(ConsoleKey.D)) x += speed * dt;
 
         var state = Gamepad.GetKeystate();
-        if (state.HasValue)
+        if (state != null)
         {
             var gp = state.Value.Gamepad;
             const float deadZone = 8000f;
@@ -87,12 +86,12 @@ public class PlayerController : Templet
                 z -= (gp.LeftThumbY / 32768f) * speed * dt;
 
             if (Gamepad.IsA() || IsKeyTriger(ConsoleKey.Spacebar))
-                y += speed * dt;
+                y = 3.0f;
         }
         else
         {
             if (IsKeyTriger(ConsoleKey.Spacebar))
-                y += speed * dt;
+                y = 3.0f;
         }
     }
 }

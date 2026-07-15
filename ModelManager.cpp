@@ -2,6 +2,7 @@
 #include "Create3DObjectOBB.h"
 #include "ConvertString.h"
 #include <fstream>
+#include "GameScript.h"
 
 
 
@@ -134,6 +135,11 @@ void ModelManager::SaveToFile() {
 		obj["obb"]["orientationX"] = { entity->obb.orientations[0].x, entity->obb.orientations[0].y, entity->obb.orientations[0].z };
 		obj["obb"]["orientationY"] = { entity->obb.orientations[1].x, entity->obb.orientations[1].y, entity->obb.orientations[1].z };
 		obj["obb"]["orientationZ"] = { entity->obb.orientations[2].x, entity->obb.orientations[2].y, entity->obb.orientations[2].z };
+
+		auto* gs = entity->GetComponent<GameScript>();
+		if (gs) {
+			obj["scriptName"] = gs->m_scriptName;
+		}
 
 		data["objects"].push_back(obj);
 	}

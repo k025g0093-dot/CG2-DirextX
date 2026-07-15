@@ -217,6 +217,7 @@
     <ClInclude Include="DXC.h" />
     <ClInclude Include="DynamicMesh.h" />
     <ClInclude Include="DynamicMeshModel.h" />
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="EntityComponent.h" />
     <ClInclude Include="EntityManager.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />

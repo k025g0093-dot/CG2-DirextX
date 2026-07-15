@@ -125,6 +125,14 @@ public:
 	}
 
 	void ReloadScript() {
+
+		for (auto& e : EntityManager::GetInstance()->GetEntities()) {
+			if (e->GetComponent<GameScript>() == this) {
+				entity = e.get();
+				break;
+			}
+		}
+
 		static bool s_csStarted = false;
 		// 既存のC#プロセスを強制終了
 		system("taskkill /f /im GameScriptC.exe 2>nul");
