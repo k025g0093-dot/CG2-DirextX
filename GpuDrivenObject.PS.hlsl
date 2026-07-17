@@ -94,8 +94,8 @@ PixelShaderOutput main(VertexShaderOutput input)
 
             //Phongの実装
             float3 toEye = normalize(gCamera.worldPorition - input.worldPosition);
-            //float3 reflectLight = reflect(gDirectionalLight.direction, normalize(input.normal));
-            //float RdotE = dot(reflectLight, toEye);
+            //元：float3 reflectLight = reflect(gDirectionalLight.direction, normalize(input.normal));
+            //元：float RdotE = dot(reflectLight, toEye);
           　
             //Blinn-Phongの実装
             float3 halfVector = normalize(-gDirectionalLight.direction + toEye);
