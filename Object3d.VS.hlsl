@@ -40,6 +40,7 @@ VertexShaderOutput main(VertexShaderInput input)
 
     output.tangent = normalize(mul(input.tangent, (float3x3) gTransformationMatrix.World));
 
+      output.worldPosition = mul(input.position, gTransformationMatrix.World).xyz;
 
 
     return output;

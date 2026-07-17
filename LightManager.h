@@ -13,6 +13,12 @@ struct DirectionalLight {
     float intensity;
 };
 
+struct PointLight {
+    Vector4 color;//ライトの色
+    Vector3 direction;//ライトの位置
+    float intensity;//光度
+};
+
 class LightManager {
 public:
     static LightManager* GetInstance();

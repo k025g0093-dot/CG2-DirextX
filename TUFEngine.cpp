@@ -947,9 +947,24 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	m_gpuDrivenRenderer->TransitionToSRV(commandList.Get());
 
 	// グラフィックス描画
+
+
+
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
+
+	m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));
+
+	Vector4* cameraData = nullptr;
+	m_cameraBuffer->Map(0, nullptr, reinterpret_cast<void**>(&cameraData));
+	cameraData->x = m_camera.transform.translate.x;
+	cameraData->y = m_camera.transform.translate.y;
+	cameraData->z = m_camera.transform.translate.z;
+	cameraData->w = 1.0f;
+	m_cameraBuffer->Unmap(0, nullptr);
+
+	commandList->SetGraphicsRootConstantBufferView(6, m_cameraBuffer->GetGPUVirtualAddress());
 
 	commandList->SetGraphicsRootShaderResourceView(
 		1,

@@ -9,6 +9,7 @@ struct Material
       int enableNormalMap;
       float2 padding; // パディングを追加して16バイトの倍数にする
     float32_t4x4 uvTransform;
+      float shininess;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
@@ -20,6 +21,11 @@ struct DirectionalLight
       float intensity;
 };
 
+struct Camera
+{
+      float3 worldPorition;
+};
+
 struct PixelShaderOutput
 {
     float32_t4 color : SV_TARGET0;
@@ -29,6 +35,8 @@ Texture2D<float32_t4> gTexture : register(t0);
 Texture2D<float32_t4> gNormalTexture : register(t1);
 SamplerState gSampler : register(s0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
+ConstantBuffer<Camera> gCamera : register(b2);
+
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
@@ -75,11 +83,38 @@ PixelShaderOutput main(VertexShaderOutput input)
             gDirectionalLight.color *
             cos *
             gDirectionalLight.intensity;
+            
+            
+            float3 toEye = normalize(gCamera.worldPorition - input.worldPosition);
+            float3 reflectLight = reflect(gDirectionalLight.direction, normalize(input.normal));
+            float RdotE = dot(reflectLight, toEye);
+            float specularPow = pow(saturate(RdotE), gMaterial.shininess);
+      
+            float3 diffuce =
+      gMaterial.color.rgb *
+      textureColor.rgb *
+      gDirectionalLight.color.rgb *
+      cos *
+      gDirectionalLight.intensity;
+           
+           
+            
+            float3 specular =
+            gDirectionalLight.color.rgb*
+            gDirectionalLight.intensity * 
+            specularPow *
+            float3(1.0f, 1.0f, 1.0f);
+            
+            output.color.rgb = diffuce + specular;
+            output.color.a = gMaterial.color.a * textureColor.a;
+            
       }
       else
       {
             output.color = gMaterial.color * textureColor;
       }
 
+
+      
       return output;
 }

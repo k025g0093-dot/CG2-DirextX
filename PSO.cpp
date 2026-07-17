@@ -24,7 +24,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 
 
 	// ルートパラメータの設定（シェーダーに渡すリソースの種類を定義）
-	D3D12_ROOT_PARAMETER rootParameter[5] = {};
+	D3D12_ROOT_PARAMETER rootParameter[6] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使用
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // 全シェーダーから参照可能
 	rootParameter[0].Descriptor.ShaderRegister = 0; // register(b0)に対応
@@ -47,6 +47,11 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	rootParameter[4].DescriptorTable.pDescriptorRanges = &descriptorRange[1];
 	rootParameter[4].DescriptorTable.NumDescriptorRanges = 1;
 
+
+	// 51-53行目をこう直す
+	rootParameter[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[5].Descriptor.ShaderRegister = 2;  // register(b2) → gCamera
 
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);
@@ -260,7 +265,7 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	descriptorRange[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 
-	D3D12_ROOT_PARAMETER rootParameter[6] = {};
+	D3D12_ROOT_PARAMETER rootParameter[7] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0; // b0 material
@@ -293,7 +298,10 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	rootParameter[5].Constants.RegisterSpace = 0;
 	rootParameter[5].Constants.Num32BitValues = 1;
 
-
+	// [6] CBV b2 - Camera (pixel)
+	rootParameter[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[6].Descriptor.ShaderRegister = 2;
 
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);

@@ -1,6 +1,10 @@
 #pragma once
 #include "Vector.h"
 
+struct CameraForGPU {
+    Vector3 worldPosition;
+};
+
 class Camera {
 public:
     Camera() {

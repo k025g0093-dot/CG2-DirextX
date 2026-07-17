@@ -14,6 +14,7 @@ void TextureManager::Initialize(
 		);
 	}
 	m_textureCount = 0;
+
 }
 
 
