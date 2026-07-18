@@ -107,8 +107,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int frameIndex = 0;
 	int observeX = wallX + 40;
 
-	LightManager::GetInstance()->SetPerObjectLight(1, { {1,1,1,1}, {0,-1,0}, 1.0f });
-	LightManager::GetInstance()->SetPerObjectLight(2, { {1,1,1,1}, {0,-1,0}, 1.0f });
+
 
 
 
@@ -142,23 +141,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 					if (ImGui::CollapsingHeader("球体設定")) {
 						for (int i = 0; i < 2; ++i) {
-							int lightId = i + 1;
 							ImGui::PushID(i);
 							ImGui::Text("球体 %d", i);
 							ImGui::DragFloat3("位置", &spherePos[i].x, 0.1f);
 							ImGui::DragFloat3("回転", &sphereRot[i].x, 0.01f);
 							ImGui::DragFloat3("拡大", &sphereScale[i].x, 0.01f, 0.01f, 10.0f);
 							ImGui::Checkbox("モンスターボール", &sphereUseMonsterBall[i]);
-
-							ImGui::SeparatorText("ライト");
-							DirectionalLight light = LightManager::GetInstance()->GetPerObjectLight(lightId);
-							bool changed = false;
-							changed |= ImGui::ColorEdit4("##Color", &light.color.x);
-							changed |= ImGui::DragFloat3("##Direction", &light.direction.x, 0.01f, -1.0f, 1.0f);
-							changed |= ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
-
-							if (changed) LightManager::GetInstance()->SetPerObjectLight(lightId, light);
-
 							ImGui::Separator();
 							ImGui::PopID();
 						}
@@ -200,9 +188,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 							engine->ResetSpriteUVTransform();
 						}
 					}
-					ImGui::End();
+					
 				}
-				};
+				ImGui::End();
+			};
 #endif // USE_IMGUI
 
 			engine->m_camera.transform.rotate.y += Input::GetRightStickX() * cameraRotateSpeed;
@@ -213,7 +202,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #ifdef USE_IMGUI
 			if (!ImGuizmo::IsUsing())
 #endif
-			debugCamer_->Update();
+				debugCamer_->Update();
 
 			if (debugCamer_->IsDebug()) {
 				engine->SetViewProjectionMatrix(debugCamer_->GetViewProjectionMatrix());
@@ -224,7 +213,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				);
 			}
 
-	
+
 
 			////================================================================================================================
 			////描画処理ここから
@@ -256,14 +245,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					uvChecker);
 			}
 
-		engine->DrawSprite(
-			spritePos,        // 表示位置
-			300, 200,              // 幅・高さ
-			spriteRot,     // 回転（なし）
-			Vector3(spriteScale.x, spriteScale.y, 1.0f),     // スケール（等倍）
-			Vector4(1, 1, 1, 1),  // 色（白＝そのまま表示）
-			uvChecker          // 使いたいテクスチャのインデックス
-		);
+			engine->DrawSprite(
+				spritePos,        // 表示位置
+				300, 200,              // 幅・高さ
+				spriteRot,     // 回転（なし）
+				Vector3(spriteScale.x, spriteScale.y, 1.0f),     // スケール（等倍）
+				Vector4(1, 1, 1, 1),  // 色（白＝そのまま表示）
+				uvChecker          // 使いたいテクスチャのインデックス
+			);
 			// Grid
 			{
 				const float gridSize = 100.0f;

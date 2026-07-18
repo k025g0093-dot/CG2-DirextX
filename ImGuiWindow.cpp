@@ -15,8 +15,9 @@ static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
 // 💡 引数を追加
 void ImGuiUIWindow::update(TUFEngine* engine) {
 	if (begin("Default Window")) {
-		end();
 	}
+	end();
+
 }
 
 void ImGuiUIWindow::Show() {
@@ -85,8 +86,9 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			ImGui::PopID();
 		}
 
-		end();
 	}
+	end();
+
 #endif
 }
 
@@ -256,29 +258,6 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				if (changed) lm->SetGlobalLight(global);
 			}
 
-			ImGui::Spacing();
-
-			auto ids = lm->GetPerObjectIds();
-			for (int id : ids) {
-				std::string label = "オブジェクトライト " + std::to_string(id);
-				if (ImGui::CollapsingHeader(label.c_str())) {
-					ImGui::PushID(id);
-					DirectionalLight light = lm->GetPerObjectLight(id);
-					bool changed = false;
-					changed |= ImGui::ColorEdit4("##Color", &light.color.x);
-					changed |= ImGui::DragFloat3("##Direction", &light.direction.x, 0.01f, -1.0f, 1.0f);
-					changed |= ImGui::DragFloat("##Intensity", &light.intensity, 0.01f, 0.0f, 10.0f);
-					if (changed) lm->SetPerObjectLight(id, light);
-
-					ImGui::Spacing();
-					if (ImGui::Button("グローバルにリセット")) {
-						lm->ClearPerObjectLight(id);
-						ImGui::PopID();
-						break;
-					}
-					ImGui::PopID();
-				}
-			}
 			ImGui::Dummy(ImVec2(0.0f, 4.0f));
 		}
 
@@ -377,7 +356,6 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				break;
 			}
 		}
-
 	}
 
 

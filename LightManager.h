@@ -1,8 +1,6 @@
 #pragma once
 #include <d3d12.h>
 #include <wrl.h>
-#include <map>
-#include <vector>
 #include "allVector.h"
 
 using Microsoft::WRL::ComPtr;
@@ -13,52 +11,36 @@ struct DirectionalLight {
     float intensity;
 };
 
-struct PointLight {
-    Vector4 color;//ライトの色
-    Vector3 direction;//ライトの位置
-    float intensity;//光度
+struct LightData {
+    Vector3 dirOrPos;
+    Vector3 color;
+    float intensity;
 };
 
 class LightManager {
 public:
     static LightManager* GetInstance();
 
-    void Initialize(ID3D12Device* device);
+    static const int MAX_LIGHTS = 8;
+    static const int LIGHT_SRV_SLOT = 108;
 
-    // グローバルライト
+    void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
+
     void SetGlobalLight(const DirectionalLight& light);
     const DirectionalLight& GetGlobalLight() const { return m_globalLight; }
 
-    // 個別ライト
-    void SetPerObjectLight(int id, const DirectionalLight& light);
-    void ClearPerObjectLight(int id);
-    bool HasPerObjectLight(int id) const;
-
-    // 描画コマンドにセットする直前に呼ぶ
-    // 個別があればそちら、なければグローバルをb1にバインドする
     void Bind(ID3D12GraphicsCommandList* cmdList, int id);
 
-    // ImGui描画（LightManagerが直接持つ）
-    void DrawImGui();
-
-
-    std::vector<int> GetPerObjectIds() ;
-    DirectionalLight GetPerObjectLight(int id) ;
 private:
     LightManager() = default;
-
-    void UploadGlobal();
-    void UploadPerObject(int id, const DirectionalLight& light);
+    void Upload();
 
     static LightManager* s_instance;
 
     ID3D12Device* m_device = nullptr;
+    DirectionalLight m_globalLight{};
+    ComPtr<ID3D12Resource> m_lightBuffer;
+    D3D12_GPU_DESCRIPTOR_HANDLE m_lightSrvGpuHandle{};
 
-    DirectionalLight             m_globalLight{};
-    ComPtr<ID3D12Resource>       m_globalCB;
-
-    std::map<int, DirectionalLight>       m_perObjectLights;
-    std::map<int, ComPtr<ID3D12Resource>> m_perObjectCBs;
-
-    static ComPtr<ID3D12Resource> CreateLightCB(ID3D12Device* device, const DirectionalLight& data);
+    LightData m_lights[MAX_LIGHTS] = {};
 };

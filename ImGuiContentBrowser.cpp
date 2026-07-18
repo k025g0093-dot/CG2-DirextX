@@ -128,7 +128,8 @@ void ImGuiContentBrowser::update(TUFEngine* engine) {
 		ImGui::SliderFloat("サムネイルサイズ", &thumbnailSize, 16, 512);
 		ImGui::SliderFloat("パディング", &padding, 0, 32);
 
-		end();
 	}
+	end();
+
 #endif
 }

@@ -38,7 +38,8 @@ void ImGuiCamera::update(TUFEngine* engine) {
             m_transform->rotate = { 0.0f, 0.0f,  0.0f };
         }
 
-        end();
+
     }
+    end();
 #endif
 }

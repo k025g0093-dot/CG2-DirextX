@@ -80,10 +80,7 @@ void TriangleModel::Draw(
         cmdList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetGPUHandle(textureIndex));
     }
 
-    // ライトセット
-    if (m_pLightResource) {
-        cmdList->SetGraphicsRootConstantBufferView(3, m_pLightResource->GetGPUVirtualAddress());
-    }
+ 
 
     cmdList->DrawInstanced(3, instanceCount, 0, startInstanceLocation);
 }

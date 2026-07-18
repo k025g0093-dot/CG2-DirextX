@@ -38,15 +38,6 @@ ImGuiUIManager::ImGuiUIManager(HWND hwnd)
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     ImGuiStyle& style = ImGui::GetStyle();
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        style.WindowRounding = 0.0f;
-        style.Colors[ImGuiCol_WindowBg].w =  1.0f;
-        
-        auto& pio = ImGui::GetPlatformIO();
-        pio.Renderer_RenderWindow = ViewportRenderCallback;
-        pio.Renderer_SwapBuffers = ViewportSwapCallback;
-    }
 #endif
 }
 
@@ -92,13 +83,7 @@ void ImGuiUIManager::update(TUFEngine* engine)
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         ImGui::UpdatePlatformWindows();
-        for (int i = 1; i < ImGui::GetPlatformIO().Viewports.Size; i++) {
-            ImGui::GetPlatformIO().Viewports[i]->Flags |= ImGuiViewportFlags_NoFocusOnClick;
-        }
-        ImGui::RenderPlatformWindowsDefault(
-            nullptr,
-            (void*)engine->GetCommandList()
-        );
+        ImGui::RenderPlatformWindowsDefault();
     }
 #endif
 }
