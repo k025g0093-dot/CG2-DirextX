@@ -270,6 +270,7 @@ private://描画物のリソース
 	std::unique_ptr<Sprite>           sprite;
 
 	ComPtr<ID3D12Resource> m_pConstantBuffer;
+	ComPtr<ID3D12Resource> m_cameraBuffer;
 	ID3D12Resource* m_directionalLightResource = nullptr;
 
 	std::vector<DrawRequest> m_drawRequests;
@@ -303,4 +304,9 @@ private://描画物のリソース
 	float m_currentRenderWidth = (float)width;
 	float m_currentRenderHeight = (float)height;
 
+
+	uint32_t Align256(uint32_t size)
+	{
+		return (size + 0xff) & ~0xff;
+	}
 };

@@ -14,6 +14,7 @@ void TextureManager::Initialize(
 		);
 	}
 	m_textureCount = 0;
+
 }
 
 
@@ -21,8 +22,11 @@ void TextureManager::Initialize(
 int TextureManager::LoadTexture(const std::string& filePath) {
 	DirectX::ScratchImage image{};
 	std::wstring filePathW = ConvertString(filePath);
-	hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-	assert(SUCCEEDED(hr));
+
+
+
+hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+if (FAILED(hr)) return -1;
 
 	// ↓ const参照ではなく、mipImagesから取得する
 	DirectX::ScratchImage mipImages{};

@@ -125,7 +125,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	InitializeImGui(hwnd);
 #endif
 
-	LightManager::GetInstance()->Initialize(device.Get());
+	LightManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get());
 
 	CreateDepthStencilTextureResource(width, height);
 
@@ -290,6 +290,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 	ImGui_ImplDX12_Init(&initInfo);
 
+
+
 	// フォント設定は DX12 の初期化後に行う
 	ImGuiIO& io = ImGui::GetIO();
 	ImFontConfig config;
@@ -300,10 +302,13 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	jpConfig.SizePixels = 13.0f;
 	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msgothic.ttc", 13.0f, &jpConfig, io.Fonts->GetGlyphRangesJapanese());
 	io.Fonts->Build();
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	m_imguiManager = std::make_unique<ImGuiUIManager>(hwnd);
 
-
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+		platform_io.Renderer_RenderWindow = ImGuiUIManager::ViewportRenderCallback;
+		platform_io.Renderer_SwapBuffers = ImGuiUIManager::ViewportSwapCallback;
+	}
 
 
 	//ここから各種windowを宣言していきます
@@ -870,9 +875,6 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 			// renderOrder を最優先（小さい方が先に描画）
 			if (a.renderOrder != b.renderOrder) return a.renderOrder < b.renderOrder;
 
-			// ← lightId チェックを戻す
-			if (a.lightId != b.lightId) return a.lightId < b.lightId;
-
 			// 次点：バッチ化
 			if (a.model != b.model) return a.model < b.model;
 			if (a.textureIndex != b.textureIndex) return a.textureIndex < b.textureIndex;
@@ -947,16 +949,35 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	m_gpuDrivenRenderer->TransitionToSRV(commandList.Get());
 
 	// グラフィックス描画
+
+
+
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
+
+	if (!m_cameraBuffer) {
+		m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));
+	}
+	
+	Vector4* cameraData = nullptr;
+	HRESULT hr = m_cameraBuffer->Map(0, nullptr, reinterpret_cast<void**>(&cameraData));
+	if (FAILED(hr)) { assert(false); return; }
+	cameraData->x = m_camera.transform.translate.x;
+	cameraData->y = m_camera.transform.translate.y;
+	cameraData->z = m_camera.transform.translate.z;
+	cameraData->w = 1.0f;
+	m_cameraBuffer->Unmap(0, nullptr);
+
+	commandList->SetGraphicsRootConstantBufferView(6, m_cameraBuffer->GetGPUVirtualAddress());
 
 	commandList->SetGraphicsRootShaderResourceView(
 		1,
 		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress()
 	);
 
-	// 3D描画ループ（既存と同じ）
+	LightManager::GetInstance()->Bind(commandList.Get(), 0);
+
 	int start = 0;
 	while (start < (int)sortedRequests.size()) {
 		const DrawRequest& head = sortedRequests[start];
@@ -966,14 +987,12 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 			const DrawRequest& next = sortedRequests[start + count];
 			if (next.model != head.model ||
 				next.textureIndex != head.textureIndex ||
-				next.lightId != head.lightId ||
-				next.renderOrder != head.renderOrder) {  // ← これを追加
+				next.renderOrder != head.renderOrder) {
 				break;
 			}
 			count++;
 		}
 
-		LightManager::GetInstance()->Bind(commandList.Get(), head.lightId);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		if (head.model) {
@@ -1000,6 +1019,8 @@ void TUFEngine::RenderSprites2D(const std::vector<DrawRequest>& requests2D) {
 
 	ID3D12DescriptorHeap* heaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, heaps);
+
+	LightManager::GetInstance()->Bind(commandList.Get(), 0);
 
 	// 2D描画用にビューポートを設定（ウィンドウサイズ）
 	D3D12_VIEWPORT viewport{};
