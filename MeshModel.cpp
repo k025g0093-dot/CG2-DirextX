@@ -22,7 +22,7 @@ bool MeshModel::LoadFromOBJ(
 	const std::string& filename
 ) {
 	std::ifstream file(directoryPath + "/" + filename);
-	assert(file.is_open());
+	//assert(file.is_open());
 
 	std::vector<VertexData> faceVertices;
 

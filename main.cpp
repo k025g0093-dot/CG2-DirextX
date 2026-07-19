@@ -245,7 +245,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			meshRot.y += 0.0016f;
 
-			engine->DrawMesh(modelData, meshPos, meshRot, meshScale, -1);
+			//engine->DrawMesh(modelData, meshPos, meshRot, meshScale, -1);
 
 			for (int i = 0; i < 10; i++) {
 				engine->DrawTriangle(
