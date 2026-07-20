@@ -81,6 +81,10 @@ PixelShaderOutput main(VertexShaderOutput input)
             for (uint i = 0; i < LIGHT_COUNT; i++)
             {
                 Light light = g_lights[i];
+                  
+                  if (light.intensity <= 0.0f)
+                        continue;
+                  
                 float NdotL = dot(normal, -normalize(light.dirOrPos));
                 float halfLambert = pow(NdotL * 0.5f + 0.5f, 2.0f);
 
