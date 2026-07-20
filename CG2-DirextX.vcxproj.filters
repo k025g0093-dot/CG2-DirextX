@@ -456,5 +456,6 @@
   <ItemGroup>
     <None Include="Object3d.hlsli" />
     <None Include="GpuDrivenObject.hlsli" />
+    <None Include="Light.hlsli" />
   </ItemGroup>
 </Project>

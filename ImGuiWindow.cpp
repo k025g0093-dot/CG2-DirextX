@@ -144,8 +144,46 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 		// --- ② ギズモ（ImGuizmo）の描画 ---
 #ifdef _DEBUG
+		LightManager* lm = LightManager::GetInstance();
+		int selectedLight = lm->GetSelectedLight();
+
 		auto& objects = EntityManager::GetInstance()->GetEntities();
-		if (!objects.empty()) {
+
+		bool hasEntitySelection = false;
+		for (auto& obj : objects) {
+			if (obj->isSelected) { hasEntitySelection = true; break; }
+		}
+
+		if (selectedLight >= 1 && selectedLight < LightManager::MAX_LIGHTS) {
+			// 🌟ライトのギズモ操作
+			ImGuizmo::BeginFrame();
+			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
+
+			LightData light = lm->GetLight(selectedLight);
+
+			// 位置だけを持つアフィン行列を作る（回転・スケールは単位のまま）
+			Matrix4x4 lightTransform = MakeAffineMatrix(
+				{ 1.0f, 1.0f, 1.0f },
+				{ 0.0f, 0.0f, 0.0f },
+				light.dirOrPos
+			);
+
+			if (ImGuizmo::Manipulate(
+				&engine->GetViewMatrix().m[0][0],
+				&engine->GetProjectionMatrix().m[0][0],
+				ImGuizmo::TRANSLATE, // ライトは移動だけできれば十分
+				ImGuizmo::LOCAL,
+				&lightTransform.m[0][0]
+			)) {
+				float t[3], r[3], s[3];
+				ImGuizmo::DecomposeMatrixToComponents(&lightTransform.m[0][0], t, r, s);
+				light.dirOrPos = { t[0], t[1], t[2] };
+				lm->SetLight(selectedLight, light);
+			}
+		}
+		else if (hasEntitySelection) {
+			// 🌟既存のEntity用ギズモ処理
 			ImGuizmo::BeginFrame();
 			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
 
@@ -159,10 +197,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 				Matrix4x4 transform = MakeAffineMatrix(objects[i]->transform.scale, objects[i]->transform.rotation, objects[i]->transform.position);
 
-				// 修正：プロジェクション行列の引数を imageScreenPos から viewportSize に変更
 				if (ImGuizmo::Manipulate(
 					&engine->GetViewMatrix().m[0][0],
-					&engine->GetProjectionMatrix().m[0][0], // ✨ここを修正
+					&engine->GetProjectionMatrix().m[0][0],
 					mCurrentGizmoOperation,
 					mCurrentGizmoMode,
 					&transform.m[0][0]
@@ -250,15 +287,40 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 			ImGui::Dummy(ImVec2(0.0f, 2.0f));
 
 			if (ImGui::CollapsingHeader("グローバルライト")) {
-				DirectionalLight global = lm->GetGlobalLight();
+				LightData global = lm->GetLight(0);
 				bool changed = false;
 				changed |= ImGui::ColorEdit4("色", &global.color.x);
-				changed |= ImGui::DragFloat3("方向", &global.direction.x, 0.01f, -1.0f, 1.0f);
+				changed |= ImGui::DragFloat3("方向", &global.dirOrPos.x, 0.01f, -1.0f, 1.0f);
 				changed |= ImGui::DragFloat("強度", &global.intensity, 0.01f, 0.0f, 10.0f);
-				if (changed) lm->SetGlobalLight(global);
+				if (changed) lm->SetLight(0, global);
 			}
 
 			ImGui::Dummy(ImVec2(0.0f, 4.0f));
+
+			// ポイントライト（index 1〜MAX_LIGHTS-1）
+			// ポイントライト（index 1〜MAX_LIGHTS-1）
+			for (int i = 1; i < LightManager::MAX_LIGHTS; i++) {
+				ImGui::PushID(i);
+				std::string label = "ポイントライト " + std::to_string(i);
+				if (ImGui::CollapsingHeader(label.c_str())) {
+					LightData point = lm->GetLight(i);
+					bool changed = false;
+					changed |= ImGui::ColorEdit4("色", &point.color.x);
+					changed |= ImGui::DragFloat3("位置", &point.dirOrPos.x, 0.1f);
+					changed |= ImGui::DragFloat("強度", &point.intensity, 0.01f, 0.0f, 10.0f);
+
+					// 🌟追加：ギズモ操作対象として選択
+					if (ImGui::Button("ギズモで選択")) {
+						lm->SetSelectedLight(i);
+					}
+
+					if (changed) {
+						point.type = 1;
+						lm->SetLight(i, point);
+					}
+				}
+				ImGui::PopID();
+			}
 		}
 
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
