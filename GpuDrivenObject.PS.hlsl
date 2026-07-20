@@ -74,32 +74,53 @@ PixelShaderOutput main(VertexShaderOutput input)
       if (gMaterial.enableLighting != 0)
       {
             float3 toEye = normalize(gCamera.worldPorition - input.worldPosition);
-            float3 baseColor = gMaterial.color.rgb * textureColor.rgb;
+            float4 baseColor = gMaterial.color * textureColor; // ← float4のまま計算する（rgbを取り出さない）
 
-            float3 finalColor = float3(0.0f, 0.0f, 0.0f);
+            float4 finalColor = float4(0.0f, 0.0f, 0.0f, 0.0f); // ← float4で初期化
+
             [loop]
             for (uint i = 0; i < LIGHT_COUNT; i++)
             {
-                Light light = g_lights[i];
-                  
+                  Light light = g_lights[i];
+
                   if (light.intensity <= 0.0f)
                         continue;
-                  
-                float NdotL = dot(normal, -normalize(light.dirOrPos));
-                float halfLambert = pow(NdotL * 0.5f + 0.5f, 2.0f);
 
-                float3 diffuse = baseColor * light.color * halfLambert * light.intensity;
+                  float3 lightDir;
+                  float attenuation = 1.0f;
 
-                float3 halfVector = normalize(-normalize(light.dirOrPos) + toEye);
-                float NDotH = dot(normal, halfVector);
-                float specularPow = pow(saturate(NDotH), 32.0f);
-                float3 specular = light.color * light.intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+                  if (light.type == 0) // ポイントライト
+                  {
+                        lightDir = -normalize(light.dirOrPos); // ← マイナスを戻す
 
-                finalColor += diffuse + specular;
+                        
+                  }
+                  else // ポイントライト（type == 1）
+                  {
+                        float3 toLight = light.dirOrPos - input.worldPosition;
+                        float dist = length(toLight);
+                        lightDir = normalize(toLight);
+
+                        float range = 20.0f;
+                        attenuation = saturate(1.0f - (dist * dist) / (range * range));
+                        attenuation *= attenuation;
+                  }
+
+                  float NdotL = dot(normal, lightDir);
+                  float halfLambert = pow(NdotL * 0.5f + 0.5f, 2.0f);
+
+                  float4 diffuse = baseColor * light.color * halfLambert * light.intensity * attenuation;
+
+                  float3 halfVector = normalize(lightDir + toEye);
+                  float NDotH = dot(normal, halfVector);
+                  float specularPow = pow(saturate(NDotH), 32.0f);
+                  float4 specular = light.color * light.intensity * specularPow * attenuation * float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+                  finalColor += diffuse + specular;
             }
 
-            output.color.rgb = finalColor;
-            output.color.a = gMaterial.color.a * textureColor.a;
+            output.color = finalColor;
+            output.color.a = gMaterial.color.a * textureColor.a; // ライト計算のアルファは意味を持たないので、最後に正しいアルファへ上書き
       }
       else
       {

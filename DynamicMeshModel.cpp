@@ -94,12 +94,12 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     // ───────────────────────────────────────────────────────
     // ライトバッファ
     // ───────────────────────────────────────────────────────
-    m_lightBuffer = CreateBufferResource(engine->GetDevice(), sizeof(DirectionalLight));
+    m_lightBuffer = CreateBufferResource(engine->GetDevice(), sizeof(LightData));
     if (!m_lightBuffer) return false;
-    DirectionalLight* lightData = nullptr;
+    LightData* lightData = nullptr;
     m_lightBuffer->Map(0, nullptr, reinterpret_cast<void**>(&lightData));
     lightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    lightData->direction = { 0.0f, -1.0f, 0.0f };
+    lightData->dirOrPos = { 0.0f, -1.0f, 0.0f };
     lightData->intensity = 1.0f;
     m_lightBuffer->Unmap(0, nullptr);
 

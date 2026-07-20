@@ -1,7 +1,8 @@
 struct Light
 {
     float3 dirOrPos;
-    float3 color;
+    int type;
+    float4 color;
     float intensity;
 };
 

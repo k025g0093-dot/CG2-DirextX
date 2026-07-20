@@ -5,15 +5,10 @@
 
 using Microsoft::WRL::ComPtr;
 
-struct DirectionalLight {
-    Vector4 color;
-    Vector3 direction;
-    float intensity;
-};
-
 struct LightData {
     Vector3 dirOrPos;
-    Vector3 color;
+    float type;
+    Vector4 color;
     float intensity;
 };
 
@@ -26,10 +21,16 @@ public:
 
     void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
 
-    void SetGlobalLight(const DirectionalLight& light);
-    const DirectionalLight& GetGlobalLight() const { return m_globalLight; }
+    void SetLight(int index, const LightData& light);
+    const LightData& GetLight(int index) const { return m_lights[index]; }
+    int GetActiveLightCount() const { return m_activeLightCount; }
 
     void Bind(ID3D12GraphicsCommandList* cmdList, int id);
+
+    void SetSelectedLight(int index) { m_selectedLightIndex = index; }
+    int GetSelectedLight() const { return m_selectedLightIndex; }
+
+
 
 private:
     LightManager() = default;
@@ -38,9 +39,11 @@ private:
     static LightManager* s_instance;
 
     ID3D12Device* m_device = nullptr;
-    DirectionalLight m_globalLight{};
+
     ComPtr<ID3D12Resource> m_lightBuffer;
     D3D12_GPU_DESCRIPTOR_HANDLE m_lightSrvGpuHandle{};
 
     LightData m_lights[MAX_LIGHTS] = {};
+    int m_activeLightCount = 0;   // ← m_lightDataの代わりにこれを追加
+    int m_selectedLightIndex = -1;
 };
