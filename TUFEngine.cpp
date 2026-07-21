@@ -342,6 +342,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	auto componentWin = std::make_shared<ImGuiComponentWindow>();
 	m_imguiManager->addWindow(componentWin);
 
+	auto ImGuiLightWin = std::make_shared<ImGuiLightManagerWindow>();
+	m_imguiManager->addWindow(ImGuiLightWin);
+
 
 
 }
@@ -955,6 +958,10 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
+
+	commandList->SetGraphicsRoot32BitConstant(
+		7, static_cast<UINT>(LightManager::GetInstance()->
+			GetActiveLightCount()), 0);
 
 	if (!m_cameraBuffer) {
 		m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));

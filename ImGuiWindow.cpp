@@ -105,11 +105,98 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 #endif
 }
 
+void ImGuiLightManagerWindow::update(TUFEngine* engine) {
+#ifdef _DEBUG
+
+	if (begin("ライティングのシーン管理", ImGuiWindowFlags_MenuBar))
+	{
+
+		//メニューバー
+		if (ImGui::BeginMenuBar()) {
+			if (ImGui::BeginMenu("ファイル")) {
+				if (ImGui::MenuItem("保存")) {
+					//ここでいろいろなライトの保存の実装だったりを行います
+					//ModelManager::GetInstance()->SaveToFile();
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
+
+		LightManager* lm = LightManager::GetInstance();
+
+		// --- グローバルライト（常に1個だけ、固定） ---
+		if (ImGui::CollapsingHeader("グローバルライト")) {
+			LightData global = lm->GetLight(0);
+			bool changed = false;
+			changed |= ImGui::ColorEdit4("色", &global.color.x);
+			changed |= ImGui::DragFloat3("方向", &global.dirOrPos.x, 0.01f, -1.0f, 1.0f);
+			changed |= ImGui::DragFloat("強度", &global.intensity, 0.01f, 0.0f, 10.0f);
+			if (changed) lm->SetLight(0, global);
+		}
+
+		ImGui::Dummy(ImVec2(0.0f, 6.0f));
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 6.0f));
+
+		// --- ポイントライト一覧（使われているものだけ表示） ---
+		for (int i = 1; i < LightManager::MAX_LIGHTS; i++) {
+			if (!lm->IsLightActive(i)) continue;
+
+			ImGui::PushID(i);
+			std::string label = "ポイントライト " + std::to_string(i);
+
+			if (ImGui::CollapsingHeader(label.c_str())) {
+				LightData point = lm->GetLight(i);
+				bool changed = false;
+				changed |= ImGui::ColorEdit4("色", &point.color.x);
+				changed |= ImGui::DragFloat3("位置", &point.dirOrPos.x, 0.1f);
+				changed |= ImGui::DragFloat("強度", &point.intensity, 0.01f, 0.0f, 10.0f);
+
+				if (ImGui::Button("ギズモで選択")) {
+					lm->SetSelectedLight(i);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("削除")) {
+					lm->RemoveLight(i);
+					ImGui::PopID();
+					continue; // 削除直後にPopIDしたので、このまま次のループへ
+				}
+
+				if (changed) {
+					point.type = 1;
+					lm->SetLight(i, point);
+				}
+			}
+			ImGui::PopID();
+		}
+
+		ImGui::Dummy(ImVec2(0.0f, 8.0f));
+
+		// --- 追加ボタン ---
+		if (ImGui::Button("+ ポイントライト追加")) {
+			int newIndex = lm->AddLight();
+			if (newIndex == -1) {
+				ImGui::OpenPopup("LightFullPopup");
+			}
+		}
+		if (ImGui::BeginPopup("LightFullPopup")) {
+			ImGui::Text("これ以上ライトを追加できません（上限: %d）", LightManager::MAX_LIGHTS - 1);
+			ImGui::EndPopup();
+		}
+
+
+	}
+	end();
+
+#endif // _DEBUG
+}
+
 
 //ギズモの仮実装。まだまだいらないものとか将来的に自由にアイテムを選択できるようにしたりしていきたい
 void ImGuiZmoWindow::update(TUFEngine* engine) {
 #ifdef _DEBUG
-	auto& objects =EntityManager::GetInstance()->GetEntities();
+	auto& objects = EntityManager::GetInstance()->GetEntities();
 	if (objects.empty()) return; // オブジェクトがなければ何もしない
 
 	// キー入力による切り替え判定だけを行う
@@ -136,7 +223,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 	if (ImGui::Begin("デバック用ビューポート", nullptr, viewportFlags)) {
 
-		
+
 
 		// --- ① シーン（ゲーム画面）の描画 ---
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
@@ -294,52 +381,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 
 
-	if (begin("コンポーネント")){
-
-		
-
-
-		if (ImGui::CollapsingHeader("ライト設定")) {
-			LightManager* lm = LightManager::GetInstance();
-
-			ImGui::Dummy(ImVec2(0.0f, 2.0f));
-
-			if (ImGui::CollapsingHeader("グローバルライト")) {
-				LightData global = lm->GetLight(0);
-				bool changed = false;
-				changed |= ImGui::ColorEdit4("色", &global.color.x);
-				changed |= ImGui::DragFloat3("方向", &global.dirOrPos.x, 0.01f, -1.0f, 1.0f);
-				changed |= ImGui::DragFloat("強度", &global.intensity, 0.01f, 0.0f, 10.0f);
-				if (changed) lm->SetLight(0, global);
-			}
-
-			ImGui::Dummy(ImVec2(0.0f, 4.0f));
-
-			// ポイントライト（index 1〜MAX_LIGHTS-1）
-			// ポイントライト（index 1〜MAX_LIGHTS-1）
-			for (int i = 1; i < LightManager::MAX_LIGHTS; i++) {
-				ImGui::PushID(i);
-				std::string label = "ポイントライト " + std::to_string(i);
-				if (ImGui::CollapsingHeader(label.c_str())) {
-					LightData point = lm->GetLight(i);
-					bool changed = false;
-					changed |= ImGui::ColorEdit4("色", &point.color.x);
-					changed |= ImGui::DragFloat3("位置", &point.dirOrPos.x, 0.1f);
-					changed |= ImGui::DragFloat("強度", &point.intensity, 0.01f, 0.0f, 10.0f);
-
-					// 🌟追加：ギズモ操作対象として選択
-					if (ImGui::Button("ギズモで選択")) {
-						lm->SetSelectedLight(i);
-					}
-
-					if (changed) {
-						point.type = 1;
-						lm->SetLight(i, point);
-					}
-				}
-				ImGui::PopID();
-			}
-		}
+	if (begin("コンポーネント")) {
 
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 		ImGui::Separator();
@@ -360,7 +402,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				const char* typeName = typeid(*c).name();
 				if (ImGui::CollapsingHeader(typeName)) {
 					if (auto* mf = dynamic_cast<MeshFilter*>(c)) {
-					
+
 						ImGui::Spacing();
 						ImGui::Text("モデル: %s", mf->model ? "読み込み済み" : "なし");
 						ImGui::Spacing();
@@ -369,7 +411,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 					else if (auto* lc = dynamic_cast<LearnComponent*>(c)) {
 						ImGui::Spacing();
 						ImGui::Text("ステータス: 実行中");
-					
+
 						ImGui::Spacing();
 
 					}
@@ -379,7 +421,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 						ImGui::Spacing();
 
-						
+
 						ImGui::Text("これはからスクリプトの初期化またヴィジュアルスタジオを起動します");
 						if (ImGui::Button("C#スクリプトを初期化＆起動")) {
 
@@ -392,10 +434,10 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						if (ImGui::Button("C#のビルド")) {
 							gs->ReloadScript();
 							gs->Update();
-							
-						}			
 
-						
+						}
+
+
 						ImGui::Text("現在の.csのクラス名を決めるところです");
 
 						ImGui::Text("test: %s", gs->m_scriptNameBuf);

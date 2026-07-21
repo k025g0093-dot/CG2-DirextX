@@ -7,3 +7,8 @@ struct Light
 };
 
 StructuredBuffer<Light> g_lights : register(t3);
+
+cbuffer LightCountBuffer : register(b3)
+{
+      uint gActiveLightCount;
+};

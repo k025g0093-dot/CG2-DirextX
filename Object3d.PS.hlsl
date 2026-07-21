@@ -74,7 +74,7 @@ PixelShaderOutput main(VertexShaderOutput input)
             float4 finalColor = float4(0.0f, 0.0f, 0.0f, 0.0f); // ← float4で初期化
 
             [loop]
-            for (uint i = 0; i < LIGHT_COUNT; i++)
+            for (uint i = 0; i < gActiveLightCount; i++)
             {
                   Light light = g_lights[i];
 

@@ -16,7 +16,7 @@ class LightManager {
 public:
     static LightManager* GetInstance();
 
-    static const int MAX_LIGHTS = 8;
+    static const int MAX_LIGHTS = 1000;
     static const int LIGHT_SRV_SLOT = 108;
 
     void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
@@ -30,6 +30,9 @@ public:
     void SetSelectedLight(int index) { m_selectedLightIndex = index; }
     int GetSelectedLight() const { return m_selectedLightIndex; }
 
+    int AddLight();
+    void RemoveLight(int index);
+    bool IsLightActive(int index){return m_lightActive[index];}
 
 
 private:
@@ -44,6 +47,7 @@ private:
     D3D12_GPU_DESCRIPTOR_HANDLE m_lightSrvGpuHandle{};
 
     LightData m_lights[MAX_LIGHTS] = {};
+    bool m_lightActive[MAX_LIGHTS] = { true };
     int m_activeLightCount = 0;   // ← m_lightDataの代わりにこれを追加
     int m_selectedLightIndex = -1;
 };

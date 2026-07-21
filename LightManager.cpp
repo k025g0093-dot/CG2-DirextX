@@ -64,3 +64,38 @@ void LightManager::Upload() {
         m_lightBuffer->Unmap(0, nullptr);
     }
 }
+
+int LightManager::AddLight() {
+    for (int i = 1; i < MAX_LIGHTS; i++) {
+        if (!m_lightActive[i]) {
+            m_lightActive[i] = true;
+            LightData d{};
+            d.type = 1;
+            d.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+            d.intensity = 1.0f;
+            d.dirOrPos = { 0.0f, 2.0f, 0.0f };
+            m_lights[i] = d;
+            m_activeLightCount = i + 1;
+            Upload();
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+void LightManager::RemoveLight(int index) {
+    if (index <= 0 || index >= MAX_LIGHTS) return;
+    m_lightActive[index] = false;
+    m_lights[index] = LightData{};
+    if (m_selectedLightIndex == index) m_selectedLightIndex = -1;
+
+    // 🌟 一番後ろの有効indexを再計算
+    int lastActive = 0;
+    for (int i = 1; i < MAX_LIGHTS; i++) {
+        if (m_lightActive[i]) lastActive = i;
+    }
+    m_activeLightCount = lastActive + 1;
+
+    Upload();
+}

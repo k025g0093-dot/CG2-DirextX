@@ -27,7 +27,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	D3D12_ROOT_PARAMETER rootParameter[6] = {};
+	D3D12_ROOT_PARAMETER rootParameter[7] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0;
@@ -54,6 +54,12 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	rootParameter[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[5].Descriptor.ShaderRegister = 2;
+
+	rootParameter[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[6].Constants.ShaderRegister = 3; // b3
+	rootParameter[6].Constants.RegisterSpace = 0;
+	rootParameter[6].Constants.Num32BitValues = 1; // uintひとつだけ送る
 
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);
@@ -271,7 +277,7 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	D3D12_ROOT_PARAMETER rootParameter[7] = {};
+	D3D12_ROOT_PARAMETER rootParameter[8] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0; // b0 material
@@ -306,6 +312,15 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	rootParameter[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[6].Descriptor.ShaderRegister = 2;
+
+	// [7] 32bit constant b3 - ActiveLightCount (pixel)
+	rootParameter[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameter[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[7].Constants.ShaderRegister = 3; // b3
+	rootParameter[7].Constants.RegisterSpace = 0;
+	rootParameter[7].Constants.Num32BitValues = 1; // uintひとつだけ送る
+
+
 
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);
