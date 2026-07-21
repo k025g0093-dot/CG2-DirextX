@@ -24,15 +24,18 @@ void ImGuiUIWindow::Show() {
 	show = true;
 }
 
-bool ImGuiUIWindow::begin(std::string name)
+// ImGuiWindow.cpp
+bool ImGuiUIWindow::begin(std::string name, ImGuiWindowFlags flags)
 {
 #ifdef USE_IMGUI
 	if (!show) return false;
-	return ImGui::Begin(name.c_str(), &show);
+	return ImGui::Begin(name.c_str(), &show, flags);
 #else
 	return false;
 #endif
 }
+
+
 
 void ImGuiUIWindow::end()
 {
@@ -50,7 +53,18 @@ void ImGuiUIWindow::end()
 //ここも似た感じの者です将来的にはもっといろんな情報であったりほかのクラスと連動していろんなことができるようにしていきたいですね
 void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
-	if (begin("シーン")) {
+	if (begin("シーン", ImGuiWindowFlags_MenuBar)) {
+
+		// 🌟 メニューバー
+		if (ImGui::BeginMenuBar()) {
+			if (ImGui::BeginMenu("ファイル")) {
+				if (ImGui::MenuItem("保存")) {
+					ModelManager::GetInstance()->SaveToFile();
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
 
 		// オブジェクト一覧
 		auto& objects = EntityManager::GetInstance()->GetEntities();
@@ -78,7 +92,6 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[選択中]");
 			}
 
-			// 🌟オブジェクトごとの区切りをゆったりさせる
 			ImGui::Dummy(ImVec2(0.0f, 6.0f));
 			ImGui::Separator();
 			ImGui::Dummy(ImVec2(0.0f, 6.0f));
@@ -121,7 +134,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		viewportFlags |= ImGuiWindowFlags_NoMove;
 	}
 
-	if (ImGui::Begin("ビューポート", nullptr, viewportFlags)) {
+	if (ImGui::Begin("デバック用ビューポート", nullptr, viewportFlags)) {
+
+		
 
 		// --- ① シーン（ゲーム画面）の描画 ---
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
@@ -235,6 +250,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 
 
+
+
+
 void ImGuiPlayViewportWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -276,9 +294,9 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 
 
-	if (begin("コンポーネント")) {
+	if (begin("コンポーネント")){
 
-	
+		
 
 
 		if (ImGui::CollapsingHeader("ライト設定")) {
