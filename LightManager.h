@@ -16,7 +16,7 @@ class LightManager {
 public:
     static LightManager* GetInstance();
 
-    static const int MAX_LIGHTS = 1000;
+    static const int MAX_LIGHTS = 10;
     static const int LIGHT_SRV_SLOT = 108;
 
     void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);

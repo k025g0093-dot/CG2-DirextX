@@ -187,9 +187,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 				auto* gs = entity->AddComponent<GameScript>();
 				gs->m_scriptName = object["scriptName"];
 				gs->ReloadScript();
-			
+
 			}
-			
+
 		}
 	}
 }
@@ -954,7 +954,10 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	// グラフィックス描画
 
 
-
+	// 🌟【順序注意】ルートシグネチャ切り替え後でないと、
+	// SetGraphicsRoot32BitConstant等のパラメータ番号は正しく解釈されない。
+	// Compute用シグネチャがバインドされたままここでパラメータ7番に書き込むと
+	// 存在しない番号への書き込みになりGPUドライバごとクラッシュする（nvwgf2umx.dll等）。
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
@@ -966,7 +969,7 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	if (!m_cameraBuffer) {
 		m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));
 	}
-	
+
 	Vector4* cameraData = nullptr;
 	HRESULT hr = m_cameraBuffer->Map(0, nullptr, reinterpret_cast<void**>(&cameraData));
 	if (FAILED(hr)) { assert(false); return; }
