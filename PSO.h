@@ -40,6 +40,17 @@ ComPtr<ID3D12PipelineState> CreateComputePipelineState(
     ComPtr<ID3D12RootSignature>& rootSignature,
     HRESULT& hr);
 
+ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
+    ID3D12Device* device,
+    ComPtr<ID3D12RootSignature>& rootSignature,
+    HRESULT& hr
+);
+
+ComPtr<ID3D12RootSignature> CreateShadowRootSignature(
+    ID3D12Device* device,
+    HRESULT& hr
+);
+
 ComPtr<ID3D12RootSignature> CreateLineRootSignature(
     ID3D12Device* device,
     HRESULT& hr);

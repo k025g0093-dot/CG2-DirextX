@@ -669,3 +669,95 @@ ComPtr<ID3D12PipelineState> CreateLinePipelineState(
 	assert(SUCCEEDED(hr));
 	return pso;
 }
+
+
+//陰描画用のPSO設定
+// 陰描画用のPSO設定
+ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
+	ID3D12Device* device,
+	ComPtr<ID3D12RootSignature>& rootSignature,
+	HRESULT& hr
+) {
+	// DXCコンパイラの初期化
+	IDxcUtils* dxcUtils = nullptr;
+	IDxcCompiler3* dxcCompiler = nullptr;
+	IDxcIncludeHandler* includeHandler = nullptr;
+	DxcCompilerInclude(hr, dxcUtils, dxcCompiler, includeHandler);
+
+	// 頂点シェーダーのみコンパイル（深度だけでいいのでピクセルシェーダーは不要）
+	IDxcBlob* vertexShaderBlob = CompileShader(
+		L"shadow.VS.hlsl", L"vs_6_0",
+		dxcUtils, dxcCompiler, includeHandler);
+
+	// 各設定の生成（既存のヘルパーを流用）
+	D3D12_INPUT_LAYOUT_DESC inputLayout = CreateLayout();
+	D3D12_BLEND_DESC blendDesc = CreateBlendState();
+	D3D12_RASTERIZER_DESC rasterizerDesc = CreateRasterizerState();
+
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	depthStencilDesc.StencilEnable = FALSE;
+
+	// PSOの設定をまとめる（グラフィックス用）
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+
+	rootSignature = CreateShadowRootSignature(device, hr); // 🌟 シャドウ専用のルートシグネチャ
+	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();
+
+	graphicsPipelineStateDesc.InputLayout = inputLayout;
+
+	graphicsPipelineStateDesc.VS = {
+		vertexShaderBlob->GetBufferPointer(),
+		vertexShaderBlob->GetBufferSize()
+	};
+	// ピクセルシェーダーは設定しない（深度専用、色出力なし）
+	graphicsPipelineStateDesc.PS = {}; // 空のまま
+
+	graphicsPipelineStateDesc.BlendState = blendDesc;
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT; // ShadowMapBufferと合わせる
+
+	graphicsPipelineStateDesc.NumRenderTargets = 0; // 🌟 カラー出力は無し
+	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	ComPtr<ID3D12PipelineState> graphicsPipelineState;
+	hr = device->CreateGraphicsPipelineState(
+		&graphicsPipelineStateDesc,
+		IID_PPV_ARGS(graphicsPipelineState.GetAddressOf()));
+	assert(SUCCEEDED(hr));
+
+	return graphicsPipelineState;
+}
+
+ComPtr<ID3D12RootSignature> CreateShadowRootSignature(ID3D12Device* device, HRESULT& hr) {
+	D3D12_ROOT_SIGNATURE_DESC desc{};
+	desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	D3D12_ROOT_PARAMETER params[2] = {};
+	// [0] instance buffer (root SRV, vertex) — t2
+	params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	params[0].Descriptor.ShaderRegister = 2;
+
+	// [1] LightVP (CBV, vertex) — b4
+	params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	params[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	params[1].Descriptor.ShaderRegister = 4;
+
+	desc.pParameters = params;
+	desc.NumParameters = _countof(params);
+
+	ID3DBlob* sigBlob = nullptr;
+	ID3DBlob* errBlob = nullptr;
+	hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
+	if (FAILED(hr)) { assert(false); }
+
+	ComPtr<ID3D12RootSignature> rootSig;
+	hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(rootSig.GetAddressOf()));
+	return rootSig;
+}

@@ -131,18 +131,15 @@ PixelShaderOutput main(VertexShaderOutput input)
             float4 posInLightSpace = mul(float4(input.worldPosition, 1.0f), gLightVP);
             posInLightSpace.xyz /= posInLightSpace.w;
             float2 shadowUV = float2(
-                                     (posInLightSpace.x + 1.0f) * 0.5f,
-                                      (1.0f - posInLightSpace.y) * 0.5f
-                               );
+                         (posInLightSpace.x + 1.0f) * 0.5f,
+                          (1.0f - posInLightSpace.y) * 0.5f
+                   );
             float storedDepth = shadowMap.Sample(gSampler1, shadowUV);
             shadowFactor = (posInLightSpace.z - 0.005f < storedDepth) ? 1.0f : 0.5f;
-            
+
             output.color.rgb = finalColor.rgb * shadowFactor;
             output.color.a = gMaterial.color.a * textureColor.a;
             
-            
-            output.color = finalColor;
-            output.color.a = gMaterial.color.a * textureColor.a; // ライト計算のアルファは意味を持たないので、最後に正しいアルファへ上書き
       }
       else
       {
