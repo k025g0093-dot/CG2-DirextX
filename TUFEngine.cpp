@@ -132,6 +132,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	TextureManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
 	ModelManager::GetInstance()->Initialize(device.Get(), commandList.Get());
 
+	ShadowMapBuffer::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get());
 
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
@@ -965,6 +966,11 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	commandList->SetGraphicsRoot32BitConstant(
 		7, static_cast<UINT>(LightManager::GetInstance()->
 			GetActiveLightCount()), 0);
+
+	// RenderGpuDriven3D 内
+	auto shadowHandle = ShadowMapBuffer::GetInstance()->GetSrvGpuHandle();
+
+	commandList->SetGraphicsRootDescriptorTable(8, shadowHandle);
 
 	if (!m_cameraBuffer) {
 		m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));

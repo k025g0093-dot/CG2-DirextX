@@ -131,6 +131,7 @@
     <ClCompile Include="MonoBehaviour.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="ResourceObject.cpp" />
+    <ClCompile Include="ShadowMapBuffer.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="Sprite.cpp" />
@@ -254,6 +255,7 @@
     <ClInclude Include="MonoBehaviour.h" />
     <ClInclude Include="PSO.h" />
     <ClInclude Include="ResourceObject.h" />
+    <ClInclude Include="ShadowMapBuffer.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Sprite.h" />
