@@ -261,7 +261,7 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 
 	// t0: texture, t1: normal texture, t3: lights
 	// t2: InstanceData は RootSRV で直接アドレスを渡すので不要
-	D3D12_DESCRIPTOR_RANGE descriptorRange[3] = {};
+	D3D12_DESCRIPTOR_RANGE descriptorRange[4] = {};
 	descriptorRange[0].BaseShaderRegister = 0; // t0 texture
 	descriptorRange[0].NumDescriptors = 1;
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -277,7 +277,12 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	D3D12_ROOT_PARAMETER rootParameter[8] = {};
+	descriptorRange[3].BaseShaderRegister = 4; // t4 shadowMap
+	descriptorRange[3].NumDescriptors = 1;
+	descriptorRange[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	descriptorRange[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	D3D12_ROOT_PARAMETER rootParameter[10] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0; // b0 material
@@ -320,6 +325,17 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	rootParameter[7].Constants.RegisterSpace = 0;
 	rootParameter[7].Constants.Num32BitValues = 1; // uintひとつだけ送る
 
+	// [8] DescriptorTable t4 - シャドウマップ
+	rootParameter[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameter[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[8].DescriptorTable.pDescriptorRanges = &descriptorRange[3];
+	rootParameter[8].DescriptorTable.NumDescriptorRanges = 1;
+
+	// [9] CBV b4 - ライトVP (ALL visibility)
+	rootParameter[9].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameter[9].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameter[9].Descriptor.ShaderRegister = 4;
+
 
 
 	descriptionRootSignature.pParameters = rootParameter;
@@ -327,7 +343,7 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 
 
 	//Samplerの設定
-	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[2] = {};
 	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;//バイリニアフィルタ
 	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;//0~1の範囲を繰り返す
 	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -336,6 +352,15 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;//最大LOD
 	staticSamplers[0].ShaderRegister = 0;//register(s0)に対応
 	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;//ピクセルシェーダーで使用
+	
+	staticSamplers[1].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;//バイリニアフィルタ
+	staticSamplers[1].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;//0~1の範囲を繰り返す
+	staticSamplers[1].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[1].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[1].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;//比較しない
+	staticSamplers[1].MaxLOD = D3D12_FLOAT32_MAX;//最大LOD
+	staticSamplers[1].ShaderRegister = 1;//register(s0)に対応
+	staticSamplers[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;//ピクセルシェーダーで使用
 
 	descriptionRootSignature.pStaticSamplers = staticSamplers;
 	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);

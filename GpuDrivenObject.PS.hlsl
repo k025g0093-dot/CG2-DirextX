@@ -35,7 +35,13 @@ cbuffer CameraBuffer : register(b2)
 
 Texture2D<float32_t4> gTexture : register(t0);
 Texture2D<float32_t4> gNormalTexture : register(t1);
+Texture2D<float> shadowMap : register(t4);
+
+StructuredBuffer<InstanceData> gInstances : register(t2);
+
+
 SamplerState gSampler : register(s0);
+SamplerState gSampler1 : register(s1);
 
 static const uint LIGHT_COUNT = 8;
 
@@ -119,6 +125,22 @@ PixelShaderOutput main(VertexShaderOutput input)
                   finalColor += diffuse + specular;
             }
 
+            
+            float shadowFactor = 1.0f;
+
+            float4 posInLightSpace = mul(float4(input.worldPosition, 1.0f), gLightVP);
+            posInLightSpace.xyz /= posInLightSpace.w;
+            float2 shadowUV = float2(
+                                     (posInLightSpace.x + 1.0f) * 0.5f,
+                                      (1.0f - posInLightSpace.y) * 0.5f
+                               );
+            float storedDepth = shadowMap.Sample(gSampler1, shadowUV);
+            shadowFactor = (posInLightSpace.z - 0.005f < storedDepth) ? 1.0f : 0.5f;
+            
+            output.color.rgb = finalColor.rgb * shadowFactor;
+            output.color.a = gMaterial.color.a * textureColor.a;
+            
+            
             output.color = finalColor;
             output.color.a = gMaterial.color.a * textureColor.a; // ライト計算のアルファは意味を持たないので、最後に正しいアルファへ上書き
       }
@@ -129,3 +151,5 @@ PixelShaderOutput main(VertexShaderOutput input)
 
       return output;
 }
+
+

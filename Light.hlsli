@@ -12,3 +12,8 @@ cbuffer LightCountBuffer : register(b3)
 {
       uint gActiveLightCount;
 };
+
+cbuffer ShadowLightBuffer : register(b4)
+{
+      row_major float4x4 gLightVP;
+};
