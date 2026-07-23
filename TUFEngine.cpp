@@ -984,7 +984,7 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	// Light VP計算（仮の行列）
 	LightData shadowLight = LightManager::GetInstance()->GetLight(0);
 	Vector3 lightDir = shadowLight.dirOrPos.Normalized();
-	Vector3 lightPos = lightDir * -20.0f;
+	Vector3 lightPos = lightDir * -50.0f;
 
 	// forwardとupが平行(ライトがほぼ真上/真下を向いている)だと
 	// MakeLookAtMatrixの外積計算がゼロベクトルになり、行列が縮退してしまう。
