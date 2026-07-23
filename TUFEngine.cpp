@@ -960,8 +960,8 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	auto* shadowBuf = ShadowMapBuffer::GetInstance();
 	shadowBuf->TransitionToDsv(commandList.Get());
 
-	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get()); // ← 追加
-	commandList->SetDescriptorHeaps(1, heaps);                             // ← 追加
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	commandList->SetDescriptorHeaps(1, heaps);
 	commandList->SetPipelineState(m_shadowPipelineState.Get());
 
 	D3D12_VIEWPORT shadowVP{};
@@ -969,8 +969,6 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	shadowVP.Height = (float)ShadowMapBuffer::SHADOW_MAP_SIZE;
 	shadowVP.MaxDepth = 1.0f;
 	commandList->RSSetViewports(1, &shadowVP);
-
-
 
 	D3D12_RECT shadowRect{};
 	shadowRect.right = ShadowMapBuffer::SHADOW_MAP_SIZE;
@@ -981,14 +979,10 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	commandList->OMSetRenderTargets(0, nullptr, false, &shadowDsv);
 	commandList->ClearDepthStencilView(shadowDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	// Light VP計算（仮の行列）
 	LightData shadowLight = LightManager::GetInstance()->GetLight(0);
 	Vector3 lightDir = shadowLight.dirOrPos.Normalized();
 	Vector3 lightPos = lightDir * -50.0f;
 
-	// forwardとupが平行(ライトがほぼ真上/真下を向いている)だと
-	// MakeLookAtMatrixの外積計算がゼロベクトルになり、行列が縮退してしまう。
-	// その場合はupベクトルを別の軸に切り替える。
 	Vector3 upVector = { 0.0f, 1.0f, 0.0f };
 	if (std::abs(lightDir.Dot(upVector)) > 0.99f) {
 		upVector = { 0.0f, 0.0f, 1.0f };
@@ -997,8 +991,6 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	Matrix4x4 lightView = MakeLookAtMatrix(lightPos, { 0.0f, 0.0f, 0.0f }, upVector);
 	Matrix4x4 lightProj = MakeOrthographicMatrix(-20.0f, 20.0f, 20.0f, -20.0f, 0.1f, 100.0f);
 	Matrix4x4 lightVP = Multiply(lightView, lightProj);
-	
-
 
 	Matrix4x4* mapped = nullptr;
 	m_lightVPBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
@@ -1008,14 +1000,14 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	commandList->SetGraphicsRootShaderResourceView(1,
 		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress());
 
-	// 全モデルをシャドウPSOで描画（既存のdraw loopと同じ構造）
+	// 🌟 シャドウパス専用のバッチ分割：textureIndexは深度書き込みに無関係なので条件から外す
 	int sStart = 0;
 	while (sStart < (int)sortedRequests.size()) {
 		const DrawRequest& head = sortedRequests[sStart];
 		int count = 1;
 		while (sStart + count < (int)sortedRequests.size()) {
 			const DrawRequest& next = sortedRequests[sStart + count];
-			if (next.model != head.model || next.textureIndex != head.textureIndex || next.renderOrder != head.renderOrder) break;
+			if (next.model != head.model || next.renderOrder != head.renderOrder) break; // textureIndex条件を削除
 			count++;
 		}
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -1028,7 +1020,6 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 
 	shadowBuf->TransitionToSrv(commandList.Get());
 
-	// ビューポート復元（PreDrawと同じ値）
 	D3D12_VIEWPORT mainVP{};
 	mainVP.Width = m_currentRenderWidth;
 	mainVP.Height = m_currentRenderHeight;
@@ -1039,27 +1030,19 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	mainRect.bottom = (LONG)m_currentRenderHeight;
 	commandList->RSSetScissorRects(1, &mainRect);
 
-	// 🌟 ここが抜けていた：メインシーン用のレンダーターゲットに戻す
+	// 🌟 メインシーン用のレンダーターゲットに戻す
 	D3D12_CPU_DESCRIPTOR_HANDLE mainDsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &mainDsvHandle);
 
-
 	// グラフィックス描画
 
-
-	// 🌟【順序注意】ルートシグネチャ切り替え後でないと、
-	// SetGraphicsRoot32BitConstant等のパラメータ番号は正しく解釈されない。
-	// Compute用シグネチャがバインドされたままここでパラメータ7番に書き込むと
-	// 存在しない番号への書き込みになりGPUドライバごとクラッシュする（nvwgf2umx.dll等）。
-	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
+	// ルートシグネチャとヒープはShadow Passで既に設定済みなので、PSOのみ切り替える
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
-	commandList->SetDescriptorHeaps(1, heaps);
 
 	commandList->SetGraphicsRoot32BitConstant(
 		7, static_cast<UINT>(LightManager::GetInstance()->
 			GetActiveLightCount()), 0);
 
-	// RenderGpuDriven3D 内
 	auto shadowHandle = ShadowMapBuffer::GetInstance()->GetSrvGpuHandle();
 
 	commandList->SetGraphicsRootDescriptorTable(8, shadowHandle);
