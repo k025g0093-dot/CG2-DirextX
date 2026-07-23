@@ -387,5 +387,36 @@ Matrix4x4 MakeViewportMatrix(
 
 
 
+Matrix4x4 MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vector3& up)
+{
+	Vector3 forward = (target - eye).Normalized();
+	Vector3 right = up.Cross(forward).Normalized();
+	Vector3 newUp = forward.Cross(right);
+
+	Matrix4x4 result{};
+
+	result.m[0][0] = right.x;
+	result.m[0][1] = newUp.x;
+	result.m[0][2] = forward.x;
+	result.m[0][3] = 0.0f;
+
+	result.m[1][0] = right.y;
+	result.m[1][1] = newUp.y;
+	result.m[1][2] = forward.y;
+	result.m[1][3] = 0.0f;
+
+	result.m[2][0] = right.z;
+	result.m[2][1] = newUp.z;
+	result.m[2][2] = forward.z;
+	result.m[2][3] = 0.0f;
+
+	result.m[3][0] = -right.Dot(eye);
+	result.m[3][1] = -newUp.Dot(eye);
+	result.m[3][2] = -forward.Dot(eye);
+	result.m[3][3] = 1.0f;
+
+	return result;
+}
+
 
 #pragma endregion

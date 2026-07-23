@@ -131,6 +131,7 @@
     <ClCompile Include="MonoBehaviour.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="ResourceObject.cpp" />
+    <ClCompile Include="ShadowMapBuffer.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="Sprite.cpp" />
@@ -199,6 +200,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="shadow.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="WaveGrid.CS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -254,6 +261,7 @@
     <ClInclude Include="MonoBehaviour.h" />
     <ClInclude Include="PSO.h" />
     <ClInclude Include="ResourceObject.h" />
+    <ClInclude Include="ShadowMapBuffer.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Sprite.h" />
