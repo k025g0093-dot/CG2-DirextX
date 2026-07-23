@@ -703,7 +703,7 @@ ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
 	// PSOの設定をまとめる（グラフィックス用）
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 
-	rootSignature = CreateShadowRootSignature(device, hr); // 🌟 シャドウ専用のルートシグネチャ
+	//rootSignature = CreateShadowRootSignature(device, hr); // 🌟 シャドウ専用のルートシグネチャ
 	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();
 
 	graphicsPipelineStateDesc.InputLayout = inputLayout;
@@ -761,3 +761,5 @@ ComPtr<ID3D12RootSignature> CreateShadowRootSignature(ID3D12Device* device, HRES
 	hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(rootSig.GetAddressOf()));
 	return rootSig;
 }
+
+

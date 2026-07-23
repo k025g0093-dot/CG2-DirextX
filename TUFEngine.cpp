@@ -118,6 +118,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	gpuDrivenPipelineState =
 		CreateGpuDrivenPipelineStateDesc(device.Get(), gpuDrivenRootSignature, hr);
 
+	m_shadowPipelineState =
+		CreateShadowPipelineState(device.Get(), gpuDrivenRootSignature, hr);
+
 	m_linePipelineState =
 		CreateLinePipelineState(device.Get(), m_lineRootSignature, hr);
 
@@ -133,6 +136,7 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	ModelManager::GetInstance()->Initialize(device.Get(), commandList.Get());
 
 	ShadowMapBuffer::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get());
+	m_lightVPBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Matrix4x4)));
 
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
@@ -952,6 +956,80 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 
 	m_gpuDrivenRenderer->TransitionToSRV(commandList.Get());
 
+	// ──── Shadow Pass ────
+	auto* shadowBuf = ShadowMapBuffer::GetInstance();
+	shadowBuf->TransitionToDsv(commandList.Get());
+
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get()); // ← 追加
+	commandList->SetDescriptorHeaps(1, heaps);                             // ← 追加
+	commandList->SetPipelineState(m_shadowPipelineState.Get());
+
+	D3D12_VIEWPORT shadowVP{};
+	shadowVP.Width = (float)ShadowMapBuffer::SHADOW_MAP_SIZE;
+	shadowVP.Height = (float)ShadowMapBuffer::SHADOW_MAP_SIZE;
+	shadowVP.MaxDepth = 1.0f;
+	commandList->RSSetViewports(1, &shadowVP);
+
+
+
+	D3D12_RECT shadowRect{};
+	shadowRect.right = ShadowMapBuffer::SHADOW_MAP_SIZE;
+	shadowRect.bottom = ShadowMapBuffer::SHADOW_MAP_SIZE;
+	commandList->RSSetScissorRects(1, &shadowRect);
+
+	auto shadowDsv = shadowBuf->GetDsvCpuHandle();
+	commandList->OMSetRenderTargets(0, nullptr, false, &shadowDsv);
+	commandList->ClearDepthStencilView(shadowDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	// Light VP計算（仮の行列）
+	Matrix4x4 lightVP = MakeIdentity4x4(); // TODO: 正しい計算に差し替え
+	
+
+
+	Matrix4x4* mapped = nullptr;
+	m_lightVPBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
+	if (mapped) { *mapped = lightVP; m_lightVPBuffer->Unmap(0, nullptr); }
+	commandList->SetGraphicsRootConstantBufferView(9, m_lightVPBuffer->GetGPUVirtualAddress());
+
+	commandList->SetGraphicsRootShaderResourceView(1,
+		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress());
+
+	// 全モデルをシャドウPSOで描画（既存のdraw loopと同じ構造）
+	int sStart = 0;
+	while (sStart < (int)sortedRequests.size()) {
+		const DrawRequest& head = sortedRequests[sStart];
+		int count = 1;
+		while (sStart + count < (int)sortedRequests.size()) {
+			const DrawRequest& next = sortedRequests[sStart + count];
+			if (next.model != head.model || next.textureIndex != head.textureIndex || next.renderOrder != head.renderOrder) break;
+			count++;
+		}
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		if (head.model) {
+			commandList->SetGraphicsRoot32BitConstant(5, gpuInstanceIndex[sStart], 0);
+			head.model->Draw(commandList.Get(), head.textureIndex, count, gpuInstanceIndex[sStart]);
+		}
+		sStart += count;
+	}
+
+	shadowBuf->TransitionToSrv(commandList.Get());
+
+	// ビューポート復元（PreDrawと同じ値）
+	D3D12_VIEWPORT mainVP{};
+	mainVP.Width = m_currentRenderWidth;
+	mainVP.Height = m_currentRenderHeight;
+	mainVP.MaxDepth = 1.0f;
+	commandList->RSSetViewports(1, &mainVP);
+	D3D12_RECT mainRect{};
+	mainRect.right = (LONG)m_currentRenderWidth;
+	mainRect.bottom = (LONG)m_currentRenderHeight;
+	commandList->RSSetScissorRects(1, &mainRect);
+
+	// 🌟 ここが抜けていた：メインシーン用のレンダーターゲットに戻す
+	D3D12_CPU_DESCRIPTOR_HANDLE mainDsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &mainDsvHandle);
+
+
 	// グラフィックス描画
 
 
@@ -971,6 +1049,8 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	auto shadowHandle = ShadowMapBuffer::GetInstance()->GetSrvGpuHandle();
 
 	commandList->SetGraphicsRootDescriptorTable(8, shadowHandle);
+
+	commandList->SetGraphicsRootConstantBufferView(9, m_lightVPBuffer->GetGPUVirtualAddress());
 
 	if (!m_cameraBuffer) {
 		m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));

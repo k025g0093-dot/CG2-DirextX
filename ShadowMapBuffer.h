@@ -7,7 +7,7 @@ using Microsoft::WRL::ComPtr;
 class ShadowMapBuffer
 {
 public:
-
+    static constexpr UINT SHADOW_MAP_SIZE = 1024;
     static ShadowMapBuffer* GetInstance();
 
     bool Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
@@ -18,7 +18,7 @@ public:
 
     ID3D12Resource* GetTexture() const { return shadowBuffer_.Get(); }
     D3D12_GPU_DESCRIPTOR_HANDLE GetSrvGpuHandle() const { return srvGpuHandle_; }
-
+    D3D12_CPU_DESCRIPTOR_HANDLE GetDsvCpuHandle() const { return dsvHeap_->GetCPUDescriptorHandleForHeapStart(); }
 private:
     static ShadowMapBuffer* s_instance;
 
