@@ -982,7 +982,21 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	commandList->ClearDepthStencilView(shadowDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	// Light VP計算（仮の行列）
-	Matrix4x4 lightVP = MakeIdentity4x4(); // TODO: 正しい計算に差し替え
+	LightData shadowLight = LightManager::GetInstance()->GetLight(0);
+	Vector3 lightDir = shadowLight.dirOrPos.Normalized();
+	Vector3 lightPos = lightDir * -20.0f;
+
+	// forwardとupが平行(ライトがほぼ真上/真下を向いている)だと
+	// MakeLookAtMatrixの外積計算がゼロベクトルになり、行列が縮退してしまう。
+	// その場合はupベクトルを別の軸に切り替える。
+	Vector3 upVector = { 0.0f, 1.0f, 0.0f };
+	if (std::abs(lightDir.Dot(upVector)) > 0.99f) {
+		upVector = { 0.0f, 0.0f, 1.0f };
+	}
+
+	Matrix4x4 lightView = MakeLookAtMatrix(lightPos, { 0.0f, 0.0f, 0.0f }, upVector);
+	Matrix4x4 lightProj = MakeOrthographicMatrix(-20.0f, 20.0f, 20.0f, -20.0f, 0.1f, 100.0f);
+	Matrix4x4 lightVP = Multiply(lightView, lightProj);
 	
 
 
