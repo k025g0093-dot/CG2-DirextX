@@ -47,9 +47,14 @@ public:
         const Vector3& normal,
         int index) = 0;
 
-    virtual void Draw(
-        ID3D12GraphicsCommandList* cmdList,
-        int textureIndex,
-        UINT instanceCount,
-        UINT startInstanceLocation) = 0;
+	virtual void Draw(
+		ID3D12GraphicsCommandList* cmdList,
+		int textureIndex,
+		UINT instanceCount,
+		UINT startInstanceLocation) = 0;
+
+	virtual void DrawDepthOnly(
+		ID3D12GraphicsCommandList* cmdList,
+		UINT instanceCount,
+		UINT startInstanceLocation) {}
 };

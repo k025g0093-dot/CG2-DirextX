@@ -246,6 +246,24 @@ void MeshModel::Draw(
 	);
 }
 
+void MeshModel::DrawDepthOnly(
+	ID3D12GraphicsCommandList* cmdList,
+	UINT instanceCount,
+	UINT startInstanceLocation)
+{
+	if (m_vertexCount == 0 || !m_vertexBuffer || !m_indexBuffer) return;
+
+	cmdList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	cmdList->IASetIndexBuffer(&m_indexBufferView);
+	cmdList->DrawIndexedInstanced(
+		m_indexCount,
+		instanceCount,
+		0,
+		0,
+		startInstanceLocation
+	);
+}
+
 void MeshModel::SetEnableLighting(int val) {
 	if (!m_pMaterialResource) return;
 	Material* materialData = nullptr;

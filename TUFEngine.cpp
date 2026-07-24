@@ -682,7 +682,7 @@ void TUFEngine::PostDraw() {
 	ID3D12CommandList* commandLists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(1, commandLists);
 
-	swapChain->Present(1, 0);
+	swapChain->Present(0, 0);
 
 	m_fenceValue++;
 	commandQueue->Signal(m_fence.Get(), m_fenceValue);
@@ -989,7 +989,7 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	}
 
 	Matrix4x4 lightView = MakeLookAtMatrix(lightPos, { 0.0f, 0.0f, 0.0f }, upVector);
-	Matrix4x4 lightProj = MakeOrthographicMatrix(-20.0f, 20.0f, 20.0f, -20.0f, 0.1f, 100.0f);
+	Matrix4x4 lightProj = MakeOrthographicMatrix(-200.0f, 200.0f, 200.0f, -200.0f, 0.1f, 100.0f);
 	Matrix4x4 lightVP = Multiply(lightView, lightProj);
 
 	Matrix4x4* mapped = nullptr;
@@ -1007,13 +1007,13 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 		int count = 1;
 		while (sStart + count < (int)sortedRequests.size()) {
 			const DrawRequest& next = sortedRequests[sStart + count];
-			if (next.model != head.model || next.renderOrder != head.renderOrder) break; // textureIndex条件を削除
+			if (next.model != head.model || next.renderOrder != head.renderOrder) break;
 			count++;
 		}
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		if (head.model) {
 			commandList->SetGraphicsRoot32BitConstant(5, gpuInstanceIndex[sStart], 0);
-			head.model->Draw(commandList.Get(), head.textureIndex, count, gpuInstanceIndex[sStart]);
+			head.model->DrawDepthOnly(commandList.Get(), count, gpuInstanceIndex[sStart]);
 		}
 		sStart += count;
 	}

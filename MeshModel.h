@@ -47,11 +47,16 @@ public:
         std::vector<VertexData>& vertices, 
         std::vector<uint32_t>& indices);
 
-    void Draw(
-        ID3D12GraphicsCommandList* cmdList,
-        int textureIndex,
-        UINT instanceCount,
-        UINT startInstanceLocation ) override;
+	void Draw(
+		ID3D12GraphicsCommandList* cmdList,
+		int textureIndex,
+		UINT instanceCount,
+		UINT startInstanceLocation ) override;
+
+	void DrawDepthOnly(
+		ID3D12GraphicsCommandList* cmdList,
+		UINT instanceCount,
+		UINT startInstanceLocation) override;
     MaterialData LoadMaterialTemplateFile(
         const std::string& directoryPath,
         const std::string& filename);
