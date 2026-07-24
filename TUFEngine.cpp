@@ -161,11 +161,13 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	sprite = std::move(sprite_);
 
 
+
 	std::ifstream f("sceneObject.json");
 	if (f.is_open()) {
 		json modelData = json::parse(f);
 		for (const auto& object : modelData["objects"]) {
 			std::string modelPath = object["modelPath"];
+			std::string displyName = object["displayName"];
 			std::string directory = modelPath.substr(0, modelPath.find_last_of("/"));
 			std::string filename = modelPath.substr(modelPath.find_last_of("/") + 1);
 
@@ -183,6 +185,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 			auto* mf = entity->AddComponent<MeshFilter>();
 			mf->model = mesh;
 			entity->transform = t;
+			entity->displayName = displyName;
+			strncpy_s(entity->displayNameBuf, displyName.c_str(), sizeof(entity->displayNameBuf));
 
 			Create3DObjectOBB obbCreator;
 			entity->obb = obbCreator.CreateOBBForModel(*mesh, t.position);

@@ -78,6 +78,14 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			ImGui::Text("%s", objName.c_str());
 			ImGui::SameLine();
 
+			// 表示名バッファ（rename用）
+
+			strncpy_s(objects[i]->displayNameBuf, objects[i]->displayName.c_str(), sizeof(objects[i]->displayNameBuf));
+			if (ImGui::InputText("Model Name", objects[i]->displayNameBuf, sizeof(objects[i]->displayNameBuf))) {
+				objects[i]->displayName = objects[i]->displayNameBuf;
+			}
+
+
 			// 選択ボタン
 			if (ImGui::Button("選択")) {
 				for (int j = 0; j < (int)objects.size(); j++) {

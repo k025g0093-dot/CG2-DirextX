@@ -13,7 +13,7 @@ public:
 
 
 
-    Entity() = default;
+    Entity();
     ~Entity();
 
     template<typename T, typename... Args>
@@ -32,9 +32,20 @@ public:
         return nullptr;
     }
 
+    void SetDisplayName(const std::string& n) {
+        displayName = n;
+        strncpy_s(displayNameBuf, n.c_str(), sizeof(displayNameBuf));
+    }
 
+    // Entity.h
+    void SetName(const std::string& newName) { name = newName; }
+    const std::string& GetName() const { return name; }
 
     std::string name;
+    std::string displayName;
+    char displayNameBuf[128]{};
+
+
     Transform transform;
 
 	bool isSelected = false;
