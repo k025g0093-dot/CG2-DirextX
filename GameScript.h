@@ -51,6 +51,12 @@ public:
 	}
 
 
+	Component* Clone()const override {
+		auto* gs = new GameScript();
+		gs->m_scriptName = m_scriptName;
+		return gs;
+	}
+
 	bool m_vsOpened = false; // Visual Studioを既に開いたかどうかのフラグ
 
 	void Start() override {

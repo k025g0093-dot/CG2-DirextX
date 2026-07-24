@@ -400,6 +400,18 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 		for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
 			if (!entity->isSelected) continue;
 
+			if (ImGui::Button("複製")) {
+				Entity* selected = nullptr;
+				for (auto& e : EntityManager::GetInstance()->GetEntities()) {
+					if (e->isSelected) { selected = e.get(); break; }
+				}
+				if (selected) {
+					EntityManager::GetInstance()->DuplicateEntity(selected);
+					ModelManager::GetInstance()->SaveToFile();
+				}
+				break; // イテレータ無効化を回避
+			}
+
 			if (ImGui::CollapsingHeader("トランスフォーム")) {
 				ImGui::DragFloat3("位置", &entity->transform.position.x, 0.1f);
 				ImGui::DragFloat3("回転", &entity->transform.rotation.x, 0.01f);
