@@ -1,10 +1,6 @@
 #include "GpuDrivenObject.hlsli"
 
-struct InstanceData
-{
-      row_major float4x4 WVP;
-      row_major float4x4 World;
-};
+
 
 StructuredBuffer<InstanceData> gInstances : register(t2);
 

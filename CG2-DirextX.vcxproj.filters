@@ -109,6 +109,9 @@
     <Filter Include="ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの">
       <UniqueIdentifier>{0ade99f5-7990-4276-ba15-eceb23901ff5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\陰に関する処理">
+      <UniqueIdentifier>{6d2275df-3644-4d82-a1da-89891eaa7889}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -252,6 +255,9 @@
     <ClCompile Include="Entity.cpp">
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
     </ClCompile>
+    <ClCompile Include="ShadowMapBuffer.cpp">
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\陰に関する処理</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -264,6 +270,7 @@
     <FxCompile Include="WaveGrid.CS.hlsl" />
     <FxCompile Include="Line.PS.hlsl" />
     <FxCompile Include="Line.VS.hlsl" />
+    <FxCompile Include="shadow.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TUFEngine.h">
@@ -452,9 +459,13 @@
     <ClInclude Include="Entity.h">
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp</Filter>
     </ClInclude>
+    <ClInclude Include="ShadowMapBuffer.h">
+      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\陰に関する処理</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Object3d.hlsli" />
     <None Include="GpuDrivenObject.hlsli" />
+    <None Include="Light.hlsli" />
   </ItemGroup>
 </Project>

@@ -118,6 +118,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	gpuDrivenPipelineState =
 		CreateGpuDrivenPipelineStateDesc(device.Get(), gpuDrivenRootSignature, hr);
 
+	m_shadowPipelineState =
+		CreateShadowPipelineState(device.Get(), gpuDrivenRootSignature, hr);
+
 	m_linePipelineState =
 		CreateLinePipelineState(device.Get(), m_lineRootSignature, hr);
 
@@ -132,6 +135,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	TextureManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
 	ModelManager::GetInstance()->Initialize(device.Get(), commandList.Get());
 
+	ShadowMapBuffer::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get());
+	m_lightVPBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Matrix4x4)));
 
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
@@ -156,11 +161,13 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	sprite = std::move(sprite_);
 
 
+
 	std::ifstream f("sceneObject.json");
 	if (f.is_open()) {
 		json modelData = json::parse(f);
 		for (const auto& object : modelData["objects"]) {
 			std::string modelPath = object["modelPath"];
+			std::string displyName = object["displayName"];
 			std::string directory = modelPath.substr(0, modelPath.find_last_of("/"));
 			std::string filename = modelPath.substr(modelPath.find_last_of("/") + 1);
 
@@ -178,6 +185,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 			auto* mf = entity->AddComponent<MeshFilter>();
 			mf->model = mesh;
 			entity->transform = t;
+			entity->displayName = displyName;
+			strncpy_s(entity->displayNameBuf, displyName.c_str(), sizeof(entity->displayNameBuf));
 
 			Create3DObjectOBB obbCreator;
 			entity->obb = obbCreator.CreateOBBForModel(*mesh, t.position);
@@ -187,9 +196,9 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 				auto* gs = entity->AddComponent<GameScript>();
 				gs->m_scriptName = object["scriptName"];
 				gs->ReloadScript();
-			
+
 			}
-			
+
 		}
 	}
 }
@@ -341,6 +350,9 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 
 	auto componentWin = std::make_shared<ImGuiComponentWindow>();
 	m_imguiManager->addWindow(componentWin);
+
+	auto ImGuiLightWin = std::make_shared<ImGuiLightManagerWindow>();
+	m_imguiManager->addWindow(ImGuiLightWin);
 
 
 
@@ -948,18 +960,120 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 
 	m_gpuDrivenRenderer->TransitionToSRV(commandList.Get());
 
+	// ──── Shadow Pass ────
+	auto* shadowBuf = ShadowMapBuffer::GetInstance();
+	shadowBuf->TransitionToDsv(commandList.Get());
+
+	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get()); // ← 追加
+	commandList->SetDescriptorHeaps(1, heaps);                             // ← 追加
+	commandList->SetPipelineState(m_shadowPipelineState.Get());
+
+	D3D12_VIEWPORT shadowVP{};
+	shadowVP.Width = (float)ShadowMapBuffer::SHADOW_MAP_SIZE;
+	shadowVP.Height = (float)ShadowMapBuffer::SHADOW_MAP_SIZE;
+	shadowVP.MaxDepth = 1.0f;
+	commandList->RSSetViewports(1, &shadowVP);
+
+
+
+	D3D12_RECT shadowRect{};
+	shadowRect.right = ShadowMapBuffer::SHADOW_MAP_SIZE;
+	shadowRect.bottom = ShadowMapBuffer::SHADOW_MAP_SIZE;
+	commandList->RSSetScissorRects(1, &shadowRect);
+
+	auto shadowDsv = shadowBuf->GetDsvCpuHandle();
+	commandList->OMSetRenderTargets(0, nullptr, false, &shadowDsv);
+	commandList->ClearDepthStencilView(shadowDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	// Light VP計算（仮の行列）
+	LightData shadowLight = LightManager::GetInstance()->GetLight(0);
+	Vector3 lightDir = shadowLight.dirOrPos.Normalized();
+	Vector3 lightPos = lightDir * -50.0f;
+
+	// forwardとupが平行(ライトがほぼ真上/真下を向いている)だと
+	// MakeLookAtMatrixの外積計算がゼロベクトルになり、行列が縮退してしまう。
+	// その場合はupベクトルを別の軸に切り替える。
+	Vector3 upVector = { 0.0f, 1.0f, 0.0f };
+	if (std::abs(lightDir.Dot(upVector)) > 0.99f) {
+		upVector = { 0.0f, 0.0f, 1.0f };
+	}
+
+	Matrix4x4 lightView = MakeLookAtMatrix(lightPos, { 0.0f, 0.0f, 0.0f }, upVector);
+	Matrix4x4 lightProj = MakeOrthographicMatrix(-20.0f, 20.0f, 20.0f, -20.0f, 0.1f, 100.0f);
+	Matrix4x4 lightVP = Multiply(lightView, lightProj);
+	
+
+
+	Matrix4x4* mapped = nullptr;
+	m_lightVPBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
+	if (mapped) { *mapped = lightVP; m_lightVPBuffer->Unmap(0, nullptr); }
+	commandList->SetGraphicsRootConstantBufferView(9, m_lightVPBuffer->GetGPUVirtualAddress());
+
+	commandList->SetGraphicsRootShaderResourceView(1,
+		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress());
+
+	// 全モデルをシャドウPSOで描画（既存のdraw loopと同じ構造）
+	int sStart = 0;
+	while (sStart < (int)sortedRequests.size()) {
+		const DrawRequest& head = sortedRequests[sStart];
+		int count = 1;
+		while (sStart + count < (int)sortedRequests.size()) {
+			const DrawRequest& next = sortedRequests[sStart + count];
+			if (next.model != head.model || next.textureIndex != head.textureIndex || next.renderOrder != head.renderOrder) break;
+			count++;
+		}
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		if (head.model) {
+			commandList->SetGraphicsRoot32BitConstant(5, gpuInstanceIndex[sStart], 0);
+			head.model->Draw(commandList.Get(), head.textureIndex, count, gpuInstanceIndex[sStart]);
+		}
+		sStart += count;
+	}
+
+	shadowBuf->TransitionToSrv(commandList.Get());
+
+	// ビューポート復元（PreDrawと同じ値）
+	D3D12_VIEWPORT mainVP{};
+	mainVP.Width = m_currentRenderWidth;
+	mainVP.Height = m_currentRenderHeight;
+	mainVP.MaxDepth = 1.0f;
+	commandList->RSSetViewports(1, &mainVP);
+	D3D12_RECT mainRect{};
+	mainRect.right = (LONG)m_currentRenderWidth;
+	mainRect.bottom = (LONG)m_currentRenderHeight;
+	commandList->RSSetScissorRects(1, &mainRect);
+
+	// 🌟 ここが抜けていた：メインシーン用のレンダーターゲットに戻す
+	D3D12_CPU_DESCRIPTOR_HANDLE mainDsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &mainDsvHandle);
+
+
 	// グラフィックス描画
 
 
-
+	// 🌟【順序注意】ルートシグネチャ切り替え後でないと、
+	// SetGraphicsRoot32BitConstant等のパラメータ番号は正しく解釈されない。
+	// Compute用シグネチャがバインドされたままここでパラメータ7番に書き込むと
+	// 存在しない番号への書き込みになりGPUドライバごとクラッシュする（nvwgf2umx.dll等）。
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);
 
+	commandList->SetGraphicsRoot32BitConstant(
+		7, static_cast<UINT>(LightManager::GetInstance()->
+			GetActiveLightCount()), 0);
+
+	// RenderGpuDriven3D 内
+	auto shadowHandle = ShadowMapBuffer::GetInstance()->GetSrvGpuHandle();
+
+	commandList->SetGraphicsRootDescriptorTable(8, shadowHandle);
+
+	commandList->SetGraphicsRootConstantBufferView(9, m_lightVPBuffer->GetGPUVirtualAddress());
+
 	if (!m_cameraBuffer) {
 		m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));
 	}
-	
+
 	Vector4* cameraData = nullptr;
 	HRESULT hr = m_cameraBuffer->Map(0, nullptr, reinterpret_cast<void**>(&cameraData));
 	if (FAILED(hr)) { assert(false); return; }

@@ -24,15 +24,18 @@ void ImGuiUIWindow::Show() {
 	show = true;
 }
 
-bool ImGuiUIWindow::begin(std::string name)
+// ImGuiWindow.cpp
+bool ImGuiUIWindow::begin(std::string name, ImGuiWindowFlags flags)
 {
 #ifdef USE_IMGUI
 	if (!show) return false;
-	return ImGui::Begin(name.c_str(), &show);
+	return ImGui::Begin(name.c_str(), &show, flags);
 #else
 	return false;
 #endif
 }
+
+
 
 void ImGuiUIWindow::end()
 {
@@ -50,7 +53,18 @@ void ImGuiUIWindow::end()
 //ここも似た感じの者です将来的にはもっといろんな情報であったりほかのクラスと連動していろんなことができるようにしていきたいですね
 void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
-	if (begin("シーン")) {
+	if (begin("シーン", ImGuiWindowFlags_MenuBar)) {
+
+		// 🌟 メニューバー
+		if (ImGui::BeginMenuBar()) {
+			if (ImGui::BeginMenu("ファイル")) {
+				if (ImGui::MenuItem("保存")) {
+					ModelManager::GetInstance()->SaveToFile();
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
 
 		// オブジェクト一覧
 		auto& objects = EntityManager::GetInstance()->GetEntities();
@@ -63,6 +77,14 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			if (sep != std::string::npos) objName = objName.substr(sep + 1);
 			ImGui::Text("%s", objName.c_str());
 			ImGui::SameLine();
+
+			// 表示名バッファ（rename用）
+
+			strncpy_s(objects[i]->displayNameBuf, objects[i]->displayName.c_str(), sizeof(objects[i]->displayNameBuf));
+			if (ImGui::InputText("Model Name", objects[i]->displayNameBuf, sizeof(objects[i]->displayNameBuf))) {
+				objects[i]->displayName = objects[i]->displayNameBuf;
+			}
+
 
 			// 選択ボタン
 			if (ImGui::Button("選択")) {
@@ -78,7 +100,6 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[選択中]");
 			}
 
-			// 🌟オブジェクトごとの区切りをゆったりさせる
 			ImGui::Dummy(ImVec2(0.0f, 6.0f));
 			ImGui::Separator();
 			ImGui::Dummy(ImVec2(0.0f, 6.0f));
@@ -92,11 +113,98 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 #endif
 }
 
+void ImGuiLightManagerWindow::update(TUFEngine* engine) {
+#ifdef _DEBUG
+
+	if (begin("ライティングのシーン管理", ImGuiWindowFlags_MenuBar))
+	{
+
+		//メニューバー
+		if (ImGui::BeginMenuBar()) {
+			if (ImGui::BeginMenu("ファイル")) {
+				if (ImGui::MenuItem("保存")) {
+					//ここでいろいろなライトの保存の実装だったりを行います
+					//ModelManager::GetInstance()->SaveToFile();
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
+
+		LightManager* lm = LightManager::GetInstance();
+
+		// --- グローバルライト（常に1個だけ、固定） ---
+		if (ImGui::CollapsingHeader("グローバルライト")) {
+			LightData global = lm->GetLight(0);
+			bool changed = false;
+			changed |= ImGui::ColorEdit4("色", &global.color.x);
+			changed |= ImGui::DragFloat3("方向", &global.dirOrPos.x, 0.01f, -1.0f, 1.0f);
+			changed |= ImGui::DragFloat("強度", &global.intensity, 0.01f, 0.0f, 10.0f);
+			if (changed) lm->SetLight(0, global);
+		}
+
+		ImGui::Dummy(ImVec2(0.0f, 6.0f));
+		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, 6.0f));
+
+		// --- ポイントライト一覧（使われているものだけ表示） ---
+		for (int i = 1; i < LightManager::MAX_LIGHTS; i++) {
+			if (!lm->IsLightActive(i)) continue;
+
+			ImGui::PushID(i);
+			std::string label = "ポイントライト " + std::to_string(i);
+
+			if (ImGui::CollapsingHeader(label.c_str())) {
+				LightData point = lm->GetLight(i);
+				bool changed = false;
+				changed |= ImGui::ColorEdit4("色", &point.color.x);
+				changed |= ImGui::DragFloat3("位置", &point.dirOrPos.x, 0.1f);
+				changed |= ImGui::DragFloat("強度", &point.intensity, 0.01f, 0.0f, 10.0f);
+
+				if (ImGui::Button("ギズモで選択")) {
+					lm->SetSelectedLight(i);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("削除")) {
+					lm->RemoveLight(i);
+					ImGui::PopID();
+					continue; // 削除直後にPopIDしたので、このまま次のループへ
+				}
+
+				if (changed) {
+					point.type = 1;
+					lm->SetLight(i, point);
+				}
+			}
+			ImGui::PopID();
+		}
+
+		ImGui::Dummy(ImVec2(0.0f, 8.0f));
+
+		// --- 追加ボタン ---
+		if (ImGui::Button("+ ポイントライト追加")) {
+			int newIndex = lm->AddLight();
+			if (newIndex == -1) {
+				ImGui::OpenPopup("LightFullPopup");
+			}
+		}
+		if (ImGui::BeginPopup("LightFullPopup")) {
+			ImGui::Text("これ以上ライトを追加できません（上限: %d）", LightManager::MAX_LIGHTS - 1);
+			ImGui::EndPopup();
+		}
+
+
+	}
+	end();
+
+#endif // _DEBUG
+}
+
 
 //ギズモの仮実装。まだまだいらないものとか将来的に自由にアイテムを選択できるようにしたりしていきたい
 void ImGuiZmoWindow::update(TUFEngine* engine) {
 #ifdef _DEBUG
-	auto& objects =EntityManager::GetInstance()->GetEntities();
+	auto& objects = EntityManager::GetInstance()->GetEntities();
 	if (objects.empty()) return; // オブジェクトがなければ何もしない
 
 	// キー入力による切り替え判定だけを行う
@@ -121,7 +229,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		viewportFlags |= ImGuiWindowFlags_NoMove;
 	}
 
-	if (ImGui::Begin("ビューポート", nullptr, viewportFlags)) {
+	if (ImGui::Begin("デバック用ビューポート", nullptr, viewportFlags)) {
+
+
 
 		// --- ① シーン（ゲーム画面）の描画 ---
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
@@ -144,8 +254,46 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 		// --- ② ギズモ（ImGuizmo）の描画 ---
 #ifdef _DEBUG
+		LightManager* lm = LightManager::GetInstance();
+		int selectedLight = lm->GetSelectedLight();
+
 		auto& objects = EntityManager::GetInstance()->GetEntities();
-		if (!objects.empty()) {
+
+		bool hasEntitySelection = false;
+		for (auto& obj : objects) {
+			if (obj->isSelected) { hasEntitySelection = true; break; }
+		}
+
+		if (selectedLight >= 1 && selectedLight < LightManager::MAX_LIGHTS) {
+			// 🌟ライトのギズモ操作
+			ImGuizmo::BeginFrame();
+			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
+
+			LightData light = lm->GetLight(selectedLight);
+
+			// 位置だけを持つアフィン行列を作る（回転・スケールは単位のまま）
+			Matrix4x4 lightTransform = MakeAffineMatrix(
+				{ 1.0f, 1.0f, 1.0f },
+				{ 0.0f, 0.0f, 0.0f },
+				light.dirOrPos
+			);
+
+			if (ImGuizmo::Manipulate(
+				&engine->GetViewMatrix().m[0][0],
+				&engine->GetProjectionMatrix().m[0][0],
+				ImGuizmo::TRANSLATE, // ライトは移動だけできれば十分
+				ImGuizmo::LOCAL,
+				&lightTransform.m[0][0]
+			)) {
+				float t[3], r[3], s[3];
+				ImGuizmo::DecomposeMatrixToComponents(&lightTransform.m[0][0], t, r, s);
+				light.dirOrPos = { t[0], t[1], t[2] };
+				lm->SetLight(selectedLight, light);
+			}
+		}
+		else if (hasEntitySelection) {
+			// 🌟既存のEntity用ギズモ処理
 			ImGuizmo::BeginFrame();
 			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
 
@@ -159,10 +307,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 				Matrix4x4 transform = MakeAffineMatrix(objects[i]->transform.scale, objects[i]->transform.rotation, objects[i]->transform.position);
 
-				// 修正：プロジェクション行列の引数を imageScreenPos から viewportSize に変更
 				if (ImGuizmo::Manipulate(
 					&engine->GetViewMatrix().m[0][0],
-					&engine->GetProjectionMatrix().m[0][0], // ✨ここを修正
+					&engine->GetProjectionMatrix().m[0][0],
 					mCurrentGizmoOperation,
 					mCurrentGizmoMode,
 					&transform.m[0][0]
@@ -195,6 +342,9 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 	ImGui::PopStyleVar(2);
 #endif
 }
+
+
+
 
 
 
@@ -241,26 +391,6 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 	if (begin("コンポーネント")) {
 
-	
-
-
-		if (ImGui::CollapsingHeader("ライト設定")) {
-			LightManager* lm = LightManager::GetInstance();
-
-			ImGui::Dummy(ImVec2(0.0f, 2.0f));
-
-			if (ImGui::CollapsingHeader("グローバルライト")) {
-				DirectionalLight global = lm->GetGlobalLight();
-				bool changed = false;
-				changed |= ImGui::ColorEdit4("色", &global.color.x);
-				changed |= ImGui::DragFloat3("方向", &global.direction.x, 0.01f, -1.0f, 1.0f);
-				changed |= ImGui::DragFloat("強度", &global.intensity, 0.01f, 0.0f, 10.0f);
-				if (changed) lm->SetGlobalLight(global);
-			}
-
-			ImGui::Dummy(ImVec2(0.0f, 4.0f));
-		}
-
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
 		ImGui::Separator();
 		ImGui::Dummy(ImVec2(0.0f, 10.0f));
@@ -280,7 +410,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				const char* typeName = typeid(*c).name();
 				if (ImGui::CollapsingHeader(typeName)) {
 					if (auto* mf = dynamic_cast<MeshFilter*>(c)) {
-					
+
 						ImGui::Spacing();
 						ImGui::Text("モデル: %s", mf->model ? "読み込み済み" : "なし");
 						ImGui::Spacing();
@@ -289,7 +419,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 					else if (auto* lc = dynamic_cast<LearnComponent*>(c)) {
 						ImGui::Spacing();
 						ImGui::Text("ステータス: 実行中");
-					
+
 						ImGui::Spacing();
 
 					}
@@ -299,7 +429,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 						ImGui::Spacing();
 
-						
+
 						ImGui::Text("これはからスクリプトの初期化またヴィジュアルスタジオを起動します");
 						if (ImGui::Button("C#スクリプトを初期化＆起動")) {
 
@@ -312,10 +442,10 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						if (ImGui::Button("C#のビルド")) {
 							gs->ReloadScript();
 							gs->Update();
-							
-						}			
 
-						
+						}
+
+
 						ImGui::Text("現在の.csのクラス名を決めるところです");
 
 						ImGui::Text("test: %s", gs->m_scriptNameBuf);

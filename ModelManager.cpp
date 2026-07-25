@@ -126,6 +126,7 @@ void ModelManager::SaveToFile() {
 		json obj;
 
 		obj["modelPath"] = entity->name;
+		obj["displayName"] = entity->displayName;
 		obj["position"] = { entity->transform.position.x, entity->transform.position.y, entity->transform.position.z };
 		obj["rotation"] = { entity->transform.rotation.x, entity->transform.rotation.y, entity->transform.rotation.z };
 		obj["scale"] = { entity->transform.scale.x, entity->transform.scale.y, entity->transform.scale.z };

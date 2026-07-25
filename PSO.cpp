@@ -27,7 +27,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	D3D12_ROOT_PARAMETER rootParameter[6] = {};
+	D3D12_ROOT_PARAMETER rootParameter[7] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0;
@@ -54,6 +54,12 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(
 	rootParameter[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[5].Descriptor.ShaderRegister = 2;
+
+	rootParameter[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[6].Constants.ShaderRegister = 3; // b3
+	rootParameter[6].Constants.RegisterSpace = 0;
+	rootParameter[6].Constants.Num32BitValues = 1; // uintひとつだけ送る
 
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);
@@ -255,7 +261,7 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 
 	// t0: texture, t1: normal texture, t3: lights
 	// t2: InstanceData は RootSRV で直接アドレスを渡すので不要
-	D3D12_DESCRIPTOR_RANGE descriptorRange[3] = {};
+	D3D12_DESCRIPTOR_RANGE descriptorRange[4] = {};
 	descriptorRange[0].BaseShaderRegister = 0; // t0 texture
 	descriptorRange[0].NumDescriptors = 1;
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -271,7 +277,12 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	descriptorRange[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	D3D12_ROOT_PARAMETER rootParameter[7] = {};
+	descriptorRange[3].BaseShaderRegister = 4; // t4 shadowMap
+	descriptorRange[3].NumDescriptors = 1;
+	descriptorRange[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	descriptorRange[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	D3D12_ROOT_PARAMETER rootParameter[10] = {};
 	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[0].Descriptor.ShaderRegister = 0; // b0 material
@@ -307,12 +318,32 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameter[6].Descriptor.ShaderRegister = 2;
 
+	// [7] 32bit constant b3 - ActiveLightCount (pixel)
+	rootParameter[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameter[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[7].Constants.ShaderRegister = 3; // b3
+	rootParameter[7].Constants.RegisterSpace = 0;
+	rootParameter[7].Constants.Num32BitValues = 1; // uintひとつだけ送る
+
+	// [8] DescriptorTable t4 - シャドウマップ
+	rootParameter[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameter[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter[8].DescriptorTable.pDescriptorRanges = &descriptorRange[3];
+	rootParameter[8].DescriptorTable.NumDescriptorRanges = 1;
+
+	// [9] CBV b4 - ライトVP (ALL visibility)
+	rootParameter[9].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameter[9].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameter[9].Descriptor.ShaderRegister = 4;
+
+
+
 	descriptionRootSignature.pParameters = rootParameter;
 	descriptionRootSignature.NumParameters = _countof(rootParameter);
 
 
 	//Samplerの設定
-	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[2] = {};
 	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;//バイリニアフィルタ
 	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;//0~1の範囲を繰り返す
 	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -321,6 +352,15 @@ ComPtr<ID3D12RootSignature> CreateGpuDrivenRootSignature(
 	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;//最大LOD
 	staticSamplers[0].ShaderRegister = 0;//register(s0)に対応
 	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;//ピクセルシェーダーで使用
+	
+	staticSamplers[1].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;//バイリニアフィルタ
+	staticSamplers[1].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;//0~1の範囲を繰り返す
+	staticSamplers[1].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[1].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[1].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;//比較しない
+	staticSamplers[1].MaxLOD = D3D12_FLOAT32_MAX;//最大LOD
+	staticSamplers[1].ShaderRegister = 1;//register(s0)に対応
+	staticSamplers[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;//ピクセルシェーダーで使用
 
 	descriptionRootSignature.pStaticSamplers = staticSamplers;
 	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
@@ -629,3 +669,97 @@ ComPtr<ID3D12PipelineState> CreateLinePipelineState(
 	assert(SUCCEEDED(hr));
 	return pso;
 }
+
+
+//陰描画用のPSO設定
+// 陰描画用のPSO設定
+ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
+	ID3D12Device* device,
+	ComPtr<ID3D12RootSignature>& rootSignature,
+	HRESULT& hr
+) {
+	// DXCコンパイラの初期化
+	IDxcUtils* dxcUtils = nullptr;
+	IDxcCompiler3* dxcCompiler = nullptr;
+	IDxcIncludeHandler* includeHandler = nullptr;
+	DxcCompilerInclude(hr, dxcUtils, dxcCompiler, includeHandler);
+
+	// 頂点シェーダーのみコンパイル（深度だけでいいのでピクセルシェーダーは不要）
+	IDxcBlob* vertexShaderBlob = CompileShader(
+		L"shadow.VS.hlsl", L"vs_6_0",
+		dxcUtils, dxcCompiler, includeHandler);
+
+	// 各設定の生成（既存のヘルパーを流用）
+	D3D12_INPUT_LAYOUT_DESC inputLayout = CreateLayout();
+	D3D12_BLEND_DESC blendDesc = CreateBlendState();
+	D3D12_RASTERIZER_DESC rasterizerDesc = CreateRasterizerState();
+
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	depthStencilDesc.StencilEnable = FALSE;
+
+	// PSOの設定をまとめる（グラフィックス用）
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+
+	//rootSignature = CreateShadowRootSignature(device, hr); // 🌟 シャドウ専用のルートシグネチャ
+	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();
+
+	graphicsPipelineStateDesc.InputLayout = inputLayout;
+
+	graphicsPipelineStateDesc.VS = {
+		vertexShaderBlob->GetBufferPointer(),
+		vertexShaderBlob->GetBufferSize()
+	};
+	// ピクセルシェーダーは設定しない（深度専用、色出力なし）
+	graphicsPipelineStateDesc.PS = {}; // 空のまま
+
+	graphicsPipelineStateDesc.BlendState = blendDesc;
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT; // ShadowMapBufferと合わせる
+
+	graphicsPipelineStateDesc.NumRenderTargets = 0; // 🌟 カラー出力は無し
+	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	ComPtr<ID3D12PipelineState> graphicsPipelineState;
+	hr = device->CreateGraphicsPipelineState(
+		&graphicsPipelineStateDesc,
+		IID_PPV_ARGS(graphicsPipelineState.GetAddressOf()));
+	assert(SUCCEEDED(hr));
+
+	return graphicsPipelineState;
+}
+
+ComPtr<ID3D12RootSignature> CreateShadowRootSignature(ID3D12Device* device, HRESULT& hr) {
+	D3D12_ROOT_SIGNATURE_DESC desc{};
+	desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	D3D12_ROOT_PARAMETER params[2] = {};
+	// [0] instance buffer (root SRV, vertex) — t2
+	params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	params[0].Descriptor.ShaderRegister = 2;
+
+	// [1] LightVP (CBV, vertex) — b4
+	params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	params[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	params[1].Descriptor.ShaderRegister = 4;
+
+	desc.pParameters = params;
+	desc.NumParameters = _countof(params);
+
+	ID3DBlob* sigBlob = nullptr;
+	ID3DBlob* errBlob = nullptr;
+	hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
+	if (FAILED(hr)) { assert(false); }
+
+	ComPtr<ID3D12RootSignature> rootSig;
+	hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(rootSig.GetAddressOf()));
+	return rootSig;
+}
+
+

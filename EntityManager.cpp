@@ -5,8 +5,13 @@
 Entity* EntityManager::CreateEntity(const std::string& name) {
     auto entity = std::make_unique<Entity>();
     entity->name = name;
+    entity->displayName = name;
+    strncpy_s(entity->displayNameBuf, name.c_str(), sizeof(entity->displayNameBuf));
+
     Entity* ptr = entity.get();
     m_entities.push_back(std::move(entity));
+
+
     return ptr;
 }
 

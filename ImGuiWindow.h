@@ -28,7 +28,7 @@ public:
     void Show();
 
 protected:
-    virtual bool begin(std::string name);
+    virtual bool begin(std::string name, ImGuiWindowFlags flags = 0);
     void end();
     bool show = true; // 💡 最初から表示状態（true）にしておくとバグりにくいです
 };
@@ -40,7 +40,12 @@ class ImGuiSceneWindow : public ImGuiUIWindow
 {
 public:
     void update(TUFEngine* engine) override;
+};
 
+class ImGuiLightManagerWindow : public ImGuiUIWindow
+{
+public:
+    void update(TUFEngine* engine) override;
 };
 
 class ImGuiViewportWindow : public ImGuiUIWindow

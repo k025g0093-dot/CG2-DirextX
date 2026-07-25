@@ -57,8 +57,10 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "LightManager.h"
 #include "Create3DObjectOBB.h"
 #include "AllComponent.h"
-
 #include "EntityManager.h"
+
+//陰に関するヘッダー
+#include "ShadowMapBuffer.h"
 
 //GUIのヘッダー関連
 #include "ImGuiCamera.h"

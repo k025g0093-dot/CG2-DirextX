@@ -35,7 +35,13 @@ cbuffer CameraBuffer : register(b2)
 
 Texture2D<float32_t4> gTexture : register(t0);
 Texture2D<float32_t4> gNormalTexture : register(t1);
+Texture2D<float> shadowMap : register(t4);
+
+StructuredBuffer<InstanceData> gInstances : register(t2);
+
+
 SamplerState gSampler : register(s0);
+SamplerState gSampler1 : register(s1);
 
 static const uint LIGHT_COUNT = 8;
 
@@ -74,28 +80,66 @@ PixelShaderOutput main(VertexShaderOutput input)
       if (gMaterial.enableLighting != 0)
       {
             float3 toEye = normalize(gCamera.worldPorition - input.worldPosition);
-            float3 baseColor = gMaterial.color.rgb * textureColor.rgb;
+            float4 baseColor = gMaterial.color * textureColor; // ← float4のまま計算する（rgbを取り出さない）
 
-            float3 finalColor = float3(0.0f, 0.0f, 0.0f);
+            float4 finalColor = float4(0.0f, 0.0f, 0.0f, 0.0f); // ← float4で初期化
+
             [loop]
-            for (uint i = 0; i < LIGHT_COUNT; i++)
+            for (uint i = 0; i < gActiveLightCount; i++)
             {
-                Light light = g_lights[i];
-                float NdotL = dot(normal, -normalize(light.dirOrPos));
-                float halfLambert = pow(NdotL * 0.5f + 0.5f, 2.0f);
+                  Light light = g_lights[i];
 
-                float3 diffuse = baseColor * light.color * halfLambert * light.intensity;
+                  if (light.intensity <= 0.0f)
+                        continue;
 
-                float3 halfVector = normalize(-normalize(light.dirOrPos) + toEye);
-                float NDotH = dot(normal, halfVector);
-                float specularPow = pow(saturate(NDotH), 32.0f);
-                float3 specular = light.color * light.intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+                  float3 lightDir;
+                  float attenuation = 1.0f;
 
-                finalColor += diffuse + specular;
+                  if (light.type == 0) // ポイントライト
+                  {
+                        lightDir = -normalize(light.dirOrPos); // ← マイナスを戻す
+
+                        
+                  }
+                  else // ポイントライト（type == 1）
+                  {
+                        float3 toLight = light.dirOrPos - input.worldPosition;
+                        float dist = length(toLight);
+                        lightDir = normalize(toLight);
+
+                        float range = 20.0f;
+                        attenuation = saturate(1.0f - (dist * dist) / (range * range));
+                        attenuation *= attenuation;
+                  }
+
+                  float NdotL = dot(normal, lightDir);
+                  float halfLambert = pow(NdotL * 0.5f + 0.5f, 2.0f);
+
+                  float4 diffuse = baseColor * light.color * halfLambert * light.intensity * attenuation;
+
+                  float3 halfVector = normalize(lightDir + toEye);
+                  float NDotH = dot(normal, halfVector);
+                  float specularPow = pow(saturate(NDotH), 32.0f);
+                  float4 specular = light.color * light.intensity * specularPow * attenuation * float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+                  finalColor += diffuse + specular;
             }
 
-            output.color.rgb = finalColor;
+            
+            float shadowFactor = 1.0f;
+
+            float4 posInLightSpace = mul(float4(input.worldPosition, 1.0f), gLightVP);
+            posInLightSpace.xyz /= posInLightSpace.w;
+            float2 shadowUV = float2(
+                         (posInLightSpace.x + 1.0f) * 0.5f,
+                          (1.0f - posInLightSpace.y) * 0.5f
+                   );
+            float storedDepth = shadowMap.Sample(gSampler1, shadowUV);
+            shadowFactor = (posInLightSpace.z - 0.005f < storedDepth) ? 1.0f : 0.5f;
+
+            output.color.rgb = finalColor.rgb * shadowFactor;
             output.color.a = gMaterial.color.a * textureColor.a;
+            
       }
       else
       {
@@ -104,3 +148,5 @@ PixelShaderOutput main(VertexShaderOutput input)
 
       return output;
 }
+
+
