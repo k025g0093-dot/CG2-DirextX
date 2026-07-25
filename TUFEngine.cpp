@@ -634,6 +634,21 @@ void TUFEngine::PostDraw() {
 		commandList->SetDescriptorHeaps(1, lineHeaps);
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandleLine = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 		commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &dsvHandleLine);
+
+		float lineRenderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
+		float lineRenderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
+		D3D12_VIEWPORT lineViewport{};
+		lineViewport.Width = lineRenderWidth;
+		lineViewport.Height = lineRenderHeight;
+		lineViewport.MinDepth = 0.0f;
+		lineViewport.MaxDepth = 1.0f;
+		commandList->RSSetViewports(1, &lineViewport);
+
+		D3D12_RECT lineScissorRect{};
+		lineScissorRect.right = static_cast<LONG>(lineRenderWidth);
+		lineScissorRect.bottom = static_cast<LONG>(lineRenderHeight);
+		commandList->RSSetScissorRects(1, &lineScissorRect);
+
 		m_line->Draw(commandList.Get(), viewProjectionMatrix);
 	}
 
@@ -1033,14 +1048,17 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	shadowBuf->TransitionToSrv(commandList.Get());
 
 	// ビューポート復元（PreDrawと同じ値）
+	const float sceneRenderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
+	const float sceneRenderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
+
 	D3D12_VIEWPORT mainVP{};
-	mainVP.Width = m_currentRenderWidth;
-	mainVP.Height = m_currentRenderHeight;
+	mainVP.Width = sceneRenderWidth;
+	mainVP.Height = sceneRenderHeight;
 	mainVP.MaxDepth = 1.0f;
 	commandList->RSSetViewports(1, &mainVP);
 	D3D12_RECT mainRect{};
-	mainRect.right = (LONG)m_currentRenderWidth;
-	mainRect.bottom = (LONG)m_currentRenderHeight;
+	mainRect.right = (LONG)sceneRenderWidth;
+	mainRect.bottom = (LONG)sceneRenderHeight;
 	commandList->RSSetScissorRects(1, &mainRect);
 
 	// 🌟 ここが抜けていた：メインシーン用のレンダーターゲットに戻す
