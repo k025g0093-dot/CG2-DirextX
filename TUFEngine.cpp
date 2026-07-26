@@ -191,6 +191,21 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 			Create3DObjectOBB obbCreator;
 			entity->obb = obbCreator.CreateOBBForModel(*mesh, t.position);
 
+			// localAABB を頂点データから計算（RenderGpuDrivenALLRequests での上書き対策）
+			const Vertex* verts = mesh->GetVertexData();
+			UINT vCount = mesh->GetVertexCount();
+			Vector3 aabbMin = { FLT_MAX, FLT_MAX, FLT_MAX };
+			Vector3 aabbMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+			for (UINT j = 0; j < vCount; j++) {
+				aabbMin.x = (std::min)(aabbMin.x, verts[j].position.x);
+				aabbMin.y = (std::min)(aabbMin.y, verts[j].position.y);
+				aabbMin.z = (std::min)(aabbMin.z, verts[j].position.z);
+				aabbMax.x = (std::max)(aabbMax.x, verts[j].position.x);
+				aabbMax.y = (std::max)(aabbMax.y, verts[j].position.y);
+				aabbMax.z = (std::max)(aabbMax.z, verts[j].position.z);
+			}
+			entity->localAABB = { aabbMin, aabbMax };
+
 			//スクリプトがある場合それらを割り当てる
 			if (object.contains("scriptName")) {
 				auto* gs = entity->AddComponent<GameScript>();
@@ -787,10 +802,15 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 
 		Matrix4x4 rotMat = Multiply(Multiply(MakeRotateXMatrix(obj.transform.rotation.x), MakeRotateYMatrix(obj.transform.rotation.y)), MakeRotateZMatrix(obj.transform.rotation.z));
 
+		Vector3 scaledLocalCenter = {
+			localCenter.x * obj.transform.scale.x,
+			localCenter.y * obj.transform.scale.y,
+			localCenter.z * obj.transform.scale.z
+		};
 		Vector3 rotatedCenter = {
-			localCenter.x * rotMat.m[0][0] + localCenter.y * rotMat.m[1][0] + localCenter.z * rotMat.m[2][0],
-			localCenter.x * rotMat.m[0][1] + localCenter.y * rotMat.m[1][1] + localCenter.z * rotMat.m[2][1],
-			localCenter.x * rotMat.m[0][2] + localCenter.y * rotMat.m[1][2] + localCenter.z * rotMat.m[2][2]
+			scaledLocalCenter.x * rotMat.m[0][0] + scaledLocalCenter.y * rotMat.m[1][0] + scaledLocalCenter.z * rotMat.m[2][0],
+			scaledLocalCenter.x * rotMat.m[0][1] + scaledLocalCenter.y * rotMat.m[1][1] + scaledLocalCenter.z * rotMat.m[2][1],
+			scaledLocalCenter.x * rotMat.m[0][2] + scaledLocalCenter.y * rotMat.m[1][2] + scaledLocalCenter.z * rotMat.m[2][2]
 		};
 
 		obj.obb.center = obj.transform.position + rotatedCenter;
@@ -823,10 +843,15 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 			Multiply(MakeRotateXMatrix(entity->transform.rotation.x),
 				MakeRotateYMatrix(entity->transform.rotation.y)),
 			MakeRotateZMatrix(entity->transform.rotation.z));
+		Vector3 scaledLocalCenter = {
+			localCenter.x * entity->transform.scale.x,
+			localCenter.y * entity->transform.scale.y,
+			localCenter.z * entity->transform.scale.z
+		};
 		Vector3 rotatedCenter = {
-			localCenter.x * rotMat.m[0][0] + localCenter.y * rotMat.m[1][0] + localCenter.z * rotMat.m[2][0],
-			localCenter.x * rotMat.m[0][1] + localCenter.y * rotMat.m[1][1] + localCenter.z * rotMat.m[2][1],
-			localCenter.x * rotMat.m[0][2] + localCenter.y * rotMat.m[1][2] + localCenter.z * rotMat.m[2][2]
+			scaledLocalCenter.x * rotMat.m[0][0] + scaledLocalCenter.y * rotMat.m[1][0] + scaledLocalCenter.z * rotMat.m[2][0],
+			scaledLocalCenter.x * rotMat.m[0][1] + scaledLocalCenter.y * rotMat.m[1][1] + scaledLocalCenter.z * rotMat.m[2][1],
+			scaledLocalCenter.x * rotMat.m[0][2] + scaledLocalCenter.y * rotMat.m[1][2] + scaledLocalCenter.z * rotMat.m[2][2]
 		};
 		entity->obb.center = entity->transform.position + rotatedCenter;
 		entity->obb.orientations[0] = { rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2] };

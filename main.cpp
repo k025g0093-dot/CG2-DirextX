@@ -266,9 +266,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			// OBB
 			{
-				Vector4 obbColor = { 1.0f, 1.0f, 0.0f, 1.0f };
-				for (auto& obj : ModelManager::GetInstance()->GetSceneObjects()) {
-					engine->DrawDebugOBB(obj.obb, obbColor);
+				Vector4 entityObbColor = { 0.0f, 1.0f, 1.0f, 1.0f };
+				for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
+					engine->DrawDebugOBB(entity->obb, entityObbColor);
 				}
 			}
 
