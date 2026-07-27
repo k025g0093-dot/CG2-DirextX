@@ -1,105 +1,12 @@
 {
     "objects": [
         {
-            "displayName": "player",
-            "modelPath": "resources//suzanne.obj",
-            "obb": {
-                "center": [
-                    -4.748081207275391,
-                    1.874300479888916,
-                    -2.1665964126586914
-                ],
-                "orientationX": [
-                    -0.9278280138969421,
-                    -3.900692263414385e-06,
-                    0.37300825119018555
-                ],
-                "orientationY": [
-                    -5.772280019300524e-06,
-                    1.0,
-                    -3.900692263414385e-06
-                ],
-                "orientationZ": [
-                    -0.37300825119018555,
-                    -5.772280019300524e-06,
-                    -0.9278280138969421
-                ],
-                "size": [
-                    1.043290376663208,
-                    0.7511764168739319,
-                    0.6498203277587891
-                ]
-            },
-            "position": [
-                -4.748081207275391,
-                1.874300479888916,
-                -2.1665964126586914
-            ],
-            "rotation": [
-                -3.1415884494781494,
-                -0.3822491765022278,
-                -3.1415884494781494
-            ],
-            "scale": [
-                0.7630921602249146,
-                0.7630998492240906,
-                0.7630921602249146
-            ],
-            "scriptName": "PlayerController"
-        },
-        {
-            "displayName": "",
-            "modelPath": "resources//multiMesh.obj",
-            "obb": {
-                "center": [
-                    -1.247975468635559,
-                    0.6131119728088379,
-                    -0.27535101771354675
-                ],
-                "orientationX": [
-                    1.0,
-                    0.0,
-                    0.0
-                ],
-                "orientationY": [
-                    0.0,
-                    1.0,
-                    0.0
-                ],
-                "orientationZ": [
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "size": [
-                    2.2479753494262695,
-                    1.613111972808838,
-                    1.0
-                ]
-            },
-            "position": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "rotation": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "scale": [
-                1.0,
-                1.0,
-                1.0
-            ]
-        },
-        {
-            "displayName": "",
-            "modelPath": "resources/asset\\terrain/terrain.obj",
+            "displayName": "resources/asset\\cube/cube.obj",
+            "modelPath": "resources/asset\\cube/cube.obj",
             "obb": {
                 "center": [
                     0.0,
-                    1.5006054639816284,
+                    0.0,
                     0.0
                 ],
                 "orientationX": [
@@ -118,55 +25,9 @@
                     1.0
                 ],
                 "size": [
-                    10.0,
-                    1.5006054639816284,
-                    10.0
-                ]
-            },
-            "position": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "rotation": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "scale": [
-                1.0,
-                1.0,
-                1.0
-            ]
-        },
-        {
-            "displayName": "resources/asset\\Dragon\\fbx/Dragon 2.5_fbx.fbx",
-            "modelPath": "resources/asset\\Dragon\\fbx/Dragon 2.5_fbx.fbx",
-            "obb": {
-                "center": [
-                    0.001251220703125,
-                    15.285785675048828,
-                    24.517105102539063
-                ],
-                "orientationX": [
                     1.0,
-                    0.0,
-                    0.0
-                ],
-                "orientationY": [
-                    0.0,
                     1.0,
-                    0.0
-                ],
-                "orientationZ": [
-                    0.0,
-                    0.0,
                     1.0
-                ],
-                "size": [
-                    76.54769897460938,
-                    15.38823127746582,
-                    54.30183410644531
                 ]
             },
             "position": [
