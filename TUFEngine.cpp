@@ -278,6 +278,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
+
 	ImGui::StyleColorsDark();
 
 	// カスタムカラースキーム

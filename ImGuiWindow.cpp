@@ -29,6 +29,13 @@ bool ImGuiUIWindow::begin(std::string name, ImGuiWindowFlags flags)
 {
 #ifdef USE_IMGUI
 	if (!show) return false;
+
+	// 前フレームで制限範囲外に出ていたら位置を矯正
+	if (m_needsClamp) {
+		ImGui::SetNextWindowPos(m_nextPos, ImGuiCond_Always);
+		m_needsClamp = false;
+	}
+
 	return ImGui::Begin(name.c_str(), &show, flags);
 #else
 	return false;
@@ -40,6 +47,18 @@ bool ImGuiUIWindow::begin(std::string name, ImGuiWindowFlags flags)
 void ImGuiUIWindow::end()
 {
 #ifdef USE_IMGUI
+	if (m_enableClamp) {
+		ImVec2 pos = ImGui::GetWindowPos();
+		ImVec2 size = ImGui::GetWindowSize();
+		ImVec2 clamped;
+		clamped.x = (std::max)(m_clampMin.x, (std::min)(pos.x, m_clampMax.x - size.x));
+		clamped.y = (std::max)(m_clampMin.y, (std::min)(pos.y, m_clampMax.y - size.y));
+		if (clamped.x != pos.x || clamped.y != pos.y) {
+			m_nextPos = clamped;
+			m_needsClamp = true;
+		}
+	}
+
 	ImGui::End();
 #endif
 }

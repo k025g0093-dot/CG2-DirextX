@@ -31,6 +31,13 @@ protected:
     virtual bool begin(std::string name, ImGuiWindowFlags flags = 0);
     void end();
     bool show = true; // 💡 最初から表示状態（true）にしておくとバグりにくいです
+
+    // ウィンドウ移動範囲の制限
+    bool m_enableClamp = false;          // true で移動制限を有効化
+    ImVec2 m_clampMin = { 0,0 };         // 制限範囲 (左上)
+    ImVec2 m_clampMax = { 0,0 };         // 制限範囲 (右下)
+    ImVec2 m_nextPos = { 0,0 };          // 次フレームで適用する位置
+    bool m_needsClamp = false;
 };
 
 
