@@ -20,12 +20,13 @@ public:
 
 	bool Init();                    // PhysicsSystem 作成、床設置
 	void Step(float dt);            // PushTransform → Update → PullTransform
-	//uint32_t AddBody(ColliderDesc); // 形状と位置から Body 作成、BodyID を返す
+	uint32_t AddBody(); // 形状と位置から Body 作成、BodyID を返す
 	void RemoveBody(uint32_t id);
 
 private:
 
     static FacadeJolt* s_instance;
+
 
     // --- フィルタークラス ---
     class BPLayerInterfaceImpl : public JPH::BroadPhaseLayerInterface {

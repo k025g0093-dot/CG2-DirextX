@@ -270,6 +270,7 @@
     <ClInclude Include="PSO.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceObject.h" />
+    <ClInclude Include="Rigidbody.h" />
     <ClInclude Include="ShadowMapBuffer.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Sphere.h" />

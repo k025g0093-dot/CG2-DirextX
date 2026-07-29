@@ -8,4 +8,6 @@ public:
     Component* Clone() const override {
         return new ConvexHullCollider();
     }
+
+
 };

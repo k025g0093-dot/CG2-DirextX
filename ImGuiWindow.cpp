@@ -491,6 +491,21 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						}
 
 					}
+					else if (auto* rigidbody = dynamic_cast<Rigidbody*>(c)) {
+						ImGui::Text("rigidbodyコンポーネントです");
+
+
+
+					}
+					else if (auto* chColloder = dynamic_cast<ConvexHullCollider*>(c)) {
+						ImGui::Text("コライダーのコンポーネントです");
+
+
+					}
+					else if (auto* sphereCollider = dynamic_cast<SphereCollider*>(c)) {
+						ImGui::Text("球体のコライダーのコンポーネントです");
+
+					}
 				}
 			}
 
@@ -501,11 +516,24 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 			if (ImGui::BeginPopup("AddComponentPopup")) {
 				if (!entity->GetComponent<MeshFilter>() && ImGui::MenuItem("MeshFilter"))
 					entity->AddComponent<MeshFilter>();
+
 				if (!entity->GetComponent<LearnComponent>() && ImGui::MenuItem("LearnComponent"))
 					entity->AddComponent<LearnComponent>();
 
 				if (!entity->GetComponent<GameScript>() && ImGui::MenuItem("C#スクリプト"))
 					entity->AddComponent<GameScript>();
+
+				if (!entity->GetComponent<Rigidbody>() && ImGui::MenuItem("rigidbodyコンポーネント"))
+					entity->AddComponent<Rigidbody>();
+
+
+				if(!entity->GetComponent<ConvexHullCollider>()&& ImGui::MenuItem("コベクスコライダーコンポーネント"))
+					entity->AddComponent<ConvexHullCollider>();
+
+				if(!entity->GetComponent<SphereCollider>() && ImGui::MenuItem("スフィアコライダーコンポーネント"))
+					entity->AddComponent<SphereCollider>();
+
+
 
 				ImGui::EndPopup();
 			}

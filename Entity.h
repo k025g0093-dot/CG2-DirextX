@@ -12,6 +12,7 @@ class Entity {
 public:
 
 
+    uint32_t m_bodyIdRaw = UINT32_MAX;
 
     Entity();
     ~Entity();
