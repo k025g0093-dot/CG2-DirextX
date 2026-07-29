@@ -219,9 +219,12 @@
     <ClInclude Include="AllIncludeHeder.h" />
     <ClInclude Include="allShapesModel.h" />
     <ClInclude Include="allVector.h" />
+    <ClInclude Include="BoxCollider.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Collider.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ConvertString.h" />
+    <ClInclude Include="ConvexHullCollider.h" />
     <ClInclude Include="Create3DObjectOBB.h" />
     <ClInclude Include="DebugCamer.h" />
     <ClInclude Include="DXC.h" />
@@ -270,6 +273,7 @@
     <ClInclude Include="ShadowMapBuffer.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Sphere.h" />
+    <ClInclude Include="SphereCollider.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TriangleModel.h" />
