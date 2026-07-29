@@ -16,10 +16,20 @@ namespace Layers {
     static constexpr JPH::ObjectLayer NON_MOVING = 0;
     static constexpr JPH::ObjectLayer MOVING = 1;
 };
+// FacadeJolt.cpp のどこかに追加
+FacadeJolt* FacadeJolt::s_instance = nullptr;
+
+FacadeJolt* FacadeJolt::GetInstance() {
+    if (!s_instance) s_instance = new FacadeJolt();
+    return s_instance;
+}
 
 bool FacadeJolt::Init() {
-    RegisterDefaultAllocator();
-    Factory::sInstance = new Factory();
-    RegisterTypes();
+    JPH::RegisterDefaultAllocator();
+    JPH::Factory::sInstance = new JPH::Factory();
+    JPH::RegisterTypes();
+    // FacadeJolt.cpp のどこかに追加
+    m_tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
+    m_jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, -1);
     return true;
 }

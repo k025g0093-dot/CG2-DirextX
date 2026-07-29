@@ -138,6 +138,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	ShadowMapBuffer::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get());
 	m_lightVPBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Matrix4x4)));
 
+	FacadeJolt::GetInstance()->Init();
+
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
 	m_temporarySpheres = std::move(sphere);
