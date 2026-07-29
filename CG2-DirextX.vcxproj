@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;USE_IMGUI;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;USE_IMGUI;JPH_DEBUG_RENDERER;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_USE_DX12;JPH_USE_CPU_COMPUTE;JPH_PROFILE_ENABLED;JPH_OBJECT_STREAM;JPH_USE_AVX2;JPH_USE_AVX;JPH_USE_SSE4_1;JPH_USE_SSE4_2;JPH_USE_LZCNT;JPH_USE_TZCNT;JPH_USE_F16C;JPH_USE_FMADD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/ignore:4049 %(AdditionalOptions)/utf-8</AdditionalOptions>
@@ -63,6 +63,7 @@
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalDependencies>assimp-vc145-mt.lib;Jolt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>./externals/assimp/include/assimpLib;./externals/Jolt/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <Manifest>
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
@@ -88,6 +89,7 @@
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalDependencies>assimp-vc145-mt.lib;Jolt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>./externals/assimp/include/assimpLib;./externals/Jolt/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <Manifest>
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
@@ -105,6 +107,7 @@
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="EntityComponent.cpp" />
     <ClCompile Include="EntityManager.cpp" />
+    <ClCompile Include="FacadeJolt.cpp" />
     <ClCompile Include="FBXLoader.cpp" />
     <ClCompile Include="GpuDrivenRenderer.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />
@@ -239,6 +242,7 @@
     <ClInclude Include="externals\nlohmann\json.hpp" />
     <ClInclude Include="externals\scripting\coreclr_delegates.h" />
     <ClInclude Include="externals\scripting\hostfxr.h" />
+    <ClInclude Include="FacadeJolt.h" />
     <ClInclude Include="FBXLoader.h" />
     <ClInclude Include="GameScript.h" />
     <ClInclude Include="GpuDrivenRenderer.h" />
@@ -250,6 +254,7 @@
     <ClInclude Include="ImGuiUIManager.h" />
     <ClInclude Include="ImGuiWindow.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="JoltAllinclude.h" />
     <ClInclude Include="LearnComponent.h" />
     <ClInclude Include="Line.h" />
     <ClInclude Include="LightManager.h" />
@@ -260,6 +265,7 @@
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="MonoBehaviour.h" />
     <ClInclude Include="PSO.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceObject.h" />
     <ClInclude Include="ShadowMapBuffer.h" />
     <ClInclude Include="Sound.h" />
@@ -293,6 +299,9 @@
     <None Include="Object3d.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TUFEngine.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

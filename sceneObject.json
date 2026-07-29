@@ -1,3 +1,50 @@
 {
-    "objects": []
+    "objects": [
+        {
+            "displayName": "resources//suzanne.obj",
+            "modelPath": "resources//suzanne.obj",
+            "obb": {
+                "center": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "orientationX": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "orientationY": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "orientationZ": [
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "size": [
+                    1.3671879768371582,
+                    0.984375,
+                    0.8515620231628418
+                ]
+            },
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        }
+    ]
 }
