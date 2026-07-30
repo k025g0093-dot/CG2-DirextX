@@ -243,7 +243,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
 
-	ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+	ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	if (ImGuizmo::IsOver()) {
 		viewportFlags |= ImGuiWindowFlags_NoMove;
 	}
@@ -283,15 +283,13 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			if (obj->isSelected) { hasEntitySelection = true; break; }
 		}
 
-		if (selectedLight >= 1 && selectedLight < LightManager::MAX_LIGHTS) {
-			// 🌟ライトのギズモ操作
-			ImGuizmo::BeginFrame();
-			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
+		ImGuizmo::BeginFrame();
+		//ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+		//ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
 
+		if (selectedLight >= 1 && selectedLight < LightManager::MAX_LIGHTS) {
 			LightData light = lm->GetLight(selectedLight);
 
-			// 位置だけを持つアフィン行列を作る（回転・スケールは単位のまま）
 			Matrix4x4 lightTransform = MakeAffineMatrix(
 				{ 1.0f, 1.0f, 1.0f },
 				{ 0.0f, 0.0f, 0.0f },
@@ -301,7 +299,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			if (ImGuizmo::Manipulate(
 				&engine->GetViewMatrix().m[0][0],
 				&engine->GetProjectionMatrix().m[0][0],
-				ImGuizmo::TRANSLATE, // ライトは移動だけできれば十分
+				ImGuizmo::TRANSLATE,
 				ImGuizmo::LOCAL,
 				&lightTransform.m[0][0]
 			)) {
@@ -312,13 +310,6 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			}
 		}
 		else if (hasEntitySelection) {
-			// 🌟既存のEntity用ギズモ処理
-			ImGuizmo::BeginFrame();
-			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-
-			// 領域の設定（これは imageScreenPos で正しい）
-			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
-
 			constexpr float kDegToRad = 3.1415926535f / 180.0f;
 
 			for (int i = 0; i < (int)objects.size(); i++) {
@@ -374,7 +365,8 @@ void ImGuiPlayViewportWindow::update(TUFEngine* engine) {
 
 	if (ImGui::Begin("プレイビューポート", nullptr,
 		ImGuiWindowFlags_NoScrollbar |
-		ImGuiWindowFlags_NoScrollWithMouse)) {
+		ImGuiWindowFlags_NoScrollWithMouse |
+		ImGuiWindowFlags_NoBringToFrontOnFocus)) {
 
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
 
