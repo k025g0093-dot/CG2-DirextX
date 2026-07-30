@@ -144,18 +144,16 @@ public:
 		if (m_pi.hProcess) {
 			// 前回起動したプロセス・ハンドルを後始末
 			TerminateProcess(m_pi.hProcess, 0);
-			CloseHandle(m_hPipe);
+			//CloseHandle(m_hPipe);
 			CloseHandle(m_pi.hProcess);
 			CloseHandle(m_pi.hThread);
 			m_pi = {};
 		}
 
 		CreateScript(m_scriptName);
-		//C#のプロジェクトをビルドする
-		if (!s_built) {
-			system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
-			s_built = true;
-		}
+
+		system("dotnet build externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj -c Debug --force");
+
 		std::wstring cmdLine = L"GameScriptC.exe " + std::wstring(m_scriptName.begin(), m_scriptName.end());
 
 
