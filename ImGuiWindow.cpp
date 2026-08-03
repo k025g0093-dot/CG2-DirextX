@@ -284,10 +284,11 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		}
 
 		ImGuizmo::BeginFrame();
-		//ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-		//ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
+		ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+		ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
 
 		if (selectedLight >= 1 && selectedLight < LightManager::MAX_LIGHTS) {
+			// 🌟ライトのギズモ操作
 			LightData light = lm->GetLight(selectedLight);
 
 			Matrix4x4 lightTransform = MakeAffineMatrix(
@@ -310,6 +311,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			}
 		}
 		else if (hasEntitySelection) {
+			// 🌟既存のEntity用ギズモ処理
 			constexpr float kDegToRad = 3.1415926535f / 180.0f;
 
 			for (int i = 0; i < (int)objects.size(); i++) {

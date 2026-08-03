@@ -28,13 +28,16 @@ namespace GameScriptC
 
         static void HandleEntity(NamedPipeServerStream pipe)
         {
-            byte[] nameBuffer = new byte[1024];
-            int nameLen = pipe.Read(nameBuffer, 0, nameBuffer.Length);
+            byte[] nameLenBuf = ReadExactly(pipe, 4);
+            int nameLen = BitConverter.ToInt32(nameLenBuf, 0);
+            byte[] nameBuffer = ReadExactly(pipe, nameLen);
+
             string scriptName = Encoding.UTF8.GetString(nameBuffer, 0, nameLen).TrimEnd('\0');
             Console.WriteLine($"Script:{scriptName}");
 
             Type type = Assembly.GetExecutingAssembly().GetType(scriptName);
-            if (type == null) {
+            if (type == null)
+            {
                 Console.WriteLine($"Script '{scriptName}' not found. Loaded types:");
                 foreach (var t in Assembly.GetExecutingAssembly().GetTypes())
                     Console.WriteLine($"  {t.FullName}");
@@ -43,11 +46,11 @@ namespace GameScriptC
             Templet script = (Templet)Activator.CreateInstance(type);
             script.OnStart();
 
-            byte[] buf = new byte[16];
             while (true)
             {
-                int bytesRead = pipe.Read(buf, 0, buf.Length);
-                if (bytesRead < 16) break;
+                byte[] lenBuf = ReadExactly(pipe, 4);
+                int len = BitConverter.ToInt32(lenBuf, 0);
+                byte[] buf = ReadExactly(pipe, len);
 
                 float x = BitConverter.ToSingle(buf, 0);
                 float y = BitConverter.ToSingle(buf, 4);
@@ -60,9 +63,28 @@ namespace GameScriptC
                 Buffer.BlockCopy(BitConverter.GetBytes(x), 0, outBuf, 0, 4);
                 Buffer.BlockCopy(BitConverter.GetBytes(y), 0, outBuf, 4, 4);
                 Buffer.BlockCopy(BitConverter.GetBytes(z), 0, outBuf, 8, 4);
-                pipe.Write(outBuf, 0, 12);
+
+                pipe.Write(BitConverter.GetBytes(outBuf.Length), 0, 4);
+                pipe.Write(outBuf, 0, outBuf.Length);
+
             }
             pipe.Close();
+        }
+        // 指定バイト数をすべて読み切るまで待つ（部分読み対策）
+        static byte[] ReadExactly(NamedPipeServerStream pipe, int count)
+        {
+            byte[] buf = new byte[count];
+            int read = 0;
+            while (read < count)
+            {
+                int n = pipe.Read(buf, read, count - read);
+                if (n <= 0)
+                    throw new EndOfStreamException("Pipe closed");
+                read += n;
+            }
+            return buf;
+        }
+
     }
 }
 
