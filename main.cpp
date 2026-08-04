@@ -47,8 +47,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SoundData soundData1 = sound->SoundLoad("resources/fanfare.wav");
 	SoundData title = sound->SoundLoad("resources/title.mp3");
 
-	DebugCamer* debugCamer_ = new DebugCamer;
-	debugCamer_->Initialize((float)kClineWidth, (float)kClineHeight);
+	DebugCamer::GetInstance().Initialize((float)kClineWidth, (float)kClineHeight);
 
 	const int cubeCountX = 200;
 	const int cubeCountZ = 200;
@@ -201,18 +200,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			engine->m_camera.transform.translate.x += Input::GetLeftStickX();
 			engine->m_camera.transform.translate.z += Input::GetLeftStickY();
 
-#ifdef USE_IMGUI
-			if (!ImGuizmo::IsUsing())
-#endif
-				debugCamer_->Update();
+			DebugCamer::GetInstance().Update();
 
-			if (debugCamer_->IsDebug()) {
-				engine->SetViewProjectionMatrix(debugCamer_->GetViewProjectionMatrix());
+			if (DebugCamer::GetInstance().IsDebug()) {
+				engine->SetViewProjectionMatrix(DebugCamer::GetInstance().GetViewProjectionMatrix());
 			}
 			else {
-				engine->SetViewProjectionMatrix(
-					engine->m_camera.GetViewProjectionMatrix(kClineWidth, kClineHeight)
-				);
+				engine->ResetViewProjectionMatrix();
 			}
 
 
@@ -386,7 +380,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	sound->SoundUnLoad(&soundData1);
 	delete sound;
-	delete debugCamer_;
 	delete engine;
 
 	return 0;

@@ -568,9 +568,11 @@ void TUFEngine::PreDraw() {
 	float renderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
 	float renderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
 
-	Matrix4x4 view = m_camera.GetViewMatrix();
-	Matrix4x4 proj = m_camera.GetProjectionMatrix(renderWidth, renderHeight);
-	viewProjectionMatrix = Multiply(view, proj);
+	if (!m_useCustomViewProjection) {
+		Matrix4x4 view = m_camera.GetViewMatrix();
+		Matrix4x4 proj = m_camera.GetProjectionMatrix(renderWidth, renderHeight);
+		viewProjectionMatrix = Multiply(view, proj);
+	}
 
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
