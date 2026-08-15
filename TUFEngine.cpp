@@ -1045,7 +1045,7 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	}
 
 	Matrix4x4 lightView = MakeLookAtMatrix(lightPos, { 0.0f, 0.0f, 0.0f }, upVector);
-	Matrix4x4 lightProj = MakeOrthographicMatrix(-200.0f, 200.0f, 200.0f, -200.0f, 0.1f, 100.0f);
+	Matrix4x4 lightProj = MakeOrthographicMatrix(-50.0f, 50.0f, 50.0f, -50.0f, 0.1f, 100.0f);
 	Matrix4x4 lightVP = Multiply(lightView, lightProj);
 	
 
