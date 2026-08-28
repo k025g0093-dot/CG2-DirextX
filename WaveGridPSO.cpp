@@ -79,7 +79,7 @@ ComPtr<ID3D12PipelineState> WaveGridCreateComputePipelineState(
 	// ★Compute Shader（GpuDrivenObject.CS.hlsl）をコンパイル
 	// ターゲットは "cs_6_0" になります
 	IDxcBlob* computeShaderBlob = CompileShader(
-		L"WaveGrid.CS.hlsl", L"cs_6_0",
+		L"resources/shaders/WaveGrid.CS.hlsl", L"cs_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
 	// Compute専用のPSO設定（グラフィックス用より設定項目が少なくてシンプル！）

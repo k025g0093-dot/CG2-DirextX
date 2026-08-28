@@ -51,12 +51,10 @@ IDxcBlob* CompileShader(
 
     // コンパイルオプションの設定
     LPCWSTR arguments[] = {
-        L"-E", L"main",       // エントリーポイントはmain関数
-        L"-T", profile,       // シェーダーの種類（vs_6_0やps_6_0など）
-        L"-Zi",               // デバッグ情報を生成
-        L"-Qembed_debug",     // デバッグ情報をバイナリに埋め込む
-        L"-Od",               // 最適化を無効化（デバッグ用）
-        L"-Zpr"               // メモリレイアウトを行優先に
+        L"-E", L"main",
+        L"-T", profile,
+        L"-I", L"shaders",        // ★ これを追加
+        L"-Zi", L"-Qembed_debug", L"-Od", L"-Zpr"
     };
 
     // シェーダーのコンパイル実行

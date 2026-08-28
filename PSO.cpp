@@ -173,11 +173,11 @@ ComPtr<ID3D12PipelineState> CreatePipelineStateDesc(
 
 	// シェーダーのコンパイル
 	IDxcBlob* vertexShaderBlob = CompileShader(
-		L"Object3d.VS.hlsl", L"vs_6_0",
+		L"shaders/Object3d.VS.hlsl", L"vs_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
 	IDxcBlob* pixelShaderBlob = CompileShader(
-		L"Object3d.PS.hlsl", L"ps_6_0",
+		L"shaders/Object3d.PS.hlsl", L"ps_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
 
@@ -405,11 +405,11 @@ ComPtr<ID3D12PipelineState> CreateGpuDrivenPipelineStateDesc(
 
 	// シェーダーのコンパイル
 	IDxcBlob* vertexShaderBlob = CompileShader(
-		L"GpuDrivenObject.VS.hlsl", L"vs_6_0",
+		L"shaders/GpuDrivenObject.VS.hlsl", L"vs_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
 	IDxcBlob* pixelShaderBlob = CompileShader(
-		L"GpuDrivenObject.PS.hlsl", L"ps_6_0",
+		L"shaders/GpuDrivenObject.PS.hlsl", L"ps_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
 	// 各設定の生成
@@ -556,7 +556,7 @@ ComPtr<ID3D12PipelineState> CreateComputePipelineState(
 	// ★Compute Shader（GpuDrivenObject.CS.hlsl）をコンパイル
 	// ターゲットは "cs_6_0" になります
 	IDxcBlob* computeShaderBlob = CompileShader(
-		L"GpuDrivenObject.CS.hlsl", L"cs_6_0",
+		L"shaders/GpuDrivenObject.CS.hlsl", L"cs_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
 	// Compute専用のPSO設定（グラフィックス用より設定項目が少なくてシンプル！）
@@ -618,8 +618,8 @@ ComPtr<ID3D12PipelineState> CreateLinePipelineState(
 	IDxcIncludeHandler* includeHandler = nullptr;
 	DxcCompilerInclude(hr, dxcUtils, dxcCompiler, includeHandler);
 
-	IDxcBlob* vertexBlob = CompileShader(L"Line.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
-	IDxcBlob* pixelBlob = CompileShader(L"Line.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob* vertexBlob = CompileShader(L"shaders/Line.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob* pixelBlob = CompileShader(L"shaders/Line.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 
 	rootSignature = CreateLineRootSignature(device, hr);
 
@@ -686,7 +686,7 @@ ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
 
 	// 頂点シェーダーのみコンパイル（深度だけでいいのでピクセルシェーダーは不要）
 	IDxcBlob* vertexShaderBlob = CompileShader(
-		L"shadow.VS.hlsl", L"vs_6_0",
+		L"shaders/shadow.VS.hlsl", L"vs_6_0",
 		dxcUtils, dxcCompiler, includeHandler);
 
 	// 各設定の生成（既存のヘルパーを流用）

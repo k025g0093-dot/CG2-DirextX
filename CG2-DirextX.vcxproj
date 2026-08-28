@@ -64,6 +64,7 @@
       <AdditionalDependencies>assimp-vc145-mt.lib;Jolt.lib;SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>./externals/assimp/include/assimpLib;./externals/Jolt/lib;./externals/SDL/SDL3lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <AdditionalOptions>/ignore:4049 /IGNORE:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <Manifest>
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
@@ -85,7 +86,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalOptions>/ignore:4049 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/ignore:4049 /IGNORE:4099 %(AdditionalOptions)</AdditionalOptions>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalDependencies>assimp-vc145-mt.lib;Jolt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>./externals/assimp/include/assimpLib;./externals/Jolt/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
