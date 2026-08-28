@@ -7,9 +7,12 @@
 
 
 
-MeshModel*ModelManager::LoadModel(const std::string& directoryPath, const std::string& filename) {
-	if (m_meshes.count(filename) > 0) {
-		return m_meshes[filename].get();
+MeshModel* ModelManager::LoadModel(const std::string& directoryPath, const std::string& filename) {
+
+	const std::string key = directoryPath + "/" + filename;   // ★ 追加
+
+	if (m_meshes.count(key) > 0) {                            // ★ filename → key
+		return m_meshes[key].get();                           // ★ filename → key
 	}
 
 	auto mesh = std::make_unique<MeshModel>();
@@ -55,7 +58,7 @@ MeshModel*ModelManager::LoadModel(const std::string& directoryPath, const std::s
 	}
 
 	MeshModel* ptr = mesh.get();
-	m_meshes[filename] = std::move(mesh);
+	m_meshes[key] = std::move(mesh);                          // ★ filename → key
 	return ptr;
 }
 

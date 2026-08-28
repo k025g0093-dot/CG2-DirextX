@@ -11,6 +11,7 @@
 #include "Entity.h"
 #include "EntityManager.h"
 
+
 #ifndef UNMANAGEDCALLERSONLY_METHOD
 #define UNMANAGEDCALLERSONLY_METHOD ((const char_t*)-1)
 #endif
@@ -27,7 +28,6 @@ private:
 	hostfxr_close_fn    m_close_fptr = nullptr; // hostfxrのクローズ関数ポインタ(現状未使用)
 	hostfxr_handle      m_runtime_handle = nullptr; // .NETランタイムのハンドル(現状未使用)
 	bool m_loaded = false; // ロード済みフラグ(現状未使用)
-	Entity* entity = nullptr; // 座標同期対象のEntity
 public:
 
 	std::string m_scriptName = "PlayerController"; // デフォルトのスクリプト名(未設定時の初期値)
@@ -115,13 +115,7 @@ public:
 		MonoBehaviour::Start();
 		if (!m_vsOpened) {
 			m_vsOpened = true;
-			// このコンポーネントを持つEntityを探して保持しておく
-			for (auto& e : EntityManager::GetInstance()->GetEntities()) {
-				if (e->GetComponent<GameScript>() == this) {
-					entity = e.get();
-					break;
-				}
-			}
+			
 			// Visual Studioでcsprojを開く
 			ShellExecuteA(NULL, "open", "devenv.exe",
 				"\"externals/GameScript/GameScriptC/GameScriptC/GameScriptC.csproj\"",
@@ -132,12 +126,7 @@ public:
 
 	void ReloadScript() {
 
-		for (auto& e : EntityManager::GetInstance()->GetEntities()) {
-			if (e->GetComponent<GameScript>() == this) {
-				entity = e.get();
-				break;
-			}
-		}
+
 
 		static bool s_built = false;
 
@@ -193,14 +182,14 @@ public:
 	}
 
 	void Update() override {
-		if (m_hPipe == INVALID_HANDLE_VALUE || !entity) return;
+		if (m_hPipe == INVALID_HANDLE_VALUE || !Component::entity) return;
 		float dt = 0.016f; // 固定デルタタイム
 		DWORD written;
 		// 現在の座標とdtをC#側に送信
 		float sendData[4] = {
-			entity->transform.position.x,
-			entity->transform.position.y,
-			entity->transform.position.z,
+			Component::entity->transform.position.x,
+			Component::entity->transform.position.y,
+			Component::entity->transform.position.z,
 			dt
 		};
 		WriteFile(m_hPipe, sendData, sizeof(sendData), &written, NULL);
@@ -208,9 +197,9 @@ public:
 		DWORD read;
 		// C#側で更新された座標を受信して反映
 		if (ReadFile(m_hPipe, recvData, sizeof(recvData), &read, NULL) && read == sizeof(recvData)) {
-			entity->transform.position.x = recvData[0];
-			entity->transform.position.y = recvData[1];
-			entity->transform.position.z = recvData[2];
+			Component::entity->transform.position.x = recvData[0];
+			Component::entity->transform.position.y = recvData[1];
+			Component::entity->transform.position.z = recvData[2];
 		}
 	}
 private:
