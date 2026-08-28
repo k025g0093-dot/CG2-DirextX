@@ -38,7 +38,7 @@ void EntityManager::UpdateAll(float dt) {
 	int steps = 0;
 	while (m_accumlator >= kFixedTimeStep && steps < kMaxFixedSteps) {
 
-		//FacadeJolt::GetInstance()->Step(kFixedTimeStep);未来のjolt
+		FacadeJolt::GetInstance()->Step(kFixedTimeStep);
 
 		for (auto& entity : m_entities) {
 			for (auto* c : entity->m_components) {

@@ -2,6 +2,10 @@
 #include "TUFEngine.h"
 #include "ModelManager.h"
 
+#include "FacadeJolt.h"
+#include "BoxCollider.h"
+#include <cmath>
+
 ImGuiUIWindow::ImGuiUIWindow() : show(true) {}
 ImGuiUIWindow::~ImGuiUIWindow() {}
 #ifdef USE_IMGUI
@@ -485,20 +489,72 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						}
 
 					}
-					else if (auto* rigidbody = dynamic_cast<Rigidbody*>(c)) {
-						ImGui::Text("rigidbodyコンポーネントです");
+					else if (auto* rb = dynamic_cast<Rigidbody*>(c)) {
+						bool dirty = false;
 
+						dirty |= ImGui::Checkbox("重力を受ける", &rb->useGravity);
+						dirty |= ImGui::Checkbox("キネマティック（手動で動かす）", &rb->isKinematic);
 
+						ImGui::Spacing();
+						dirty |= ImGui::DragFloat("質量", &rb->mass, 0.1f, 0.01f, 1000.0f);
+						dirty |= ImGui::DragFloat("移動の減衰", &rb->linearDrag, 0.01f, 0.0f, 10.0f);
+						dirty |= ImGui::DragFloat("回転の減衰", &rb->angularDrag, 0.01f, 0.0f, 10.0f);
 
+						ImGui::Separator();
+
+						// ── 現在の状態（読み取り専用）──
+						if (entity->m_bodyIdRaw != UINT32_MAX) {
+							auto* jolt = FacadeJolt::GetInstance();
+							bool active = jolt->IsBodyActive(entity->m_bodyIdRaw);
+							Vector3 vel = jolt->GetLinearVelocity(entity->m_bodyIdRaw);
+							float speed = std::sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+
+							ImGui::Text("BodyID : %u", entity->m_bodyIdRaw);
+							ImGui::TextColored(
+								active ? ImVec4(0.4f, 0.9f, 0.5f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
+								active ? "状態   : 動作中" : "状態   : 停止（スリープ）");
+							ImGui::Text("速度   : %.2f, %.2f, %.2f", vel.x, vel.y, vel.z);
+							ImGui::Text("速さ   : %.2f m/s", speed);
+
+							if (!active && ImGui::Button("叩き起こす")) {
+								jolt->WakeBody(entity->m_bodyIdRaw);
+							}
+						}
+						else {
+							ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.3f, 1.0f),
+								"物理ボディ未生成（コライダーを付けてください）");
+						}
+
+						ImGui::Separator();
+						if (dirty) {
+							ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f),
+								"変更は再生成するまで反映されません");
+						}
+						if (ImGui::Button("物理ボディを再生成")) {
+							FacadeJolt::GetInstance()->RebuildBody(entity.get());
+						}
 					}
-					else if (auto* chColloder = dynamic_cast<ConvexHullCollider*>(c)) {
-						ImGui::Text("コライダーのコンポーネントです");
-
-
+					else if (auto* box = dynamic_cast<BoxCollider*>(c)) {
+						ImGui::DragFloat3("サイズ（全長）", &box->size.x, 0.05f, 0.01f, 100.0f);
+						ImGui::Checkbox("トリガー（すり抜けて検知だけ）", &box->isTrigger);
+						ImGui::TextDisabled("実際の半分の大きさが Jolt に渡ります");
+						if (ImGui::Button("物理ボディを再生成##box")) {
+							FacadeJolt::GetInstance()->RebuildBody(entity.get());
+						}
 					}
-					else if (auto* sphereCollider = dynamic_cast<SphereCollider*>(c)) {
-						ImGui::Text("球体のコライダーのコンポーネントです");
-
+					else if (auto* sph = dynamic_cast<SphereCollider*>(c)) {
+						ImGui::DragFloat("半径", &sph->radius, 0.05f, 0.01f, 100.0f);
+						ImGui::Checkbox("トリガー（すり抜けて検知だけ）", &sph->isTrigger);
+						if (ImGui::Button("物理ボディを再生成##sph")) {
+							FacadeJolt::GetInstance()->RebuildBody(entity.get());
+						}
+					}
+					else if (auto* hull = dynamic_cast<ConvexHullCollider*>(c)) {
+						ImGui::Checkbox("トリガー（すり抜けて検知だけ）", &hull->isTrigger);
+						ImGui::TextDisabled("現在は AABB のボックスで代用しています");
+						if (ImGui::Button("物理ボディを再生成##hull")) {
+							FacadeJolt::GetInstance()->RebuildBody(entity.get());
+						}
 					}
 				}
 			}
@@ -521,10 +577,14 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 					entity->AddComponent<Rigidbody>();
 
 
-				if(!entity->GetComponent<ConvexHullCollider>()&& ImGui::MenuItem("コベクスコライダーコンポーネント"))
+				// コライダーは1つだけ。基底 Collider で判定する
+				if (!entity->GetComponent<Collider>() && ImGui::MenuItem("ボックスコライダー"))
+					entity->AddComponent<BoxCollider>();
+
+				if (!entity->GetComponent<Collider>() && ImGui::MenuItem("コベクスコライダーコンポーネント"))
 					entity->AddComponent<ConvexHullCollider>();
 
-				if(!entity->GetComponent<SphereCollider>() && ImGui::MenuItem("スフィアコライダーコンポーネント"))
+				if (!entity->GetComponent<Collider>() && ImGui::MenuItem("スフィアコライダーコンポーネント"))
 					entity->AddComponent<SphereCollider>();
 
 
