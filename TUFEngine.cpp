@@ -232,15 +232,17 @@ int TUFEngine::LoadTexture(const std::string& filePath) {
 
 
 void TUFEngine::OnUpdate() {
+	static auto s_prevTime = std::chrono::high_resolution_clock::now();
+	auto  nowTime = std::chrono::high_resolution_clock::now();
+	float dt = std::chrono::duration<float>(nowTime - s_prevTime).count();
+	s_prevTime = nowTime;
+	dt = (std::min)(dt, 0.1f);
+
 	Input::Update();
-	EntityManager::GetInstance()->UpdateAll(0.016f);
+	EntityManager::GetInstance()->UpdateAll(dt);
 #ifdef USE_IMGUI
-	if (m_imguiManager) {
-		m_imguiManager->update(this);
-	}
+	if (m_imguiManager) { m_imguiManager->update(this); }
 #endif
-
-
 }
 
 TUFEngine::~TUFEngine() {

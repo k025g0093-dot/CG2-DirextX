@@ -20,6 +20,7 @@ public:
     template<typename T, typename... Args>
     T* AddComponent(Args&&... args) {
         T* comp = new T(std::forward<Args>(args)...);
+        comp->entity = this;
         m_components.push_back(comp);
         return comp;
     }

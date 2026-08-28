@@ -17,6 +17,10 @@ public:
     Entity* DuplicateEntity(Entity* src);
     const std::vector<std::unique_ptr<Entity>>& GetEntities() const { return m_entities; }
     bool isSelected;
+
+    static constexpr float kFixedTimeStep = 1.0f / 60.0f;
+    static constexpr int   kMaxFixedSteps = 5;
+
 private:
     EntityManager() = default;
     ~EntityManager() = default;
@@ -24,4 +28,7 @@ private:
     EntityManager& operator=(const EntityManager&) = delete;
 
     std::vector<std::unique_ptr<Entity>> m_entities;
+    float m_accumlator = 0.0f;
+
 };
+
