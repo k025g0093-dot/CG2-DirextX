@@ -2,9 +2,9 @@
 using Vortice.XInput;
 
 // ==============================================
-// Player スクリプトテンプレート
+// tayanaoyu スクリプトテンプレート
 // ==============================================
-// このクラスはC++側から「Player」という名前で呼び出されます。
+// このクラスはC++側から「tayanaoyu」という名前で呼び出されます。
 // Update() が毎フレーム呼ばれるので、ここにキャラクターの挙動を書いてください。
 //
 // 使えるAPI一覧:
@@ -14,7 +14,7 @@ using Vortice.XInput;
 //   ゲームパッド(任意のボタン)     → Gamepad.IsButtonDown(0x1000 のようなビットマスク値)
 //   ゲームパッド(スティック等の生値) → Gamepad.GetKeystate() でState構造体を直接取得
 // ==============================================
-public class Player : Templet
+public class tayanaoyu : Templet
 {
     // ゲーム開始時に1回だけ呼ばれます。初期化処理をここに書いてください。
     public override void OnStart() { }
@@ -68,7 +68,7 @@ public class Player : Templet
 
     public override void InPostion(ref float x, ref float y, ref float z, float dt)
     {
-        float speed = 5.0f;
+        float speed = 10.0f;
 
         if (IsKeyDown(ConsoleKey.W)) z += speed * dt;
         if (IsKeyDown(ConsoleKey.S)) z -= speed * dt;

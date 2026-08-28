@@ -6,4 +6,7 @@ public:
     void Update() override {
         OutputDebugStringA("LearnComponent::Update called\n");
     }
+    Component* Clone() const override {
+        return new LearnComponent();
+    }
 };

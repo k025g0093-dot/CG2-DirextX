@@ -1,59 +1,59 @@
 {
     "objects": [
         {
-            "displayName": "player",
+            "displayName": "resources//suzanne.obj",
             "modelPath": "resources//suzanne.obj",
             "obb": {
                 "center": [
-                    -3.5199990272521973,
-                    0.0,
-                    0.0
+                    -0.64000004529953,
+                    10.686697959899902,
+                    -0.40000003576278687
                 ],
                 "orientationX": [
-                    -0.9972813129425049,
-                    -1.814978077163687e-06,
-                    0.07368871569633484
-                ],
-                "orientationY": [
-                    -1.971602614503354e-06,
                     1.0,
-                    -2.0527486412902363e-06
-                ],
-                "orientationZ": [
-                    -0.07368871569633484,
-                    -2.1924524844507687e-06,
-                    -0.9972813129425049
-                ],
-                "size": [
-                    0.0,
                     0.0,
                     0.0
+                ],
+                "orientationY": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "orientationZ": [
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "size": [
+                    2.288673162460327,
+                    1.6478440761566162,
+                    1.4255151748657227
                 ]
             },
             "position": [
-                -3.5199990272521973,
-                0.0,
-                0.0
+                -0.64000004529953,
+                10.686697959899902,
+                -0.40000003576278687
             ],
             "rotation": [
-                -3.1415905952453613,
-                -0.07375556975603104,
-                -3.1415908336639404
+                0.0,
+                -0.0,
+                0.0
             ],
             "scale": [
-                0.9999999403953552,
-                1.0,
-                0.9999999403953552
+                1.6740003824234009,
+                1.6740003824234009,
+                1.6740003824234009
             ],
             "scriptName": "PlayerController"
         },
         {
-            "displayName": "",
-            "modelPath": "resources//multiMesh.obj",
+            "displayName": "resources/asset\\terrain/terrain.obj",
+            "modelPath": "resources/asset\\terrain/terrain.obj",
             "obb": {
                 "center": [
                     0.0,
-                    0.0,
+                    1.5006054639816284,
                     0.0
                 ],
                 "orientationX": [
@@ -72,9 +72,9 @@
                     1.0
                 ],
                 "size": [
-                    0.0,
-                    0.0,
-                    0.0
+                    10.0,
+                    1.5006054639816284,
+                    10.0
                 ]
             },
             "position": [
@@ -94,8 +94,8 @@
             ]
         },
         {
-            "displayName": "",
-            "modelPath": "resources/asset\\terrain/terrain.obj",
+            "displayName": "resources/asset\\cube/cube.obj",
+            "modelPath": "resources/asset\\cube/cube.obj",
             "obb": {
                 "center": [
                     0.0,
@@ -118,9 +118,9 @@
                     1.0
                 ],
                 "size": [
-                    0.0,
-                    0.0,
-                    0.0
+                    1.0,
+                    1.0,
+                    1.0
                 ]
             },
             "position": [

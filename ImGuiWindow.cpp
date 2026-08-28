@@ -29,6 +29,13 @@ bool ImGuiUIWindow::begin(std::string name, ImGuiWindowFlags flags)
 {
 #ifdef USE_IMGUI
 	if (!show) return false;
+
+	// 前フレームで制限範囲外に出ていたら位置を矯正
+	if (m_needsClamp) {
+		ImGui::SetNextWindowPos(m_nextPos, ImGuiCond_Always);
+		m_needsClamp = false;
+	}
+
 	return ImGui::Begin(name.c_str(), &show, flags);
 #else
 	return false;
@@ -40,6 +47,18 @@ bool ImGuiUIWindow::begin(std::string name, ImGuiWindowFlags flags)
 void ImGuiUIWindow::end()
 {
 #ifdef USE_IMGUI
+	if (m_enableClamp) {
+		ImVec2 pos = ImGui::GetWindowPos();
+		ImVec2 size = ImGui::GetWindowSize();
+		ImVec2 clamped;
+		clamped.x = (std::max)(m_clampMin.x, (std::min)(pos.x, m_clampMax.x - size.x));
+		clamped.y = (std::max)(m_clampMin.y, (std::min)(pos.y, m_clampMax.y - size.y));
+		if (clamped.x != pos.x || clamped.y != pos.y) {
+			m_nextPos = clamped;
+			m_needsClamp = true;
+		}
+	}
+
 	ImGui::End();
 #endif
 }
@@ -224,7 +243,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
 
-	ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+	ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	if (ImGuizmo::IsOver()) {
 		viewportFlags |= ImGuiWindowFlags_NoMove;
 	}
@@ -264,15 +283,14 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			if (obj->isSelected) { hasEntitySelection = true; break; }
 		}
 
+		ImGuizmo::BeginFrame();
+		ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+		ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
+
 		if (selectedLight >= 1 && selectedLight < LightManager::MAX_LIGHTS) {
 			// 🌟ライトのギズモ操作
-			ImGuizmo::BeginFrame();
-			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
-
 			LightData light = lm->GetLight(selectedLight);
 
-			// 位置だけを持つアフィン行列を作る（回転・スケールは単位のまま）
 			Matrix4x4 lightTransform = MakeAffineMatrix(
 				{ 1.0f, 1.0f, 1.0f },
 				{ 0.0f, 0.0f, 0.0f },
@@ -282,7 +300,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			if (ImGuizmo::Manipulate(
 				&engine->GetViewMatrix().m[0][0],
 				&engine->GetProjectionMatrix().m[0][0],
-				ImGuizmo::TRANSLATE, // ライトは移動だけできれば十分
+				ImGuizmo::TRANSLATE,
 				ImGuizmo::LOCAL,
 				&lightTransform.m[0][0]
 			)) {
@@ -294,12 +312,6 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		}
 		else if (hasEntitySelection) {
 			// 🌟既存のEntity用ギズモ処理
-			ImGuizmo::BeginFrame();
-			ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-
-			// 領域の設定（これは imageScreenPos で正しい）
-			ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
-
 			constexpr float kDegToRad = 3.1415926535f / 180.0f;
 
 			for (int i = 0; i < (int)objects.size(); i++) {
@@ -355,7 +367,8 @@ void ImGuiPlayViewportWindow::update(TUFEngine* engine) {
 
 	if (ImGui::Begin("プレイビューポート", nullptr,
 		ImGuiWindowFlags_NoScrollbar |
-		ImGuiWindowFlags_NoScrollWithMouse)) {
+		ImGuiWindowFlags_NoScrollWithMouse |
+		ImGuiWindowFlags_NoBringToFrontOnFocus)) {
 
 		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
 
@@ -399,6 +412,18 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 		for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
 			if (!entity->isSelected) continue;
+
+			if (ImGui::Button("複製")) {
+				Entity* selected = nullptr;
+				for (auto& e : EntityManager::GetInstance()->GetEntities()) {
+					if (e->isSelected) { selected = e.get(); break; }
+				}
+				if (selected) {
+					EntityManager::GetInstance()->DuplicateEntity(selected);
+					ModelManager::GetInstance()->SaveToFile();
+				}
+				break; // イテレータ無効化を回避
+			}
 
 			if (ImGui::CollapsingHeader("トランスフォーム")) {
 				ImGui::DragFloat3("位置", &entity->transform.position.x, 0.1f);
@@ -460,6 +485,21 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						}
 
 					}
+					else if (auto* rigidbody = dynamic_cast<Rigidbody*>(c)) {
+						ImGui::Text("rigidbodyコンポーネントです");
+
+
+
+					}
+					else if (auto* chColloder = dynamic_cast<ConvexHullCollider*>(c)) {
+						ImGui::Text("コライダーのコンポーネントです");
+
+
+					}
+					else if (auto* sphereCollider = dynamic_cast<SphereCollider*>(c)) {
+						ImGui::Text("球体のコライダーのコンポーネントです");
+
+					}
 				}
 			}
 
@@ -470,11 +510,24 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 			if (ImGui::BeginPopup("AddComponentPopup")) {
 				if (!entity->GetComponent<MeshFilter>() && ImGui::MenuItem("MeshFilter"))
 					entity->AddComponent<MeshFilter>();
+
 				if (!entity->GetComponent<LearnComponent>() && ImGui::MenuItem("LearnComponent"))
 					entity->AddComponent<LearnComponent>();
 
 				if (!entity->GetComponent<GameScript>() && ImGui::MenuItem("C#スクリプト"))
 					entity->AddComponent<GameScript>();
+
+				if (!entity->GetComponent<Rigidbody>() && ImGui::MenuItem("rigidbodyコンポーネント"))
+					entity->AddComponent<Rigidbody>();
+
+
+				if(!entity->GetComponent<ConvexHullCollider>()&& ImGui::MenuItem("コベクスコライダーコンポーネント"))
+					entity->AddComponent<ConvexHullCollider>();
+
+				if(!entity->GetComponent<SphereCollider>() && ImGui::MenuItem("スフィアコライダーコンポーネント"))
+					entity->AddComponent<SphereCollider>();
+
+
 
 				ImGui::EndPopup();
 			}

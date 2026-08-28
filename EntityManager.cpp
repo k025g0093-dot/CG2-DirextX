@@ -43,3 +43,15 @@ void EntityManager::UpdateAll(float dt) {
 void EntityManager::Clear() {
     m_entities.clear();
 }
+
+Entity* EntityManager::DuplicateEntity(Entity* src) {
+    auto* entity = CreateEntity(src->name + " (コピー)");
+    entity->displayName = src->displayName + " (コピー)";
+    strncpy_s(entity->displayNameBuf, entity->displayName.c_str(), sizeof(entity->displayNameBuf));
+    entity->transform = src->transform;
+    entity->obb = src->obb;
+    for (auto* c : src->GetComponents()) {
+        entity->m_components.push_back(c->Clone());
+    }
+    return entity;
+}

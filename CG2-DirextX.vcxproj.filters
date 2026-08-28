@@ -112,6 +112,12 @@
     <Filter Include="ソース ファイル\TUFengine\エンジンの基礎部分\陰に関する処理">
       <UniqueIdentifier>{6d2275df-3644-4d82-a1da-89891eaa7889}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\TUFengine\GUIなどの外部ライブラリ\jolt（最強の物理エンジン）">
+      <UniqueIdentifier>{4243df2e-cc0b-40dc-9eb0-c2f0cf5a1dd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント">
+      <UniqueIdentifier>{cfafe421-0a13-4713-a9e1-4cdae5c6a4ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -257,6 +263,9 @@
     </ClCompile>
     <ClCompile Include="ShadowMapBuffer.cpp">
       <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\陰に関する処理</Filter>
+    </ClCompile>
+    <ClCompile Include="FacadeJolt.cpp">
+      <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\jolt（最強の物理エンジン）</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -462,10 +471,39 @@
     <ClInclude Include="ShadowMapBuffer.h">
       <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\陰に関する処理</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="JoltAllinclude.h">
+      <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\jolt（最強の物理エンジン）</Filter>
+    </ClInclude>
+    <ClInclude Include="FacadeJolt.h">
+      <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\jolt（最強の物理エンジン）</Filter>
+    </ClInclude>
+    <ClInclude Include="Collider.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの</Filter>
+    </ClInclude>
+    <ClInclude Include="BoxCollider.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
+    </ClInclude>
+    <ClInclude Include="SphereCollider.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
+    </ClInclude>
+    <ClInclude Include="ConvexHullCollider.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
+    </ClInclude>
+    <ClInclude Include="Rigidbody.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Object3d.hlsli" />
     <None Include="GpuDrivenObject.hlsli" />
     <None Include="Light.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TUFEngine.rc">
+      <Filter>リソース ファイル</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 #pragma once
 #include "AllIncludeHeder.h"
+#include "FacadeJolt.h"
 #include "Transform.h"
 #include <wrl.h>
 #include  <algorithm>
@@ -123,7 +124,9 @@ public:
 	Matrix4x4 GetProjectionMatrix() { return m_camera.GetProjectionMatrix((float)width, (float)height); }
 
 	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix; }
-	void SetViewProjectionMatrix(const Matrix4x4& vp) { viewProjectionMatrix = vp; }
+	// 外部からビュー行列を設定する場合（デバッグカメラなど）。PreDrawでの自動計算をスキップする
+	void SetViewProjectionMatrix(const Matrix4x4& vp) { viewProjectionMatrix = vp; m_useCustomViewProjection = true; }
+	void ResetViewProjectionMatrix() { m_useCustomViewProjection = false; }
 	void SetDirectionalLightResource(ID3D12Resource* lightResource) { m_directionalLightResource = lightResource; }
 	const Vector2& GetSpriteUVScale() const { return m_spriteUVScale; }
 	const Vector2& GetSpriteUVTranslate() const { return m_spriteUVTranslate; }
@@ -233,6 +236,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
 
 	Matrix4x4   viewProjectionMatrix;
+	bool        m_useCustomViewProjection = false;
 	Vector2     m_spriteUVScale = { 1.0f, 1.0f };
 	Vector2     m_spriteUVTranslate = { 0.0f, 0.0f };
 	float       m_spriteUVRotate = 0.0f;

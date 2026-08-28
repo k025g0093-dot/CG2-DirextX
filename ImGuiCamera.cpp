@@ -1,4 +1,5 @@
 #include "ImGuiCamera.h"
+#include "DebugCamer.h"
 #include "TUFEngine.h"
 
 void ImGuiCamera::update(TUFEngine* engine) {
@@ -6,6 +7,13 @@ void ImGuiCamera::update(TUFEngine* engine) {
     if (!show || !m_transform) return;
 
     if (begin("カメラ")) {
+        // デバッグカメラモードの切り替え（'1'キーと同じ）
+        bool isDebug = DebugCamer::GetInstance().IsDebug();
+        if (ImGui::Checkbox("デバッグカメラ", &isDebug)) {
+            DebugCamer::GetInstance().SetDebug(isDebug);
+        }
+        ImGui::Separator();
+
         ImGui::DragFloat3("カメラ位置", &m_transform->translate.x, 0.1f);
         ImGui::DragFloat3("カメラ回転", &m_transform->rotate.x, 0.01f);
 

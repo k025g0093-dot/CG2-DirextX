@@ -138,6 +138,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	ShadowMapBuffer::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get());
 	m_lightVPBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Matrix4x4)));
 
+	FacadeJolt::GetInstance()->Init();
+
 	auto sphere = std::make_unique<Sphere>();
 	sphere->InitSphere(this);
 	m_temporarySpheres = std::move(sphere);
@@ -190,6 +192,21 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 
 			Create3DObjectOBB obbCreator;
 			entity->obb = obbCreator.CreateOBBForModel(*mesh, t.position);
+
+			// localAABB を頂点データから計算（RenderGpuDrivenALLRequests での上書き対策）
+			const Vertex* verts = mesh->GetVertexData();
+			UINT vCount = mesh->GetVertexCount();
+			Vector3 aabbMin = { FLT_MAX, FLT_MAX, FLT_MAX };
+			Vector3 aabbMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+			for (UINT j = 0; j < vCount; j++) {
+				aabbMin.x = (std::min)(aabbMin.x, verts[j].position.x);
+				aabbMin.y = (std::min)(aabbMin.y, verts[j].position.y);
+				aabbMin.z = (std::min)(aabbMin.z, verts[j].position.z);
+				aabbMax.x = (std::max)(aabbMax.x, verts[j].position.x);
+				aabbMax.y = (std::max)(aabbMax.y, verts[j].position.y);
+				aabbMax.z = (std::max)(aabbMax.z, verts[j].position.z);
+			}
+			entity->localAABB = { aabbMin, aabbMax };
 
 			//スクリプトがある場合それらを割り当てる
 			if (object.contains("scriptName")) {
@@ -263,6 +280,8 @@ void TUFEngine::InitializeImGui(HWND hwnd) {
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
+
 	ImGui::StyleColorsDark();
 
 	// カスタムカラースキーム
@@ -549,9 +568,11 @@ void TUFEngine::PreDraw() {
 	float renderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
 	float renderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
 
-	Matrix4x4 view = m_camera.GetViewMatrix();
-	Matrix4x4 proj = m_camera.GetProjectionMatrix(renderWidth, renderHeight);
-	viewProjectionMatrix = Multiply(view, proj);
+	if (!m_useCustomViewProjection) {
+		Matrix4x4 view = m_camera.GetViewMatrix();
+		Matrix4x4 proj = m_camera.GetProjectionMatrix(renderWidth, renderHeight);
+		viewProjectionMatrix = Multiply(view, proj);
+	}
 
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
@@ -634,6 +655,21 @@ void TUFEngine::PostDraw() {
 		commandList->SetDescriptorHeaps(1, lineHeaps);
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandleLine = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 		commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &dsvHandleLine);
+
+		float lineRenderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
+		float lineRenderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
+		D3D12_VIEWPORT lineViewport{};
+		lineViewport.Width = lineRenderWidth;
+		lineViewport.Height = lineRenderHeight;
+		lineViewport.MinDepth = 0.0f;
+		lineViewport.MaxDepth = 1.0f;
+		commandList->RSSetViewports(1, &lineViewport);
+
+		D3D12_RECT lineScissorRect{};
+		lineScissorRect.right = static_cast<LONG>(lineRenderWidth);
+		lineScissorRect.bottom = static_cast<LONG>(lineRenderHeight);
+		commandList->RSSetScissorRects(1, &lineScissorRect);
+
 		m_line->Draw(commandList.Get(), viewProjectionMatrix);
 	}
 
@@ -772,10 +808,15 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 
 		Matrix4x4 rotMat = Multiply(Multiply(MakeRotateXMatrix(obj.transform.rotation.x), MakeRotateYMatrix(obj.transform.rotation.y)), MakeRotateZMatrix(obj.transform.rotation.z));
 
+		Vector3 scaledLocalCenter = {
+			localCenter.x * obj.transform.scale.x,
+			localCenter.y * obj.transform.scale.y,
+			localCenter.z * obj.transform.scale.z
+		};
 		Vector3 rotatedCenter = {
-			localCenter.x * rotMat.m[0][0] + localCenter.y * rotMat.m[1][0] + localCenter.z * rotMat.m[2][0],
-			localCenter.x * rotMat.m[0][1] + localCenter.y * rotMat.m[1][1] + localCenter.z * rotMat.m[2][1],
-			localCenter.x * rotMat.m[0][2] + localCenter.y * rotMat.m[1][2] + localCenter.z * rotMat.m[2][2]
+			scaledLocalCenter.x * rotMat.m[0][0] + scaledLocalCenter.y * rotMat.m[1][0] + scaledLocalCenter.z * rotMat.m[2][0],
+			scaledLocalCenter.x * rotMat.m[0][1] + scaledLocalCenter.y * rotMat.m[1][1] + scaledLocalCenter.z * rotMat.m[2][1],
+			scaledLocalCenter.x * rotMat.m[0][2] + scaledLocalCenter.y * rotMat.m[1][2] + scaledLocalCenter.z * rotMat.m[2][2]
 		};
 
 		obj.obb.center = obj.transform.position + rotatedCenter;
@@ -808,10 +849,15 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 			Multiply(MakeRotateXMatrix(entity->transform.rotation.x),
 				MakeRotateYMatrix(entity->transform.rotation.y)),
 			MakeRotateZMatrix(entity->transform.rotation.z));
+		Vector3 scaledLocalCenter = {
+			localCenter.x * entity->transform.scale.x,
+			localCenter.y * entity->transform.scale.y,
+			localCenter.z * entity->transform.scale.z
+		};
 		Vector3 rotatedCenter = {
-			localCenter.x * rotMat.m[0][0] + localCenter.y * rotMat.m[1][0] + localCenter.z * rotMat.m[2][0],
-			localCenter.x * rotMat.m[0][1] + localCenter.y * rotMat.m[1][1] + localCenter.z * rotMat.m[2][1],
-			localCenter.x * rotMat.m[0][2] + localCenter.y * rotMat.m[1][2] + localCenter.z * rotMat.m[2][2]
+			scaledLocalCenter.x * rotMat.m[0][0] + scaledLocalCenter.y * rotMat.m[1][0] + scaledLocalCenter.z * rotMat.m[2][0],
+			scaledLocalCenter.x * rotMat.m[0][1] + scaledLocalCenter.y * rotMat.m[1][1] + scaledLocalCenter.z * rotMat.m[2][1],
+			scaledLocalCenter.x * rotMat.m[0][2] + scaledLocalCenter.y * rotMat.m[1][2] + scaledLocalCenter.z * rotMat.m[2][2]
 		};
 		entity->obb.center = entity->transform.position + rotatedCenter;
 		entity->obb.orientations[0] = { rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2] };
@@ -999,7 +1045,7 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	}
 
 	Matrix4x4 lightView = MakeLookAtMatrix(lightPos, { 0.0f, 0.0f, 0.0f }, upVector);
-	Matrix4x4 lightProj = MakeOrthographicMatrix(-20.0f, 20.0f, 20.0f, -20.0f, 0.1f, 100.0f);
+	Matrix4x4 lightProj = MakeOrthographicMatrix(-50.0f, 50.0f, 50.0f, -50.0f, 0.1f, 100.0f);
 	Matrix4x4 lightVP = Multiply(lightView, lightProj);
 	
 
@@ -1033,14 +1079,17 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	shadowBuf->TransitionToSrv(commandList.Get());
 
 	// ビューポート復元（PreDrawと同じ値）
+	const float sceneRenderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
+	const float sceneRenderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
+
 	D3D12_VIEWPORT mainVP{};
-	mainVP.Width = m_currentRenderWidth;
-	mainVP.Height = m_currentRenderHeight;
+	mainVP.Width = sceneRenderWidth;
+	mainVP.Height = sceneRenderHeight;
 	mainVP.MaxDepth = 1.0f;
 	commandList->RSSetViewports(1, &mainVP);
 	D3D12_RECT mainRect{};
-	mainRect.right = (LONG)m_currentRenderWidth;
-	mainRect.bottom = (LONG)m_currentRenderHeight;
+	mainRect.right = (LONG)sceneRenderWidth;
+	mainRect.bottom = (LONG)sceneRenderHeight;
 	commandList->RSSetScissorRects(1, &mainRect);
 
 	// 🌟 ここが抜けていた：メインシーン用のレンダーターゲットに戻す

@@ -50,7 +50,6 @@ public class PlayerController : Templet
     }
 
     // 座標をC++側と同期するための関数です。
-    // 追記：この関数をアップデートにはもっていかないでください。
     // x, y, z は「ref」なので、この関数内で書き換えた値がそのままC++側に反映されます。
     // dt (デルタタイム) は前フレームからの経過時間(秒)なので、速度計算に使ってください。
     //
@@ -69,7 +68,7 @@ public class PlayerController : Templet
 
     public override void InPostion(ref float x, ref float y, ref float z, float dt)
     {
-        float speed = 5.0f;
+        float speed = 15.0f;
 
         if (IsKeyDown(ConsoleKey.W)) z += speed * dt;
         if (IsKeyDown(ConsoleKey.S)) z -= speed * dt;
@@ -77,7 +76,7 @@ public class PlayerController : Templet
         if (IsKeyDown(ConsoleKey.D)) x += speed * dt;
 
         var state = Gamepad.GetKeystate();
-        if (state.HasValue)
+        if (state != null)
         {
             var gp = state.Value.Gamepad;
             const float deadZone = 8000f;
@@ -87,12 +86,12 @@ public class PlayerController : Templet
                 z -= (gp.LeftThumbY / 32768f) * speed * dt;
 
             if (Gamepad.IsA() || IsKeyTriger(ConsoleKey.Spacebar))
-                y += speed * dt;
+                y = 13.0f;
         }
         else
         {
             if (IsKeyTriger(ConsoleKey.Spacebar))
-                y += speed * dt;
+                y = 3.0f;
         }
     }
 }

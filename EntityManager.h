@@ -14,7 +14,7 @@ public:
     void DestroyEntity(Entity* entity);
     void UpdateAll(float dt);
     void Clear();
-
+    Entity* DuplicateEntity(Entity* src);
     const std::vector<std::unique_ptr<Entity>>& GetEntities() const { return m_entities; }
     bool isSelected;
 private:
