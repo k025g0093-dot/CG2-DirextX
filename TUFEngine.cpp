@@ -6,6 +6,7 @@
 #include "EntityManager.h"
 #include "MeshFilter.h"
 #include "Line.h" 
+#include "ScriptRuntime.h"
 
 TUFEngine* TUFEngine::s_instance = nullptr;
 
@@ -240,6 +241,7 @@ void TUFEngine::OnUpdate() {
 
 	Input::Update();
 	EntityManager::GetInstance()->UpdateAll(dt);
+	ScriptRuntime::GetInstance()->Tick(dt);
 #ifdef USE_IMGUI
 	if (m_imguiManager) { m_imguiManager->update(this); }
 #endif

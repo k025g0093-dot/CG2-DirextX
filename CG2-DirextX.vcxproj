@@ -110,6 +110,7 @@
     <ClCompile Include="EntityManager.cpp" />
     <ClCompile Include="FacadeJolt.cpp" />
     <ClCompile Include="FBXLoader.cpp" />
+    <ClCompile Include="GameScript.cpp" />
     <ClCompile Include="GpuDrivenRenderer.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />
     <ClCompile Include="externals\imgui\ImGuizmo.cpp" />
@@ -135,6 +136,7 @@
     <ClCompile Include="MonoBehaviour.cpp" />
     <ClCompile Include="PSO.cpp" />
     <ClCompile Include="ResourceObject.cpp" />
+    <ClCompile Include="ScriptRuntime.cpp" />
     <ClCompile Include="ShadowMapBuffer.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="Sphere.cpp" />
@@ -272,6 +274,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceObject.h" />
     <ClInclude Include="Rigidbody.h" />
+    <ClInclude Include="ScriptRuntime.h" />
     <ClInclude Include="ShadowMapBuffer.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Sphere.h" />

@@ -1,76 +1,136 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.IO;
 using System.IO.Pipes;
-using System.Threading.Tasks;
-using Vortice.XInput;
-using System.Text;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Linq;
 
 namespace GameScriptC
 {
+
+
+
     public class MyScript
     {
         [DllImport("kernel32.dll")]
         static extern bool AllocConsole();
 
+        const string PipeName = "GameScriptPipe_Engine";
+
+        static readonly Dictionary<int, Templet> s_instances = new();
+
         public static void Main(string[] args)
         {
             AllocConsole();
-            Console.WriteLine("C# Start");
-            string pipeName = "GameScriptPipe_" + args[0];
-            var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut);
+            Console.WriteLine("=== GameScript Runtime ===");
+
+            var server = new NamedPipeServerStream(PipeName, PipeDirection.InOut);
             Console.WriteLine("接続待機中...");
             server.WaitForConnection();
             Console.WriteLine("接続されました");
-            HandleEntity(server);
+
+            try { Loop(server); }
+            catch (EndOfStreamException) { Console.WriteLine("エンジンが切断しました"); }
+            catch (Exception ex) { Console.WriteLine("エラー: " + ex); }
         }
 
-        static void HandleEntity(NamedPipeServerStream pipe)
+        static void Loop(NamedPipeServerStream pipe)
         {
-            byte[] nameLenBuf = ReadExactly(pipe, 4);
-            int nameLen = BitConverter.ToInt32(nameLenBuf, 0);
-            byte[] nameBuffer = ReadExactly(pipe, nameLen);
-
-            string scriptName = Encoding.UTF8.GetString(nameBuffer, 0, nameLen).TrimEnd('\0');
-            Console.WriteLine($"Script:{scriptName}");
-
-            Type type = Assembly.GetExecutingAssembly().GetType(scriptName);
-            if (type == null)
-            {
-                Console.WriteLine($"Script '{scriptName}' not found. Loaded types:");
-                foreach (var t in Assembly.GetExecutingAssembly().GetTypes())
-                    Console.WriteLine($"  {t.FullName}");
-                return;
-            }
-            Templet script = (Templet)Activator.CreateInstance(type);
-            script.OnStart();
-
             while (true)
             {
-                byte[] lenBuf = ReadExactly(pipe, 4);
-                int len = BitConverter.ToInt32(lenBuf, 0);
+                int len = BitConverter.ToInt32(ReadExactly(pipe, 4), 0);
                 byte[] buf = ReadExactly(pipe, len);
+                int o = 0;
 
-                float x = BitConverter.ToSingle(buf, 0);
-                float y = BitConverter.ToSingle(buf, 4);
-                float z = BitConverter.ToSingle(buf, 8);
-                float dt = BitConverter.ToSingle(buf, 12);
+                int msgType = ReadI32(buf, ref o);
+                if (msgType != 1) continue;
 
-                script.InPostion(ref x, ref y, ref z, dt);
+                // ── spawn ──
+                int spawnCount = ReadI32(buf, ref o);
+                for (int i = 0; i < spawnCount; i++)
+                {
+                    int id = ReadI32(buf, ref o);
+                    int nameLen = ReadI32(buf, ref o);
+                    string name = Encoding.UTF8.GetString(buf, o, nameLen).TrimEnd('\0');
+                    o += nameLen;
 
-                byte[] outBuf = new byte[12];
-                Buffer.BlockCopy(BitConverter.GetBytes(x), 0, outBuf, 0, 4);
-                Buffer.BlockCopy(BitConverter.GetBytes(y), 0, outBuf, 4, 4);
-                Buffer.BlockCopy(BitConverter.GetBytes(z), 0, outBuf, 8, 4);
+                    Type? t = Assembly.GetExecutingAssembly().GetType(name)
+                                ?? Assembly.GetExecutingAssembly()
+                                .GetTypes()
+                                .FirstOrDefault(type => type.Name == name);
 
-                pipe.Write(BitConverter.GetBytes(outBuf.Length), 0, 4);
-                pipe.Write(outBuf, 0, outBuf.Length);
+                    if (t == null)
+                    {
+                        Console.WriteLine($"[警告] クラス '{name}' が見つかりません");
+                        continue;
+                    }
+                    var inst = (Templet)Activator.CreateInstance(t);
+                    inst.OnStart();
+                    s_instances[id] = inst;
+                    Console.WriteLine($"spawn  id={id}  {name}");
+                }
 
+                // ── destroy ──
+                int destroyCount = ReadI32(buf, ref o);
+                for (int i = 0; i < destroyCount; i++)
+                {
+                    int id = ReadI32(buf, ref o);
+                    s_instances.Remove(id);
+                    Console.WriteLine($"destroy id={id}");
+                }
+
+                // ── tick ──
+                int tickCount = ReadI32(buf, ref o);
+                var outBuf = new List<byte>();
+                var cmds = new List<byte>();
+                int cmdCount = 0;
+
+                for (int i = 0; i < tickCount; i++)
+                {
+                    int id = ReadI32(buf, ref o);
+                    float px = ReadF32(buf, ref o);
+                    float py = ReadF32(buf, ref o);
+                    float pz = ReadF32(buf, ref o);
+                    float vx = ReadF32(buf, ref o);
+                    float vy = ReadF32(buf, ref o);
+                    float vz = ReadF32(buf, ref o);
+                    float dt = ReadF32(buf, ref o);
+                    int flags = ReadI32(buf, ref o);
+
+                    if (!s_instances.TryGetValue(id, out var script)) continue;
+
+                    float x = px, y = py, z = pz;
+                    script.Update();
+                    script.InPostion(ref x, ref y, ref z, dt);
+
+                    // mode 0 = SetPosition
+                    cmds.AddRange(BitConverter.GetBytes(id));
+                    cmds.AddRange(BitConverter.GetBytes(0));
+                    cmds.AddRange(BitConverter.GetBytes(x));
+                    cmds.AddRange(BitConverter.GetBytes(y));
+                    cmds.AddRange(BitConverter.GetBytes(z));
+                    cmdCount++;
+                }
+
+                // ── events（今は 0 件）──
+                int eventCount = ReadI32(buf, ref o);
+                for (int i = 0; i < eventCount; i++) { /* ステップCで使う */ }
+
+                // ── 返信 ──
+                outBuf.AddRange(BitConverter.GetBytes(cmdCount));
+                outBuf.AddRange(cmds);
+
+                pipe.Write(BitConverter.GetBytes(outBuf.Count), 0, 4);
+                pipe.Write(outBuf.ToArray(), 0, outBuf.Count);
+                pipe.Flush();
             }
-            pipe.Close();
         }
-        // 指定バイト数をすべて読み切るまで待つ（部分読み対策）
+
+        static int ReadI32(byte[] b, ref int o) { int v = BitConverter.ToInt32(b, o); o += 4; return v; }
+        static float ReadF32(byte[] b, ref int o) { float v = BitConverter.ToSingle(b, o); o += 4; return v; }
+
         static byte[] ReadExactly(NamedPipeServerStream pipe, int count)
         {
             byte[] buf = new byte[count];
@@ -78,13 +138,11 @@ namespace GameScriptC
             while (read < count)
             {
                 int n = pipe.Read(buf, read, count - read);
-                if (n <= 0)
-                    throw new EndOfStreamException("Pipe closed");
+                if (n <= 0) throw new EndOfStreamException("Pipe closed");
                 read += n;
             }
             return buf;
         }
-
     }
 }
 
@@ -94,13 +152,8 @@ public static class KeyboardHelper
     static extern short GetAsyncKeyState(int vKey);
 
     public static bool IsKeyDown(ConsoleKey key)
-    {
-        return (GetAsyncKeyState((int)key) & 0x8000) != 0;
-    }
+        => (GetAsyncKeyState((int)key) & 0x8000) != 0;
 
     public static bool IsKeyPressed(ConsoleKey key)
-    {
-        return (GetAsyncKeyState((int)key) & 0x0001) != 0;
-    }
-}
+        => (GetAsyncKeyState((int)key) & 0x0001) != 0;
 }

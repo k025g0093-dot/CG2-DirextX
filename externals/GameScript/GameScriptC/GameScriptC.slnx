@@ -1,1 +1,3 @@
-<Solution />
+<Solution>
+  <Project Path="GameScriptC/GameScriptC.csproj" />
+</Solution>

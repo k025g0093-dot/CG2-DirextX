@@ -267,6 +267,12 @@
     <ClCompile Include="FacadeJolt.cpp">
       <Filter>ソース ファイル\TUFengine\GUIなどの外部ライブラリ\jolt（最強の物理エンジン）</Filter>
     </ClCompile>
+    <ClCompile Include="ScriptRuntime.cpp">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
+    </ClCompile>
+    <ClCompile Include="GameScript.cpp">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.VS.hlsl" />
@@ -493,6 +499,9 @@
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
     </ClInclude>
     <ClInclude Include="Rigidbody.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptRuntime.h">
       <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの\colliderのコンポーネント</Filter>
     </ClInclude>
   </ItemGroup>

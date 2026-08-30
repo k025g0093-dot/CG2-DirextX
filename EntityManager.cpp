@@ -1,7 +1,7 @@
 #include "EntityManager.h"
 #include "TUFEngine.h"
 #include "MonoBehaviour.h"
-
+#include "FacadeJolt.h"
 Entity* EntityManager::CreateEntity(const std::string& name) {
 	auto entity = std::make_unique<Entity>();
 	entity->name = name;
@@ -25,42 +25,41 @@ void EntityManager::DestroyEntity(Entity* entity) {
 
 void EntityManager::UpdateAll(float dt) {
 
-	for (auto& entity : m_entities) {
-		for (auto* c : entity->m_components) {
-			if (!c)continue;
-			if (auto* mb = dynamic_cast<MonoBehaviour*>(c)) {
-				if (!mb->m_isStarted)mb->Start();
-			}
-		}
-	}
+    // 1. Start
+    for (auto& entity : m_entities) {
+        for (auto* c : entity->m_components) {
+            if (!c) continue;
+            if (auto* mb = dynamic_cast<MonoBehaviour*>(c)) {
+                if (!mb->m_isStarted) mb->Start();
+            }
+        }
+    }
 
-	m_accumlator += dt;
-	int steps = 0;
-	while (m_accumlator >= kFixedTimeStep && steps < kMaxFixedSteps) {
+    // 2. FixedUpdate
+    m_accumlator += dt;
+    int steps = 0;
+    while (m_accumlator >= kFixedTimeStep && steps < kMaxFixedSteps) {
+        FacadeJolt::GetInstance()->Step(kFixedTimeStep);
+        for (auto& entity : m_entities) {
+            for (auto* c : entity->m_components) {
+                if (!c) continue;
+                c->fixedDeltaTime = kFixedTimeStep;
+                c->FixedUpdate();
+            }
+        }
+        m_accumlator -= kFixedTimeStep;
+        ++steps;
+    }
+    if (steps >= kMaxFixedSteps) m_accumlator = 0.0f;
 
-		FacadeJolt::GetInstance()->Step(kFixedTimeStep);
-
-		for (auto& entity : m_entities) {
-			for (auto* c : entity->m_components) {
-				if (!c)continue;
-				c->fixedDeltaTime = kFixedTimeStep;
-				c->FixedUpdate();
-			}
-		}
-		m_accumlator -= kFixedTimeStep;
-		++steps;
-	}
-
-	if (steps >= kMaxFixedSteps)m_accumlator = 0.0f;
-
-	for (auto& entity : m_entities) {
-		for (auto* c : entity->m_components) {
-			if (!c)continue;
-			c->deltaTime = dt;
-			c->Update();
-		}
-	}
-
+    // 3. Update
+    for (auto& entity : m_entities) {
+        for (auto* c : entity->m_components) {
+            if (!c) continue;
+            c->deltaTime = dt;
+            c->Update();
+        }
+    }
 }
 
 void EntityManager::Clear() {
@@ -73,10 +72,10 @@ Entity* EntityManager::DuplicateEntity(Entity* src) {
 	strncpy_s(entity->displayNameBuf, entity->displayName.c_str(), sizeof(entity->displayNameBuf));
 	entity->transform = src->transform;
 	entity->obb = src->obb;
-	for (auto* c : src->GetComponents()) {
-		Component* cloned = c->Clone();
-		cloned->entity = entity;
-		entity->m_components.push_back(c->Clone());
-	}
+    for (auto* c : src->GetComponents()) {
+        Component* cloned = c->Clone();
+        cloned->entity = entity;
+        entity->m_components.push_back(cloned);
+    }
 	return entity;
 }
