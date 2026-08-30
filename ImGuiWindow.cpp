@@ -89,43 +89,45 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 			ImGui::EndMenuBar();
 		}
 
-		// オブジェクト一覧
+		// オブジェクト一覧。クリックで選択、ダブルクリックで名前編集。
 		auto& objects = EntityManager::GetInstance()->GetEntities();
 		for (int i = 0; i < (int)objects.size(); i++) {
 			ImGui::PushID(i);
+			Entity* entity = objects[i].get();
 
-			// オブジェクト名（パスからファイル名のみ抽出）
-			std::string objName = objects[i]->name;
-			size_t sep = objName.find_last_of("/\\");
-			if (sep != std::string::npos) objName = objName.substr(sep + 1);
-			ImGui::Text("%s", objName.c_str());
-			ImGui::SameLine();
+			if (m_renamingEntity == entity) {
+				if (m_focusRenameField) {
+					ImGui::SetKeyboardFocusHere();
+					m_focusRenameField = false;
+				}
 
-			// 表示名バッファ（rename用）
-
-			strncpy_s(objects[i]->displayNameBuf, objects[i]->displayName.c_str(), sizeof(objects[i]->displayNameBuf));
-			if (ImGui::InputText("Model Name", objects[i]->displayNameBuf, sizeof(objects[i]->displayNameBuf))) {
-				objects[i]->displayName = objects[i]->displayNameBuf;
+				const bool submitted = ImGui::InputText(
+					"##EntityName", entity->displayNameBuf, sizeof(entity->displayNameBuf),
+					ImGuiInputTextFlags_EnterReturnsTrue);
+				const bool finished = submitted || ImGui::IsItemDeactivatedAfterEdit();
+				if (finished) {
+					if (entity->displayNameBuf[0] != '\0') {
+						entity->displayName = entity->displayNameBuf;
+					}
+					m_renamingEntity = nullptr;
+				}
 			}
-
-
-			// 選択ボタン
-			if (ImGui::Button("選択")) {
+			else {
+				const std::string& label = entity->displayName.empty() ? entity->name : entity->displayName;
+				if (ImGui::Selectable(label.c_str(), entity->isSelected,
+					ImGuiSelectableFlags_SpanAllColumns)) {
 				for (int j = 0; j < (int)objects.size(); j++) {
 					objects[j]->isSelected = false;
 				}
-				objects[i]->isSelected = true;
-			}
+				entity->isSelected = true;
+				}
 
-			// 選択状態のバッジ表示
-			if (objects[i]->isSelected) {
-				ImGui::SameLine();
-				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[選択中]");
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+					strncpy_s(entity->displayNameBuf, entity->displayName.c_str(), sizeof(entity->displayNameBuf));
+					m_renamingEntity = entity;
+					m_focusRenameField = true;
+				}
 			}
-
-			ImGui::Dummy(ImVec2(0.0f, 6.0f));
-			ImGui::Separator();
-			ImGui::Dummy(ImVec2(0.0f, 6.0f));
 
 			ImGui::PopID();
 		}
@@ -352,6 +354,41 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			}
 			ImGui::EndDragDropTarget();
 		}
+
+		// --- ③ Play操作バー（デバッグ用Viewport内のオーバーレイ） ---
+		const auto playState = EntityManager::GetInstance()->GetPlayState();
+		const char* stateLabel = playState == EntityManager::PlayState::Edit ? "EDIT"
+			: playState == EntityManager::PlayState::Play ? "PLAY"
+			: "PAUSE";
+
+		ImGui::SetCursorScreenPos(ImVec2(imageScreenPos.x + 10.0f, imageScreenPos.y + 10.0f));
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.06f, 0.06f, 0.07f, 0.88f));
+		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 4.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 6.0f));
+		ImGui::BeginChild("##ViewportPlayControls", ImVec2(245.0f, 32.0f), ImGuiChildFlags_Borders);
+		ImGui::TextColored(
+			playState == EntityManager::PlayState::Edit ? ImVec4(0.70f, 0.70f, 0.70f, 1.0f)
+			: ImVec4(0.35f, 0.85f, 0.45f, 1.0f),
+			"%s", stateLabel);
+		ImGui::SameLine();
+		if (ImGui::Button("Play##Viewport", ImVec2(50.0f, 0.0f))
+			&& playState == EntityManager::PlayState::Edit) {
+			engine->StartPlayMode();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button(playState == EntityManager::PlayState::Pause
+			? "Resume##Viewport" : "Pause##Viewport", ImVec2(58.0f, 0.0f))
+			&& playState != EntityManager::PlayState::Edit) {
+			engine->PausePlayMode();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Stop##Viewport", ImVec2(48.0f, 0.0f))
+			&& playState != EntityManager::PlayState::Edit) {
+			engine->StopPlayMode();
+		}
+		ImGui::EndChild();
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor();
 	}
 
 	ImGui::End();
@@ -437,6 +474,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 			for (auto* c : entity->GetComponents()) {
 				const char* typeName = typeid(*c).name();
+				if (dynamic_cast<CameraComponent*>(c)) typeName = "カメラ";
 				if (ImGui::CollapsingHeader(typeName)) {
 					if (auto* mf = dynamic_cast<MeshFilter*>(c)) {
 
@@ -534,6 +572,22 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 							FacadeJolt::GetInstance()->RebuildBody(entity.get());
 						}
 					}
+					else if (auto* camera = dynamic_cast<CameraComponent*>(c)) {
+						if (ImGui::Checkbox("メインカメラ", &camera->isMainCamera)
+							&& camera->isMainCamera) {
+							// Main Camera は同時に1台だけ選べるようにする。
+							for (const auto& otherEntity : EntityManager::GetInstance()->GetEntities()) {
+								if (otherEntity.get() == entity.get()) continue;
+								if (auto* otherCamera = otherEntity->GetComponent<CameraComponent>()) {
+									otherCamera->isMainCamera = false;
+								}
+							}
+						}
+
+						ImGui::DragFloat("視野角(FOV)", &camera->fov, 0.01f, 0.01f, 3.0f);
+						ImGui::DragFloat("Near Clip", &camera->nearClip, 0.01f, 0.01f, camera->farClip);
+						ImGui::DragFloat("Far Clip", &camera->farClip, 1.0f, camera->nearClip, 100000.0f);
+					}
 					else if (auto* box = dynamic_cast<BoxCollider*>(c)) {
 						ImGui::DragFloat3("サイズ（全長）", &box->size.x, 0.05f, 0.01f, 100.0f);
 						ImGui::Checkbox("トリガー（すり抜けて検知だけ）", &box->isTrigger);
@@ -575,6 +629,9 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 				if (!entity->GetComponent<Rigidbody>() && ImGui::MenuItem("rigidbodyコンポーネント"))
 					entity->AddComponent<Rigidbody>();
+
+				if (!entity->GetComponent<CameraComponent>() && ImGui::MenuItem("カメラ"))
+					entity->AddComponent<CameraComponent>();
 
 
 				// コライダーは1つだけ。基底 Collider で判定する

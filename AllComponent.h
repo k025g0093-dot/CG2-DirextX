@@ -8,6 +8,7 @@
 #include "MeshFilter.h"
 #include "LearnComponent.h"
 #include "GameScript.h"
+#include "CameraComponent.h"
 
 #include "Collider.h"
 #include "BoxCollider.h"

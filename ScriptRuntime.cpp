@@ -263,8 +263,15 @@ void ScriptRuntime::Tick(float dt) {
 		PutF32(m_send, velocity.x); PutF32(m_send, velocity.y); PutF32(m_send, velocity.z);  // vel（ステップCで埋める）
 		PutF32(m_send, dt);
 		PutI32(m_send, 0);                   // flags
+	}
 
+	PutI32(m_send, static_cast<int32_t>(m_physicsEvents.size()));
 
+	for (const auto& event : m_physicsEvents) {
+		PutI32(m_send, event.targetScriptInstanceId);
+		PutI32(m_send, static_cast<int32_t>(event.type));
+		PutI32(m_send, event.otherEntityId);
+		PutStr(m_send, event.otherEntityName);
 	}
 
 	PutI32(m_send, 0);                       // eventCount ← 枠のみ
@@ -358,4 +365,22 @@ void ScriptRuntime::Tick(float dt) {
 			break;
 		}
 	}
+}
+
+
+// ScriptRuntime.cpp
+void ScriptRuntime::QueuePhysicsEvent(
+	int targetScriptInstanceId,
+	ScriptPhysicsEventType type,
+	Entity* other)
+{
+	if (targetScriptInstanceId < 0 || !other) return;
+
+	ScriptPhysicsEvent event;
+	event.targetScriptInstanceId = targetScriptInstanceId;
+	event.type = type;
+	event.otherEntityId = static_cast<int>(other->m_bodyIdRaw);
+	event.otherEntityName = other->displayName;
+
+	m_physicsEvents.push_back(std::move(event));
 }

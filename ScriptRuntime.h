@@ -8,6 +8,23 @@
 
 class GameScript;
 
+// ScriptRuntime.h
+
+enum class ScriptPhysicsEventType : int32_t {
+    TriggerEnter = 0,
+    TriggerExit = 1,
+    CollisionEnter = 2,
+    CollisionExit = 3,
+};
+
+struct ScriptPhysicsEvent {
+    int targetScriptInstanceId = -1; // 通知先C#スクリプト
+    ScriptPhysicsEventType type{};
+    int otherEntityId = -1;          // ひとまずJoltのBody IDを入れてもよい
+    std::string otherEntityName;
+};
+
+
 class ScriptRuntime {
 public:
     static ScriptRuntime* GetInstance();
@@ -26,6 +43,12 @@ public:
 
     bool IsConnected() const { return m_hPipe != INVALID_HANDLE_VALUE; }
     int  GetInstanceCount() const { return (int)m_instances.size(); }
+
+    // ScriptRuntime.h のpublic
+    void QueuePhysicsEvent(
+        int targetScriptInstanceId,
+        ScriptPhysicsEventType type,
+        Entity* other);
 
 private:
     ScriptRuntime() = default;
@@ -55,4 +78,5 @@ private:
     std::vector<char> m_recv;
 
     Vector3 vercity = Vector3{0,0,0};//joltに速度を渡すための値
+    std::vector<ScriptPhysicsEvent> m_physicsEvents;
 };

@@ -257,10 +257,56 @@ int TUFEngine::LoadTexture(const std::string& filePath) {
 	return TextureManager::GetInstance()->LoadTexture(filePath);
 }
 
+Entity* TUFEngine::FindMainCameraEntity()
+{
+	for (const auto& entity : EntityManager::GetInstance()->GetActiveEntities()) {
+		auto* camera = entity->GetComponent<CameraComponent>();
+
+		if (camera && camera->isMainCamera) {
+			return entity.get();
+		}
+	}
+
+	return nullptr;
+}
+
+void TUFEngine::UpdateActiveCamera()
+{
+	Entity* mainCameraEntity = FindMainCameraEntity();
+	if (!mainCameraEntity) return;
+
+	auto* cameraComponent =
+		mainCameraEntity->GetComponent<CameraComponent>();
+
+	m_camera.transform.translate = mainCameraEntity->transform.position;
+	m_camera.transform.rotate = mainCameraEntity->transform.rotation;
+	m_camera.SetNearPlane(cameraComponent->nearClip);
+	m_camera.SetFarPlane(cameraComponent->farClip);
+}
 
 
+// スタートストップなどの機能
+void TUFEngine::StartPlayMode()
+{
+	EntityManager::GetInstance()->StartPlay();
+}
 
+void TUFEngine::PausePlayMode()
+{
+	auto* entities = EntityManager::GetInstance();
 
+	if (entities->GetPlayState() == EntityManager::PlayState::Play) {
+		entities->PausePlay();
+	}
+	else if (entities->GetPlayState() == EntityManager::PlayState::Pause) {
+		entities->ResumePlay();
+	}
+}
+
+void TUFEngine::StopPlayMode()
+{
+	EntityManager::GetInstance()->StopPlay();
+}
 
 
 void TUFEngine::OnUpdate() {
@@ -272,7 +318,10 @@ void TUFEngine::OnUpdate() {
 
 	Input::Update();
 	EntityManager::GetInstance()->UpdateAll(dt);
-	ScriptRuntime::GetInstance()->Tick(dt);
+	UpdateActiveCamera();
+	if (EntityManager::GetInstance()->GetPlayState() == EntityManager::PlayState::Play) {
+		ScriptRuntime::GetInstance()->Tick(dt);
+	}
 #ifdef USE_IMGUI
 	if (m_imguiManager) { m_imguiManager->update(this); }
 #endif
@@ -874,7 +923,7 @@ void TUFEngine::RenderGpuDrivenALLRequests() {
 	}
 
 	// Entity（MeshFilter）からの描画リクエスト
-	for (auto& entity : EntityManager::GetInstance()->GetEntities()) {
+	for (auto& entity : EntityManager::GetInstance()->GetActiveEntities()) {
 		auto* mf = entity->GetComponent<MeshFilter>();
 		if (!mf || !mf->model) continue;
 

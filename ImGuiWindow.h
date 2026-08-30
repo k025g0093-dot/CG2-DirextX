@@ -47,6 +47,10 @@ class ImGuiSceneWindow : public ImGuiUIWindow
 {
 public:
     void update(TUFEngine* engine) override;
+
+private:
+    Entity* m_renamingEntity = nullptr;
+    bool m_focusRenameField = false;
 };
 
 class ImGuiLightManagerWindow : public ImGuiUIWindow

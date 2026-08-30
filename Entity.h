@@ -61,4 +61,5 @@ public:
 private:
     friend class EntityManager;
     std::vector<Component*> m_components;
+
 };

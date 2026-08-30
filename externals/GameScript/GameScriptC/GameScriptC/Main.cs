@@ -119,9 +119,39 @@ namespace GameScriptC
                     cmdCount++;
                 }
 
-                // ── events（今は 0 件）──
+                // ── physics events ──
+                // C++: targetScriptInstanceId / eventType / otherEntityId / otherEntityName
                 int eventCount = ReadI32(buf, ref o);
-                for (int i = 0; i < eventCount; i++) { /* ステップCで使う */ }
+                for (int i = 0; i < eventCount; i++)
+                {
+                    int targetScriptInstanceId = ReadI32(buf, ref o);
+                    PhysicsEventType eventType = (PhysicsEventType)ReadI32(buf, ref o);
+                    int otherEntityId = ReadI32(buf, ref o);
+                    string otherEntityName = ReadStr(buf, ref o);
+
+                    if (!s_instances.TryGetValue(targetScriptInstanceId, out var script))
+                        continue;
+
+                    var other = new CollisionInfo(otherEntityId, otherEntityName);
+                    switch (eventType)
+                    {
+                    case PhysicsEventType.TriggerEnter:
+                        script.OnTriggerEnter(other);
+                        break;
+                    case PhysicsEventType.TriggerExit:
+                        script.OnTriggerExit(other);
+                        break;
+                    case PhysicsEventType.CollisionEnter:
+                        script.OnCollisionEnter(other);
+                        break;
+                    case PhysicsEventType.CollisionExit:
+                        script.OnCollisionExit(other);
+                        break;
+                    default:
+                        Console.WriteLine($"[警告] 未知のPhysicsEventType: {(int)eventType}");
+                        break;
+                    }
+                }
 
                 // ── 返信 ──
                 outBuf.AddRange(BitConverter.GetBytes(cmdCount));
@@ -135,6 +165,13 @@ namespace GameScriptC
 
         static int ReadI32(byte[] b, ref int o) { int v = BitConverter.ToInt32(b, o); o += 4; return v; }
         static float ReadF32(byte[] b, ref int o) { float v = BitConverter.ToSingle(b, o); o += 4; return v; }
+        static string ReadStr(byte[] b, ref int o)
+        {
+            int byteCount = ReadI32(b, ref o);
+            string value = Encoding.UTF8.GetString(b, o, byteCount).TrimEnd('\0');
+            o += byteCount;
+            return value;
+        }
 
         static byte[] ReadExactly(NamedPipeServerStream pipe, int count)
         {

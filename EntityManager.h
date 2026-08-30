@@ -3,8 +3,44 @@
 #include <memory>
 #include "Entity.h"
 
+
+
 class EntityManager {
 public:
+
+    enum class PlayState {
+        Edit,
+        Play,
+        Pause,
+    };
+
+    using EntityList = std::vector<std::unique_ptr<Entity>>;
+    PlayState GetPlayState() const { return m_playState; }
+    void SetPlayState(PlayState state) { m_playState = state; }
+
+    // Play制御
+    void StartPlay();
+    void PausePlay();
+    void ResumePlay();
+    void StopPlay();
+
+    // GUIが参照する。Play中でも編集Sceneを表示する。
+    const EntityList& GetEditorEntities() const {
+        return m_entities;
+    }
+
+    // 物理・C#・ゲーム描画が参照する。
+    const EntityList& GetRuntimeEntities() const {
+        return m_runtimeEntities;
+    }
+
+    // 通常の描画・更新用
+    const EntityList& GetActiveEntities() const {
+        return m_playState == PlayState::Edit
+            ? m_entities
+            : m_runtimeEntities;
+    }
+
     static EntityManager* GetInstance() {
         static EntityManager instance;
         return &instance;
@@ -27,8 +63,14 @@ private:
     EntityManager(const EntityManager&) = delete;
     EntityManager& operator=(const EntityManager&) = delete;
 
-    std::vector<std::unique_ptr<Entity>> m_entities;
+    EntityList m_entities;
     float m_accumlator = 0.0f;
+
+
+    Entity* CloneToRuntime(const Entity& source);
+
+    EntityList m_runtimeEntities;
+    PlayState m_playState = PlayState::Edit;
 
 };
 

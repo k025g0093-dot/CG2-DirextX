@@ -172,6 +172,14 @@ public:
 
 	void DrawLine(const Vector3& from, const Vector3& to, const Vector4& color);
 
+	Entity* FindMainCameraEntity();
+	void UpdateActiveCamera();
+
+	//現在のモードを管理する関数
+	void StartPlayMode();
+	void PausePlayMode();
+	void StopPlayMode();
+
 private:
 
 

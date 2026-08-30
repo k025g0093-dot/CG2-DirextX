@@ -29,6 +29,19 @@ namespace BroadPhaseLayers {
     static constexpr JPH::uint NUM_LAYERS(2);
 }
 
+enum class PhysicsEventType {
+    TriggerEnter,
+    TriggerExit,
+    CollisionEnter,
+    CollisionExit,
+};
+
+struct PhysicsEvent {
+    PhysicsEventType type;
+    Entity* self;
+    Entity* other;
+};
+
 class FacadeJolt
 {
 public:
@@ -55,6 +68,28 @@ public:
     bool    IsBodyActive(uint32_t idRaw);        // 起きてる / 寝てる
     void    WakeBody(uint32_t idRaw);            // 叩き起こす
     void SetLinearVelocity(uint32_t idRaw, const Vector3& velocity);
+
+    std::vector<PhysicsEvent> m_events;
+    class ContactListener : public JPH::ContactListener {
+    public:
+        explicit ContactListener(FacadeJolt& owner) : m_owner(owner) {}
+
+        void OnContactAdded(
+            const JPH::Body& body1,
+            const JPH::Body& body2,
+            const JPH::ContactManifold&,
+            JPH::ContactSettings&) override;
+
+        //void OnContactRemoved(
+        //    const JPH::SubShapeIDPair& pair) override;
+
+    private:
+        FacadeJolt& m_owner;
+    };
+
+    ContactListener m_contactListener{ *this };
+
+    void DispatchEvents();
 
 private:
     FacadeJolt() = default;

@@ -385,7 +385,10 @@
       <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\描画物関係\各種モデル群\板ポリ</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
-      <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera</Filter>
+        <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera</Filter>
+      </ClInclude>
+    <ClInclude Include="CameraComponent.h">
+      <Filter>ソース ファイル\TUFengine\コンポーネントクラス群\EntityConp\Addコンポーネントによって追加されるもの</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiCamera.h">
       <Filter>ソース ファイル\TUFengine\エンジンの基礎部分\Camera</Filter>
