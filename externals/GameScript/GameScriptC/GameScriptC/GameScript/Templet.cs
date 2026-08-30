@@ -26,4 +26,5 @@ public class Templet
     public virtual void OnStart() { }
     public virtual void Update() { }
     public virtual void InPostion(ref float x, ref float y, ref float z, float dt) { }
+    public virtual void GetMoveVelocity(ref float vx, ref float vz, float dt) { }
 }

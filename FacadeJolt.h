@@ -54,6 +54,7 @@ public:
     Vector3 GetLinearVelocity(uint32_t idRaw);   // 現在の速度（表示用）
     bool    IsBodyActive(uint32_t idRaw);        // 起きてる / 寝てる
     void    WakeBody(uint32_t idRaw);            // 叩き起こす
+    void SetLinearVelocity(uint32_t idRaw, const Vector3& velocity);
 
 private:
     FacadeJolt() = default;

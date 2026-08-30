@@ -284,3 +284,10 @@ void FacadeJolt::WakeBody(uint32_t idRaw) {
     m_physicsSystem->GetBodyInterface().ActivateBody(JPH::BodyID(idRaw));
 }
 
+void FacadeJolt::SetLinearVelocity(uint32_t idRaw, const Vector3& velocity) {
+    if (!m_physicsSystem || idRaw == UINT32_MAX) return;
+
+    m_physicsSystem->GetBodyInterface().SetLinearVelocity(
+        JPH::BodyID(idRaw),
+        JPH::Vec3(velocity.x, velocity.y, velocity.z));
+}

@@ -209,6 +209,37 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 			}
 			entity->localAABB = { aabbMin, aabbMax };
 
+			if (object.contains("rigidbody")) {
+				const auto& saved = object["rigidbody"];
+				auto* rb = entity->AddComponent<Rigidbody>();
+				rb->mass = saved.value("mass", rb->mass);
+				rb->linearDrag = saved.value("linearDrag", rb->linearDrag);
+				rb->angularDrag = saved.value("angularDrag", rb->angularDrag);
+				rb->useGravity = saved.value("useGravity", rb->useGravity);
+				rb->isKinematic = saved.value("isKinematic", rb->isKinematic);
+			}
+
+			if (object.contains("collider")) {
+				const auto& saved = object["collider"];
+				const std::string type = saved.value("type", "");
+				if (type == "Box") {
+					auto* box = entity->AddComponent<BoxCollider>();
+					if (saved.contains("size") && saved["size"].size() == 3) {
+						box->size = { saved["size"][0], saved["size"][1], saved["size"][2] };
+					}
+					box->isTrigger = saved.value("isTrigger", false);
+				}
+				else if (type == "Sphere") {
+					auto* sphere = entity->AddComponent<SphereCollider>();
+					sphere->radius = saved.value("radius", sphere->radius);
+					sphere->isTrigger = saved.value("isTrigger", false);
+				}
+				else if (type == "ConvexHull") {
+					auto* hull = entity->AddComponent<ConvexHullCollider>();
+					hull->isTrigger = saved.value("isTrigger", false);
+				}
+			}
+
 			//スクリプトがある場合それらを割り当てる
 			if (object.contains("scriptName")) {
 				auto* gs = entity->AddComponent<GameScript>();
@@ -248,6 +279,7 @@ void TUFEngine::OnUpdate() {
 }
 
 TUFEngine::~TUFEngine() {
+	ModelManager::GetInstance()->SaveToFile();
 	if (s_instance == this) {
 		s_instance = nullptr;
 	}

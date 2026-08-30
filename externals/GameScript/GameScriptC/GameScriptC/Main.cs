@@ -103,14 +103,19 @@ namespace GameScriptC
 
                     float x = px, y = py, z = pz;
                     script.Update();
-                    script.InPostion(ref x, ref y, ref z, dt);
+                    //script.InPostion(ref x, ref y, ref z, dt);
+
+                    float desiredVx = 0.0f;
+                    float desiredVz = 0.0f;
+                    script.GetMoveVelocity(ref desiredVx, ref desiredVz, dt);
 
                     // mode 0 = SetPosition
+                    // mode 1 = SetVercity
                     cmds.AddRange(BitConverter.GetBytes(id));
-                    cmds.AddRange(BitConverter.GetBytes(0));
-                    cmds.AddRange(BitConverter.GetBytes(x));
-                    cmds.AddRange(BitConverter.GetBytes(y));
-                    cmds.AddRange(BitConverter.GetBytes(z));
+                    cmds.AddRange(BitConverter.GetBytes(1));
+                    cmds.AddRange(BitConverter.GetBytes(desiredVx));
+                    cmds.AddRange(BitConverter.GetBytes(0.0f));
+                    cmds.AddRange(BitConverter.GetBytes(desiredVz));
                     cmdCount++;
                 }
 

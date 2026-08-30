@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
+#include "FacadeJolt.h"
 
 class GameScript;
 
@@ -52,4 +53,6 @@ private:
 
     std::vector<char> m_send;         // 送信バッファ（使い回し）
     std::vector<char> m_recv;
+
+    Vector3 vercity = Vector3{0,0,0};//joltに速度を渡すための値
 };

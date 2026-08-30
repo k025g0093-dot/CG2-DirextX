@@ -3,6 +3,11 @@
 #include "ConvertString.h"
 #include <fstream>
 #include "GameScript.h"
+#include "Rigidbody.h"
+#include "Collider.h"
+#include "BoxCollider.h"
+#include "SphereCollider.h"
+#include "ConvexHullCollider.h"
 
 
 
@@ -143,6 +148,37 @@ void ModelManager::SaveToFile() {
 		auto* gs = entity->GetComponent<GameScript>();
 		if (gs) {
 			obj["scriptName"] = gs->m_scriptName;
+		}
+
+		if (auto* rb = entity->GetComponent<Rigidbody>()) {
+			obj["rigidbody"] = {
+				{ "mass", rb->mass },
+				{ "linearDrag", rb->linearDrag },
+				{ "angularDrag", rb->angularDrag },
+				{ "useGravity", rb->useGravity },
+				{ "isKinematic", rb->isKinematic }
+			};
+		}
+
+		if (auto* box = entity->GetComponent<BoxCollider>()) {
+			obj["collider"] = {
+				{ "type", "Box" },
+				{ "size", { box->size.x, box->size.y, box->size.z } },
+				{ "isTrigger", box->isTrigger }
+			};
+		}
+		else if (auto* sphere = entity->GetComponent<SphereCollider>()) {
+			obj["collider"] = {
+				{ "type", "Sphere" },
+				{ "radius", sphere->radius },
+				{ "isTrigger", sphere->isTrigger }
+			};
+		}
+		else if (auto* hull = entity->GetComponent<ConvexHullCollider>()) {
+			obj["collider"] = {
+				{ "type", "ConvexHull" },
+				{ "isTrigger", hull->isTrigger }
+			};
 		}
 
 		data["objects"].push_back(obj);

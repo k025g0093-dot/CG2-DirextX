@@ -66,6 +66,18 @@ public class #SCRIPTNAME# : Templet
     //           z += (gp.LeftThumbY / 32768f) * speed * dt;
     //   }
 
+    public override void GetMoveVelocity(ref float vx, ref float vz, float dt)
+{
+    const float speed = 15.0f;
+
+    if (IsKeyDown(ConsoleKey.A)) vx -= speed;
+    if (IsKeyDown(ConsoleKey.D)) vx += speed;
+    if (IsKeyDown(ConsoleKey.W)) vz += speed;
+    if (IsKeyDown(ConsoleKey.S)) vz -= speed;
+}
+
+
+
     public override void InPostion(ref float x, ref float y, ref float z, float dt)
     {
         float speed = 5.0f;
