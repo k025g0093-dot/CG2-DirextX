@@ -95,6 +95,19 @@ void EntityManager::StartPlay()
 
     // 編集中に残っているScript登録を消して、Runtime側だけを動かす。
     ScriptRuntime::GetInstance()->Shutdown();
+
+    // 編集用EntityのBodyを外す。残すとRuntime側のBodyと同じ場所で二重になり、
+    // 互いに押し合って動かなくなる。
+    {
+        auto* jolt = FacadeJolt::GetInstance();
+        for (const auto& editorEntity : m_entities) {
+            if (editorEntity->m_bodyIdRaw != UINT32_MAX) {
+                jolt->RemoveBody(editorEntity->m_bodyIdRaw);
+                editorEntity->m_bodyIdRaw = UINT32_MAX;
+            }
+        }
+    }
+
     m_runtimeEntities.clear();
 
     for (const auto& editorEntity : m_entities) {
@@ -135,6 +148,7 @@ void EntityManager::StopPlay()
     for (const auto& entity : m_runtimeEntities) {
         if (entity->m_bodyIdRaw != UINT32_MAX) {
             jolt->RemoveBody(entity->m_bodyIdRaw);
+            entity->m_bodyIdRaw = UINT32_MAX;
         }
     }
     m_runtimeEntities.clear();

@@ -5,7 +5,7 @@
 #include "Component.h"
 #include "Transform.h"
 #include "Create3DObjectOBB.h"
-
+#include <algorithm>
 
 
 class Entity {
@@ -32,6 +32,14 @@ public:
             if (casted) return casted;
         }
         return nullptr;
+    }
+
+    // GetComponent の下あたりに追加
+    void RemoveComponent(Component* target) {
+        auto it = std::find(m_components.begin(), m_components.end(), target);
+        if (it == m_components.end()) return;
+        delete* it;
+        m_components.erase(it);
     }
 
     void SetDisplayName(const std::string& n) {

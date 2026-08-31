@@ -12,6 +12,7 @@
 
 #include <unordered_map>
 #include <cstdint>
+#include <mutex>     
 #include "allVector.h"
 
 class Entity;
@@ -70,6 +71,8 @@ public:
     void SetLinearVelocity(uint32_t idRaw, const Vector3& velocity);
 
     std::vector<PhysicsEvent> m_events;
+    std::mutex                m_eventMutex;
+
     class ContactListener : public JPH::ContactListener {
     public:
         explicit ContactListener(FacadeJolt& owner) : m_owner(owner) {}

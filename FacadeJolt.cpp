@@ -8,6 +8,7 @@
 #include "SphereCollider.h"
 #include "ConvexHullCollider.h"
 #include <algorithm>
+#include <cstdio>
 
 FacadeJolt* FacadeJolt::s_instance = nullptr;
 
@@ -93,15 +94,30 @@ uint32_t FacadeJolt::AddBody(Entity* e) {
 	JPH::ShapeRefC shape;
 
 	if (auto* box = dynamic_cast<BoxCollider*>(col)) {
-		float hx = (std::max)(box->size.x * 0.5f * s.x, 0.06f);
-		float hy = (std::max)(box->size.y * 0.5f * s.y, 0.06f);
-		float hz = (std::max)(box->size.z * 0.5f * s.z, 0.06f);
+		float hx = (std::max)(box->size.x * 0.5f * s.x, 0.005f);   // クランプを緩める
+		float hy = (std::max)(box->size.y * 0.5f * s.y, 0.005f);
+		float hz = (std::max)(box->size.z * 0.5f * s.z, 0.005f);
 
-		JPH::BoxShapeSettings bs(JPH::Vec3(hx, hy, hz));
+		// 一番薄い辺より凸半径が大きいと形が崩れる
+		float minHalf = (std::min)(hx, (std::min)(hy, hz));
+		float convexRadius = (std::min)(0.05f, minHalf * 0.5f);
+
+		JPH::BoxShapeSettings bs(JPH::Vec3(hx, hy, hz), convexRadius);
 		bs.SetEmbedded();
 		auto r = bs.Create();
 		if (!r.IsValid()) return UINT32_MAX;
 		shape = r.Get();
+
+		// メッシュのAABB中心が原点からズレている場合、その分だけ形状をずらす
+		const Vector3 c = box->center;
+		if (fabsf(c.x) > 1e-5f || fabsf(c.y) > 1e-5f || fabsf(c.z) > 1e-5f) {
+			JPH::RotatedTranslatedShapeSettings off(
+				JPH::Vec3(c.x * s.x, c.y * s.y, c.z * s.z),
+				JPH::Quat::sIdentity(), shape);
+			off.SetEmbedded();
+			auto r2 = off.Create();
+			if (r2.IsValid()) shape = r2.Get();
+		}
 	}
 	else if (auto* sph = dynamic_cast<SphereCollider*>(col)) {
 		float maxScale = (std::max)(s.x, (std::max)(s.y, s.z));
@@ -114,13 +130,26 @@ uint32_t FacadeJolt::AddBody(Entity* e) {
 		shape = r.Get();
 	}
 	else {
-		// ConvexHullCollider は フェーズ1では localAABB のボックスで代用
+		// ConvexHullCollider は localAABB のボックスで代用する
 		Vector3 half = (e->localAABB.max - e->localAABB.min) * 0.5f;
-		float hx = (std::max)(half.x * s.x, 0.06f);
-		float hy = (std::max)(half.y * s.y, 0.06f);
-		float hz = (std::max)(half.z * s.z, 0.06f);
 
-		JPH::BoxShapeSettings bs(JPH::Vec3(hx, hy, hz));
+		// localAABB が未計算だと極小の箱になってすり抜ける。気づけるようにログを出す
+		if (half.x <= 1e-5f && half.y <= 1e-5f && half.z <= 1e-5f) {
+			char msg[192];
+			sprintf_s(msg, "[Jolt] localAABB が空です: %s (コライダーが極小になります)\n",
+				e->name.c_str());
+			//OutputDebugStringA(msg);
+		}
+
+		float hx = (std::max)(half.x * s.x, 0.005f);
+		float hy = (std::max)(half.y * s.y, 0.005f);
+		float hz = (std::max)(half.z * s.z, 0.005f);
+
+		// 一番薄い辺より凸半径が大きいと形が崩れる
+		float minHalf = (std::min)(hx, (std::min)(hy, hz));
+		float convexRadius = (std::min)(0.05f, minHalf * 0.5f);
+
+		JPH::BoxShapeSettings bs(JPH::Vec3(hx, hy, hz), convexRadius);
 		bs.SetEmbedded();
 		auto r = bs.Create();
 		if (!r.IsValid()) return UINT32_MAX;
@@ -154,6 +183,10 @@ uint32_t FacadeJolt::AddBody(Entity* e) {
 		settings.mLinearDamping = rb->linearDrag;
 		settings.mAngularDamping = rb->angularDrag;
 		settings.mGravityFactor = rb->useGravity ? 1.0f : 0.0f;
+
+		if (!rb->isKinematic) {
+			settings.mMotionQuality = JPH::EMotionQuality::LinearCast;
+		}
 
 		settings.mOverrideMassProperties =
 			JPH::EOverrideMassProperties::CalculateInertia;
@@ -320,14 +353,22 @@ void FacadeJolt::ContactListener::OnContactAdded(
 		: PhysicsEventType::CollisionEnter;
 
 	// 両者に通知するイベントを積む
+	std::lock_guard<std::mutex> lock(m_owner.m_eventMutex);
 	m_owner.m_events.push_back({ eventType, a, b });
-	m_owner.m_events.push_back({ eventType, b, a });
+	m_owner.m_events.push_back({ eventType, b, a });;
 
 }
 
 void FacadeJolt::DispatchEvents()
 {
-	for (const PhysicsEvent& event : m_events) {
+	// ロック中は取り出すだけ。処理はロックの外でやる
+	std::vector<PhysicsEvent> events;
+	{
+		std::lock_guard<std::mutex> lock(m_eventMutex);
+		events.swap(m_events);
+	}
+
+	for (const PhysicsEvent& event : events) {
 		if (!event.self || !event.other) continue;
 
 		for (Component* component : event.self->GetComponents()) {
@@ -342,6 +383,4 @@ void FacadeJolt::DispatchEvents()
 			}
 		}
 	}
-
-	m_events.clear();
 }

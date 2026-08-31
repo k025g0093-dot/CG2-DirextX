@@ -5,6 +5,16 @@
 #include "FacadeJolt.h"
 #include "BoxCollider.h"
 #include <cmath>
+#include <cstring>
+
+// BoxCollider をメッシュの localAABB に合わせる
+static void FitBoxColliderToMesh(Entity* e, BoxCollider* box) {
+	if (!e || !box) return;
+	Vector3 sz = e->localAABB.max - e->localAABB.min;
+	if (sz.x <= 1e-5f && sz.y <= 1e-5f && sz.z <= 1e-5f) return;   // AABB 未計算
+	box->size   = sz;
+	box->center = (e->localAABB.min + e->localAABB.max) * 0.5f;
+}
 
 ImGuiUIWindow::ImGuiUIWindow() : show(true) {}
 ImGuiUIWindow::~ImGuiUIWindow() {}
@@ -472,10 +482,30 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 				ImGui::DragFloat3("拡大", &entity->transform.scale.x, 0.01f, 0.01f, 10.0f);
 			}
 
+			// ループ中にコンポーネントを消すとイテレータが壊れるので、あとでまとめて消す
+			Component* removeTarget = nullptr;
+
 			for (auto* c : entity->GetComponents()) {
 				const char* typeName = typeid(*c).name();
+				if (std::strncmp(typeName, "class ", 6) == 0) typeName += 6;   // "class " を落とす
 				if (dynamic_cast<CameraComponent*>(c)) typeName = "カメラ";
-				if (ImGui::CollapsingHeader(typeName)) {
+
+				ImGui::PushID(c);
+
+				// CollapsingHeader が行全体のクリックを取ってしまうので、削除ボタンは左に置く
+				bool wantRemove = ImGui::SmallButton("削除");
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("このコンポーネントを削除します");
+				}
+				ImGui::SameLine();
+
+				bool opened = ImGui::CollapsingHeader(typeName);
+
+				if (wantRemove) {
+					removeTarget = c;
+				}
+
+				if (opened) {
 					if (auto* mf = dynamic_cast<MeshFilter*>(c)) {
 
 						ImGui::Spacing();
@@ -589,9 +619,19 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						ImGui::DragFloat("Far Clip", &camera->farClip, 1.0f, camera->nearClip, 100000.0f);
 					}
 					else if (auto* box = dynamic_cast<BoxCollider*>(c)) {
-						ImGui::DragFloat3("サイズ（全長）", &box->size.x, 0.05f, 0.01f, 100.0f);
+						ImGui::DragFloat3("サイズ（全長）", &box->size.x, 0.05f, 0.001f, 10000.0f);
+						ImGui::DragFloat3("中心オフセット", &box->center.x, 0.05f);
 						ImGui::Checkbox("トリガー（すり抜けて検知だけ）", &box->isTrigger);
-						ImGui::TextDisabled("実際の半分の大きさが Jolt に渡ります");
+
+						if (ImGui::Button("メッシュに合わせる##fitbox")) {
+							FitBoxColliderToMesh(entity.get(), box);
+							FacadeJolt::GetInstance()->RebuildBody(entity.get());
+						}
+						ImGui::SameLine();
+						ImGui::TextDisabled("(%.2f, %.2f, %.2f)",
+							entity->localAABB.max.x - entity->localAABB.min.x,
+							entity->localAABB.max.y - entity->localAABB.min.y,
+							entity->localAABB.max.z - entity->localAABB.min.z);
 						if (ImGui::Button("物理ボディを再生成##box")) {
 							FacadeJolt::GetInstance()->RebuildBody(entity.get());
 						}
@@ -611,6 +651,14 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 						}
 					}
 				}
+				ImGui::PopID();
+			}
+
+			// ここで実際に削除する（ループの外なので安全）
+			if (removeTarget) {
+				entity->RemoveComponent(removeTarget);
+				// Collider や Rigidbody を消した場合に備えて物理ボディを作り直す
+				FacadeJolt::GetInstance()->RebuildBody(entity.get());
 			}
 
 			ImGui::Separator();
@@ -636,7 +684,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 				// コライダーは1つだけ。基底 Collider で判定する
 				if (!entity->GetComponent<Collider>() && ImGui::MenuItem("ボックスコライダー"))
-					entity->AddComponent<BoxCollider>();
+					FitBoxColliderToMesh(entity.get(), entity->AddComponent<BoxCollider>());
 
 				if (!entity->GetComponent<Collider>() && ImGui::MenuItem("コベクスコライダーコンポーネント"))
 					entity->AddComponent<ConvexHullCollider>();
