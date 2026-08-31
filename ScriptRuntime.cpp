@@ -1,6 +1,7 @@
 #include "ScriptRuntime.h"
 #include "GameScript.h"
 #include "Entity.h"
+#include "EntityManager.h"
 #include <cstdio>
 
 #define SR_LOG(msg) { OutputDebugStringA(msg); OutputDebugStringA("\n"); }
@@ -107,7 +108,7 @@ void ScriptRuntime::Unregister(int instanceId) {
 bool ScriptRuntime::EnsureStarted() {
 	if (m_hPipe != INVALID_HANDLE_VALUE) return true;
 	if (m_startFailed) {
-		SR_LOG("[SR] Start is suppressed after a previous failure. Reload the script to retry.");
+		// 失敗後は Reload Script まで再試行しない。ここで毎フレームログを出すとFPSが落ちる。
 		return false;
 	}
 
@@ -240,9 +241,21 @@ void ScriptRuntime::Tick(float dt) {
 	}
 
 	// destroy
-	PutI32(m_send, (int32_t)m_destroyPending.size());
+	const int32_t destroyCount = static_cast<int32_t>(m_destroyPending.size());
+	PutI32(m_send, destroyCount);
 	for (int id : m_destroyPending) PutI32(m_send, id);
 	m_destroyPending.clear();
+
+	// World Entity一覧。Main.cs は destroy の直後にこのブロックを読む。
+	// スクリプトを持たない Entity も含め、C#から名前で参照できるようにする。
+	const auto& entities = EntityManager::GetInstance()->GetRuntimeEntities();
+	PutI32(m_send, static_cast<int32_t>(entities.size()));
+	for (const auto& entity : entities) {
+		PutStr(m_send, entity->displayName);
+		PutF32(m_send, entity->transform.position.x);
+		PutF32(m_send, entity->transform.position.y);
+		PutF32(m_send, entity->transform.position.z);
+	}
 
 	// tick（spawn 済みのものだけ）
 	std::vector<int> ticks;
@@ -288,10 +301,11 @@ void ScriptRuntime::Tick(float dt) {
 	for (int id : spawns) m_instances[id].spawnPending = false;
 
 	// ── 送信 ──
-	if (!spawns.empty() || !ticks.empty() || !m_destroyPending.empty()) {
+	// tick は毎フレームあるため、ここで毎フレーム出力すると大きくFPSが落ちる。
+	if (!spawns.empty() || destroyCount > 0) {
 		char b[160];
 		sprintf_s(b, "[SR] Send: spawn=%d destroy=%d update=%d bytes=%d",
-			(int)spawns.size(), (int)m_destroyPending.size(), (int)ticks.size(), (int)m_send.size());
+			(int)spawns.size(), (int)destroyCount, (int)ticks.size(), (int)m_send.size());
 		SR_LOG(b);
 	}
 
@@ -299,6 +313,7 @@ void ScriptRuntime::Tick(float dt) {
 	if (!WriteAll(m_hPipe, &len, 4) || !WriteAll(m_hPipe, m_send.data(), (DWORD)len)) {
 		SR_LOG("[ScriptRuntime] 送信に失敗。接続を切ります");
 		KillProcess();
+		m_startFailed = true; // 毎フレームの再起動ループを防ぐ。Reload Scriptで再試行する。
 		return;
 	}
 
@@ -307,11 +322,13 @@ void ScriptRuntime::Tick(float dt) {
 	if (!ReadAll(m_hPipe, &rlen, 4) || rlen < 0 || rlen > 8 * 1024 * 1024) {
 		SR_LOG("[ScriptRuntime] 受信に失敗。接続を切ります");
 		KillProcess();
+		m_startFailed = true; // 毎フレームの再起動ループを防ぐ。Reload Scriptで再試行する。
 		return;
 	}
 	m_recv.resize(rlen);
 	if (rlen > 0 && !ReadAll(m_hPipe, m_recv.data(), (DWORD)rlen)) {
 		KillProcess();
+		m_startFailed = true; // 毎フレームの再起動ループを防ぐ。Reload Scriptで再試行する。
 		return;
 	}
 
@@ -321,7 +338,7 @@ void ScriptRuntime::Tick(float dt) {
 	auto GetF32 = [&]() { float   v; memcpy(&v, rp, 4); rp += 4; return v; };
 
 	int32_t cmdCount = GetI32();
-	if (cmdCount > 0 || !spawns.empty()) {
+	if (!spawns.empty()) {
 		char b[128];
 		sprintf_s(b, "[SR] Received: commands=%d bytes=%d", cmdCount, rlen);
 		SR_LOG(b);

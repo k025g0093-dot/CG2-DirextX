@@ -279,6 +279,18 @@ private:
 	void InitGpuDrivenResource();
 	void InitGpuDrivenPipeline();
 
+	static void ImGuiSrvAlloc(
+		ImGui_ImplDX12_InitInfo* info,
+		D3D12_CPU_DESCRIPTOR_HANDLE* cpu,
+		D3D12_GPU_DESCRIPTOR_HANDLE* gpu);
+
+	static void ImGuiSrvFree(
+		ImGui_ImplDX12_InitInfo* info,
+		D3D12_CPU_DESCRIPTOR_HANDLE cpu,
+		D3D12_GPU_DESCRIPTOR_HANDLE gpu);
+
+	uint32_t m_imguiSrvNext = 0;
+
 
 private://描画物のリソース
 
@@ -319,7 +331,6 @@ private://描画物のリソース
 	//ビューポートの値を保持するため
 	float m_currentRenderWidth = (float)width;
 	float m_currentRenderHeight = (float)height;
-
 
 	uint32_t Align256(uint32_t size)
 	{

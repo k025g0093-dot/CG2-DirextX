@@ -81,6 +81,23 @@ namespace GameScriptC
                     Console.WriteLine($"destroy id={id}");
                 }
 
+                // ── World Entity一覧 ──
+                // C++がこの位置で Entity数・名前・座標 を送ってくる前提
+                int entityCount = ReadI32(buf, ref o);
+
+                World.BeginFrame();
+
+                for (int i = 0; i < entityCount; i++)
+                {
+                    string name = ReadStr(buf, ref o);
+                    float x = ReadF32(buf, ref o);
+                    float y = ReadF32(buf, ref o);
+                    float z = ReadF32(buf, ref o);
+
+                    World.UpdateEntity(name, x, y, z);
+                }
+
+
                 // ── tick ──
                 int tickCount = ReadI32(buf, ref o);
                 var outBuf = new List<byte>();
@@ -100,6 +117,9 @@ namespace GameScriptC
                     int flags = ReadI32(buf, ref o);
 
                     if (!s_instances.TryGetValue(id, out var script)) continue;
+
+                    // このスクリプト自身の現在座標を、C++ から受け取った値で同期する。
+                    script.Position = new ScriptVector3(px, py, pz);
 
                     float x = px, y = py, z = pz;
                     script.Update();
@@ -173,6 +193,8 @@ namespace GameScriptC
                     Console.WriteLine($"[C#] jump command  id={kv.Key}  vy={jumpVy}");
                 }
 
+
+
                 // ── 返信 ──
                 outBuf.AddRange(BitConverter.GetBytes(cmdCount));
                 outBuf.AddRange(cmds);
@@ -219,3 +241,5 @@ public static class KeyboardHelper
     public static bool IsKeyPressed(ConsoleKey key)
         => (GetAsyncKeyState((int)key) & 0x0001) != 0;
 }
+
+

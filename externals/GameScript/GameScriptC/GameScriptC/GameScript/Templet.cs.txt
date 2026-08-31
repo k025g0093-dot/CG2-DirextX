@@ -1,127 +1,102 @@
 ﻿using System;
-using Vortice.XInput;
 
 // ==============================================
-// #SCRIPTNAME# スクリプトテンプレート
+// #SCRIPTNAME#
 // ==============================================
-// このクラスはC++側から「#SCRIPTNAME#」という名前で呼び出されます。
-// Update() が毎フレーム呼ばれるので、ここにキャラクターの挙動を書いてください。
+// C++側のGameScriptコンポーネントで Script Name を
+// 「#SCRIPTNAME#」にすると、このクラスが呼ばれます。
 //
-// 使えるAPI一覧:
-//   キーボード(押しっぱなし判定)  → IsKeyDown(ConsoleKey.任意のキー)
-//   キーボード(押した瞬間だけ判定) → GameScriptC.Keyboard.IsKeyTriger(ConsoleKey.任意のキー)
-//   ゲームパッド(ボタン単体)      → Gamepad.IsA() / IsB() / IsX() / IsY() / IsLB() / IsRB() / IsStart()
-//   ゲームパッド(任意のボタン)     → Gamepad.IsButtonDown(0x1000 のようなビットマスク値)
-//   ゲームパッド(スティック等の生値) → Gamepad.GetKeystate() でState構造体を直接取得
+// よく使う機能:
+//
+// 自分の座標:
+//   Position.X / Position.Y / Position.Z
+//
+// 他Entityを名前で探す:
+//   var player = FindEntity("Player");
+//   if (player.HasValue)
+//   {
+//       var playerPos = player.Value.Position;
+//   }
+//
+// 移動:
+//   GetMoveVelocity() で vx, vz を設定する。
+//   物理Bodyを持つEntityなら、C++ / Jolt側に速度として反映される。
+//
+// 衝突・Trigger:
+//   OnTriggerEnter / OnCollisionEnter を override する。
+//   other.Name で接触相手の名前を調べられる。
 // ==============================================
+
 public class #SCRIPTNAME# : Templet
 {
-    // ゲーム開始時に1回だけ呼ばれます。初期化処理をここに書いてください。
-    public override void OnStart() { }
-
-    // 毎フレーム呼ばれます。入力判定やロジックはここに書いてください。
-    public override void Update()
+    // ゲーム開始時に一度だけ呼ばれる
+    public override void OnStart()
     {
-        // --- キーボード: 押しっぱなし判定の例(W/A/S/Dで移動したい時など) ---
-        if (IsKeyDown(ConsoleKey.W))
-            Console.WriteLine("W is held");
-        if (IsKeyDown(ConsoleKey.A))
-            Console.WriteLine("A is held");
-        if (IsKeyDown(ConsoleKey.S))
-            Console.WriteLine("S is held");
-        if (IsKeyDown(ConsoleKey.D))
-            Console.WriteLine("D is held");
-
-        // --- キーボード: 「押した瞬間」だけ反応させたい場合(ジャンプなど連打防止したい時) ---
-        if (GameScriptC.Keyboard.IsKeyTriger(ConsoleKey.Spacebar))
-            Console.WriteLine("Space pressed");
-
-        // --- ゲームパッド: ボタン単体の判定(よく使うボタンはショートカット関数が用意されています) ---
-        if (Gamepad.IsA())
-            Console.WriteLine("プレイヤーがジャンプ！");
-
-        // 他のボタンも同様に呼べます(必要な行だけコメントを外して使ってください):
-        // if (Gamepad.IsB())     Console.WriteLine("Bボタン押された");
-        // if (Gamepad.IsX())     Console.WriteLine("Xボタン押された");
-        // if (Gamepad.IsY())     Console.WriteLine("Yボタン押された");
-        // if (Gamepad.IsLB())    Console.WriteLine("LBボタン押された");
-        // if (Gamepad.IsRB())    Console.WriteLine("RBボタン押された");
-        // if (Gamepad.IsStart()) Console.WriteLine("Startボタン押された");
     }
 
-    // 座標をC++側と同期するための関数です。
-    // x, y, z は「ref」なので、この関数内で書き換えた値がそのままC++側に反映されます。
-    // dt (デルタタイム) は前フレームからの経過時間(秒)なので、速度計算に使ってください。
-    //
-    // 例: ゲームパッドの左スティックでキャラクターを移動させたい場合
-    //   var state = Gamepad.GetKeystate();
-    //   if (state != null)
-    //   {
-    //       var gp = state.Value.Gamepad;
-    //       const float deadZone = 8000f; // スティックの遊び(小さい傾きは無視する)
-    //       const float speed = 5.0f;
-    //       if (Math.Abs((float)gp.LeftThumbX) > deadZone)
-    //           x += (gp.LeftThumbX / 32768f) * speed * dt;
-    //       if (Math.Abs((float)gp.LeftThumbY) > deadZone)
-    //           z += (gp.LeftThumbY / 32768f) * speed * dt;
-    //   }
-
-        // ==============================================
-    // 接触イベント（必要なものだけ override してください）
-    // ==============================================
-    //   other.EntityName … ぶつかった相手の表示名
-    //   other.EntityId   … ぶつかった相手のBodyID
-    //   Jump(速度Y)      … 上方向に飛ばす（Joltの速度Yを上書きする）
-    //
-    // public override void OnCollisionEnter(CollisionInfo other)
-    // {
-    //     Console.WriteLine($"ぶつかった: {other.EntityName}");
-    //     Jump(20.0f);
-    // }
-    //
-    // public override void OnTriggerEnter(CollisionInfo other)
-    // {
-    //     Console.WriteLine($"トリガーに入った: {other.EntityName}");
-    // }
-
-    public override void GetMoveVelocity(ref float vx, ref float vz, float dt)
-{
-    const float speed = 15.0f;
-
-    if (IsKeyDown(ConsoleKey.A)) vx -= speed;
-    if (IsKeyDown(ConsoleKey.D)) vx += speed;
-    if (IsKeyDown(ConsoleKey.W)) vz += speed;
-    if (IsKeyDown(ConsoleKey.S)) vz -= speed;
-}
-
-
-
-    public override void InPostion(ref float x, ref float y, ref float z, float dt)
+    // 毎フレーム呼ばれる。
+    // 入力、状態遷移、攻撃クールダウンなどを書く。
+    public override void Update()
     {
-        float speed = 5.0f;
+    }
 
-        if (IsKeyDown(ConsoleKey.W)) z += speed * dt;
-        if (IsKeyDown(ConsoleKey.S)) z -= speed * dt;
-        if (IsKeyDown(ConsoleKey.A)) x -= speed * dt;
-        if (IsKeyDown(ConsoleKey.D)) x += speed * dt;
-
-        var state = Gamepad.GetKeystate();
-        if (state != null)
+    // 移動速度を決める。
+    // vx はX方向、vzはZ方向の速度。
+    public override void GetMoveVelocity(ref float vx, ref float vz, float dt)
+    {
+        // 例：名前が Player のEntityへ向かって移動する
+        var player = FindEntity("Player");
+        if (!player.HasValue)
         {
-            var gp = state.Value.Gamepad;
-            const float deadZone = 8000f;
-            if (Math.Abs((float)gp.LeftThumbX) > deadZone)
-                x += (gp.LeftThumbX / 32768f) * speed * dt;
-            if (Math.Abs((float)gp.LeftThumbY) > deadZone)
-                z -= (gp.LeftThumbY / 32768f) * speed * dt;
+            return;
+        }
 
-            if (Gamepad.IsA() || IsKeyTriger(ConsoleKey.Spacebar))
-                y = 3.0f;
-        }
-        else
+        var targetPos = player.Value.Position;
+
+        float dx = targetPos.X - Position.X;
+        float dz = targetPos.Z - Position.Z;
+
+        // Yを無視した距離
+        float distance = MathF.Sqrt(dx * dx + dz * dz);
+
+        // 近づきすぎたら停止
+        if (distance < 1.0f)
         {
-            if (IsKeyTriger(ConsoleKey.Spacebar))
-                y = 3.0f;
+            return;
         }
+
+        const float speed = 4.0f;
+
+        // 正規化して、一定速度でプレイヤーへ向かう
+        vx = dx / distance * speed;
+        vz = dz / distance * speed;
+    }
+
+    // Triggerに入った瞬間
+    public override void OnTriggerEnter(CollisionInfo other)
+    {
+        if (other.EntityName == "Player")
+        {
+            // プレイヤーが索敵範囲に入った時の処理
+        }
+    }
+
+    // Triggerから出た瞬間
+    public override void OnTriggerExit(CollisionInfo other)
+    {
+    }
+
+    // 物理衝突した瞬間
+    public override void OnCollisionEnter(CollisionInfo other)
+    {
+        if (other.EntityName == "Player")
+        {
+            // プレイヤーと接触した時の処理
+        }
+    }
+
+    // 物理衝突が終わった瞬間
+    public override void OnCollisionExit(CollisionInfo other)
+    {
     }
 }
