@@ -138,6 +138,7 @@
     <ClCompile Include="ResourceObject.cpp" />
     <ClCompile Include="ScriptRuntime.cpp" />
     <ClCompile Include="ShadowMapBuffer.cpp" />
+    <ClCompile Include="ShadowPass.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="Sprite.cpp" />
@@ -277,6 +278,7 @@
     <ClInclude Include="Rigidbody.h" />
     <ClInclude Include="ScriptRuntime.h" />
     <ClInclude Include="ShadowMapBuffer.h" />
+    <ClInclude Include="ShadowPass.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="SphereCollider.h" />

@@ -227,9 +227,8 @@ private:
 	ComPtr<ID3D12RootSignature> gpuDrivenRootSignature;
 	ComPtr<ID3D12PipelineState> gpuDrivenPipelineState;
 
-	//shadow.VSに送るためのパイプ設定だったり
-	ComPtr<ID3D12PipelineState> m_shadowPipelineState;
-	ComPtr<ID3D12Resource> m_lightVPBuffer;
+	// 影の描画（PSO・シャドウマップ・LightVPバッファはこの中で管理）
+	ShadowPass m_shadowPass;
 
 	// --- CSに送るためのシグネチャ関係 ---
 	ComPtr<ID3D12RootSignature> m_computeRootSignature;

@@ -119,9 +119,6 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	gpuDrivenPipelineState =
 		CreateGpuDrivenPipelineStateDesc(device.Get(), gpuDrivenRootSignature, hr);
 
-	m_shadowPipelineState =
-		CreateShadowPipelineState(device.Get(), gpuDrivenRootSignature, hr);
-
 	m_linePipelineState =
 		CreateLinePipelineState(device.Get(), m_lineRootSignature, hr);
 
@@ -136,8 +133,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 	TextureManager::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get(), commandList.Get());
 	ModelManager::GetInstance()->Initialize(device.Get(), commandList.Get());
 
-	ShadowMapBuffer::GetInstance()->Initialize(device.Get(), srvDescriptorHeap.Get());
-	m_lightVPBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Matrix4x4)));
+	// 影の描画に使うPSO・シャドウマップ・LightVPバッファの作成
+	m_shadowPass.Initialize(device.Get(), srvDescriptorHeap.Get(), gpuDrivenRootSignature);
 
 	FacadeJolt::GetInstance()->Init();
 
@@ -1127,53 +1124,8 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	m_gpuDrivenRenderer->TransitionToSRV(commandList.Get());
 
 	// ──── Shadow Pass ────
-	auto* shadowBuf = ShadowMapBuffer::GetInstance();
-	shadowBuf->TransitionToDsv(commandList.Get());
-
-	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get()); // ← 追加
-	commandList->SetDescriptorHeaps(1, heaps);                             // ← 追加
-	commandList->SetPipelineState(m_shadowPipelineState.Get());
-
-	D3D12_VIEWPORT shadowVP{};
-	shadowVP.Width = (float)ShadowMapBuffer::SHADOW_MAP_SIZE;
-	shadowVP.Height = (float)ShadowMapBuffer::SHADOW_MAP_SIZE;
-	shadowVP.MaxDepth = 1.0f;
-	commandList->RSSetViewports(1, &shadowVP);
-
-
-
-	D3D12_RECT shadowRect{};
-	shadowRect.right = ShadowMapBuffer::SHADOW_MAP_SIZE;
-	shadowRect.bottom = ShadowMapBuffer::SHADOW_MAP_SIZE;
-	commandList->RSSetScissorRects(1, &shadowRect);
-
-	auto shadowDsv = shadowBuf->GetDsvCpuHandle();
-	commandList->OMSetRenderTargets(0, nullptr, false, &shadowDsv);
-	commandList->ClearDepthStencilView(shadowDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-	// Light VP計算（仮の行列）
-	LightData shadowLight = LightManager::GetInstance()->GetLight(0);
-	Vector3 lightDir = shadowLight.dirOrPos.Normalized();
-	Vector3 lightPos = lightDir * -50.0f;
-
-	// forwardとupが平行(ライトがほぼ真上/真下を向いている)だと
-	// MakeLookAtMatrixの外積計算がゼロベクトルになり、行列が縮退してしまう。
-	// その場合はupベクトルを別の軸に切り替える。
-	Vector3 upVector = { 0.0f, 1.0f, 0.0f };
-	if (std::abs(lightDir.Dot(upVector)) > 0.99f) {
-		upVector = { 0.0f, 0.0f, 1.0f };
-	}
-
-	Matrix4x4 lightView = MakeLookAtMatrix(lightPos, { 0.0f, 0.0f, 0.0f }, upVector);
-	Matrix4x4 lightProj = MakeOrthographicMatrix(-50.0f, 50.0f, 50.0f, -50.0f, 0.1f, 100.0f);
-	Matrix4x4 lightVP = Multiply(lightView, lightProj);
-	
-
-
-	Matrix4x4* mapped = nullptr;
-	m_lightVPBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
-	if (mapped) { *mapped = lightVP; m_lightVPBuffer->Unmap(0, nullptr); }
-	commandList->SetGraphicsRootConstantBufferView(9, m_lightVPBuffer->GetGPUVirtualAddress());
+	m_shadowPass.Update(LightManager::GetInstance()->GetLight(0));
+	m_shadowPass.Begin(commandList.Get(), gpuDrivenRootSignature.Get(), heaps[0]);
 
 	commandList->SetGraphicsRootShaderResourceView(1,
 		m_gpuDrivenRenderer->GetInstanceBuffer()->GetGPUVirtualAddress());
@@ -1196,7 +1148,7 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 		sStart += count;
 	}
 
-	shadowBuf->TransitionToSrv(commandList.Get());
+	m_shadowPass.End(commandList.Get());
 
 	// ビューポート復元（PreDrawと同じ値）
 	const float sceneRenderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
@@ -1232,12 +1184,8 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 		7, static_cast<UINT>(LightManager::GetInstance()->
 			GetActiveLightCount()), 0);
 
-	// RenderGpuDriven3D 内
-	auto shadowHandle = ShadowMapBuffer::GetInstance()->GetSrvGpuHandle();
-
-	commandList->SetGraphicsRootDescriptorTable(8, shadowHandle);
-
-	commandList->SetGraphicsRootConstantBufferView(9, m_lightVPBuffer->GetGPUVirtualAddress());
+	// シャドウマップ(root 8)とLightVP(root 9)をメインパス用にセット
+	m_shadowPass.BindForMainPass(commandList.Get());
 
 	if (!m_cameraBuffer) {
 		m_cameraBuffer = CreateBufferResource(device.Get(), Align256(sizeof(Vector4)));

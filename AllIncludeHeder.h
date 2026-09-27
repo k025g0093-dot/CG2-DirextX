@@ -62,6 +62,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 //陰に関するヘッダー
 #include "ShadowMapBuffer.h"
+#include "ShadowPass.h"
 
 //GUIのヘッダー関連
 #include "ImGuiCamera.h"
