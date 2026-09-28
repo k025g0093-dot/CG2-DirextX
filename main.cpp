@@ -46,12 +46,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	const int cubeCountX = 200;
 	const int cubeCountZ = 200;
 
-	WaveGrid waveGrid(cubeCountX, cubeCountZ, ModelManager::GetInstance()->GetSceneObjects());
-
-	// ========== GPU初期化 ==========
-	waveGrid.InitializeGPU(engine->GetDevice(), engine);
-
-	float waveStrength = 10.0f;
+ 
 
 	engine->m_camera.transform.translate.x = 0.0f;
 	engine->m_camera.transform.translate.y = 5.0f;
@@ -83,9 +78,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 				if (ImGui::Begin("シーン設定")) {
 
-					if (ImGui::CollapsingHeader("ウェーブ設定")) {
-						ImGui::DragFloat("波形の強さ", &waveStrength, 0.1f, 0.0f, 50.0f);
-					}
+
 
 					if (ImGui::CollapsingHeader("メッシュ設定")) {
 						ImGui::DragFloat3("位置", &meshPos.x, 0.1f);
