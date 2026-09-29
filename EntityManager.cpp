@@ -75,8 +75,8 @@ void EntityManager::Clear() {
 }
 
 Entity* EntityManager::DuplicateEntity(Entity* src) {
-	auto* entity = CreateEntity(src->name + " (コピー)");
-	entity->displayName = src->displayName + " (コピー)";
+	auto* entity = CreateEntity(src->name );
+	entity->displayName = src->displayName;
 	strncpy_s(entity->displayNameBuf, entity->displayName.c_str(), sizeof(entity->displayNameBuf));
 	entity->transform = src->transform;
 	entity->obb = src->obb;
