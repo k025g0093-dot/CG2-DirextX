@@ -1,10 +1,10 @@
 ﻿using System;
 
 // ==============================================
-// player
+// PlayerController
 // ==============================================
 // C++側のGameScriptコンポーネントで Script Name を
-// 「player」にすると、このクラスが呼ばれます。
+// 「PlayerController」にすると、このクラスが呼ばれます。
 //
 // よく使う機能:
 //
@@ -27,7 +27,7 @@
 //   other.Name で接触相手の名前を調べられる。
 // ==============================================
 
-public class player : Templet
+public class PlayerController : Templet
 {
     // ゲーム開始時に一度だけ呼ばれる
     public override void OnStart()
@@ -42,34 +42,30 @@ public class player : Templet
 
     // 移動速度を決める。
     // vx はX方向、vzはZ方向の速度。
+    // WASDキーで移動する。
     public override void GetMoveVelocity(ref float vx, ref float vz, float dt)
     {
-        // 例：名前が Player のEntityへ向かって移動する
-        var player = FindEntity("Player");
-        if (!player.HasValue)
-        {
-            return;
-        }
-
-        var targetPos = player.Value.Position;
-
-        float dx = targetPos.X - Position.X;
-        float dz = targetPos.Z - Position.Z;
-
-        // Yを無視した距離
-        float distance = MathF.Sqrt(dx * dx + dz * dz);
-
-        // 近づきすぎたら停止
-        if (distance < 1.0f)
-        {
-            return;
-        }
-
         const float speed = 4.0f;
 
-        // 正規化して、一定速度でプレイヤーへ向かう
-        vx = dx / distance * speed;
-        vz = dz / distance * speed;
+        float inputX = 0.0f;
+        float inputZ = 0.0f;
+
+        if (IsKeyDown(ConsoleKey.W)) inputZ += 1.0f;
+        if (IsKeyDown(ConsoleKey.S)) inputZ -= 1.0f;
+        if (IsKeyDown(ConsoleKey.D)) inputX += 1.0f;
+        if (IsKeyDown(ConsoleKey.A)) inputX -= 1.0f;
+
+        // 入力が無ければ移動しない
+        if (inputX == 0.0f && inputZ == 0.0f)
+        {
+            return;
+        }
+
+        // 斜め移動でも速度が伸びないように正規化
+        float length = MathF.Sqrt(inputX * inputX + inputZ * inputZ);
+
+        vx = inputX / length * speed;
+        vz = inputZ / length * speed;
     }
 
     // Triggerに入った瞬間
