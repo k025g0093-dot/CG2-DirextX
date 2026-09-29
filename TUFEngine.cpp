@@ -241,8 +241,8 @@ TUFEngine::TUFEngine(int32_t width, int32_t height, std::wstring name)
 			if (object.contains("scriptName")) {
 				auto* gs = entity->AddComponent<GameScript>();
 				gs->m_scriptName = object["scriptName"];
-				gs->ReloadScript();
-
+				strcpy_s(gs->m_scriptNameBuf, 
+				gs->m_scriptName.c_str());
 			}
 
 		}
