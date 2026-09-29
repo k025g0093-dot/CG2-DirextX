@@ -771,7 +771,11 @@ void TUFEngine::PostDraw() {
 		ID3D12DescriptorHeap* lineHeaps[] = { srvDescriptorHeap.Get() };
 		commandList->SetDescriptorHeaps(1, lineHeaps);
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandleLine = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+#ifdef USE_IMGUI
 		commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &dsvHandleLine);
+#else
+		commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandleLine);
+#endif
 
 		float lineRenderWidth = m_sceneTextureWidth > 0 ? static_cast<float>(m_sceneTextureWidth) : static_cast<float>(width);
 		float lineRenderHeight = m_sceneTextureHeight > 0 ? static_cast<float>(m_sceneTextureHeight) : static_cast<float>(height);
@@ -810,6 +814,14 @@ void TUFEngine::PostDraw() {
 	ID3D12DescriptorHeap* imguiHeaps[] = { srvDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(1, imguiHeaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+#endif
+
+	D3D12_CPU_DESCRIPTOR_HANDLE mainDsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+#ifdef USE_IMGUI
+	commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &mainDsvHandle);
+#else
+	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &mainDsvHandle);
 #endif
 
 	// =============================================================
@@ -1164,18 +1176,19 @@ void TUFEngine::RenderGpuDriven3D(const std::vector<DrawRequest>& requests3D) {
 	mainRect.bottom = (LONG)sceneRenderHeight;
 	commandList->RSSetScissorRects(1, &mainRect);
 
-	// 🌟 ここが抜けていた：メインシーン用のレンダーターゲットに戻す
 	D3D12_CPU_DESCRIPTOR_HANDLE mainDsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+#ifdef USE_IMGUI
 	commandList->OMSetRenderTargets(1, &m_sceneRtvHandle, false, &mainDsvHandle);
+#else
+	{
+		UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+		commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &mainDsvHandle);
+	}
+#endif
 
 
 	// グラフィックス描画
 
-
-	// 🌟【順序注意】ルートシグネチャ切り替え後でないと、
-	// SetGraphicsRoot32BitConstant等のパラメータ番号は正しく解釈されない。
-	// Compute用シグネチャがバインドされたままここでパラメータ7番に書き込むと
-	// 存在しない番号への書き込みになりGPUドライバごとクラッシュする（nvwgf2umx.dll等）。
 	commandList->SetGraphicsRootSignature(gpuDrivenRootSignature.Get());
 	commandList->SetPipelineState(gpuDrivenPipelineState.Get());
 	commandList->SetDescriptorHeaps(1, heaps);

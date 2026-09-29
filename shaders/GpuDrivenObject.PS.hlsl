@@ -61,6 +61,14 @@ PixelShaderOutput main(VertexShaderOutput input)
             textureColor = gTexture.Sample(gSampler, transformedUV.xy);
       }
 
+      if (textureColor.a == 0.0f)
+      {
+            discard;
+      }
+      if (output.color.a==0.0f)
+      {
+            discard;
+      }
       float3 normal = normalize(input.normal);
 
       if (gMaterial.enableNormalMap != 0)

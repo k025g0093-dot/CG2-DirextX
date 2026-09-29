@@ -149,7 +149,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 }
 
 void ImGuiLightManagerWindow::update(TUFEngine* engine) {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 
 	if (begin("ライティングのシーン管理", ImGuiWindowFlags_MenuBar))
 	{
@@ -238,7 +238,7 @@ void ImGuiLightManagerWindow::update(TUFEngine* engine) {
 
 //ギズモの仮実装。まだまだいらないものとか将来的に自由にアイテムを選択できるようにしたりしていきたい
 void ImGuiZmoWindow::update(TUFEngine* engine) {
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 	auto& objects = EntityManager::GetInstance()->GetEntities();
 	if (objects.empty()) return; // オブジェクトがなければ何もしない
 
@@ -288,7 +288,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		);
 
 		// --- ② ギズモ（ImGuizmo）の描画 ---
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 		LightManager* lm = LightManager::GetInstance();
 		int selectedLight = lm->GetSelectedLight();
 

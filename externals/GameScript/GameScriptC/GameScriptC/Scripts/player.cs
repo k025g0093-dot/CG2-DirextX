@@ -1,0 +1,102 @@
+﻿using System;
+
+// ==============================================
+// player
+// ==============================================
+// C++側のGameScriptコンポーネントで Script Name を
+// 「player」にすると、このクラスが呼ばれます。
+//
+// よく使う機能:
+//
+// 自分の座標:
+//   Position.X / Position.Y / Position.Z
+//
+// 他Entityを名前で探す:
+//   var player = FindEntity("Player");
+//   if (player.HasValue)
+//   {
+//       var playerPos = player.Value.Position;
+//   }
+//
+// 移動:
+//   GetMoveVelocity() で vx, vz を設定する。
+//   物理Bodyを持つEntityなら、C++ / Jolt側に速度として反映される。
+//
+// 衝突・Trigger:
+//   OnTriggerEnter / OnCollisionEnter を override する。
+//   other.Name で接触相手の名前を調べられる。
+// ==============================================
+
+public class player : Templet
+{
+    // ゲーム開始時に一度だけ呼ばれる
+    public override void OnStart()
+    {
+    }
+
+    // 毎フレーム呼ばれる。
+    // 入力、状態遷移、攻撃クールダウンなどを書く。
+    public override void Update()
+    {
+    }
+
+    // 移動速度を決める。
+    // vx はX方向、vzはZ方向の速度。
+    public override void GetMoveVelocity(ref float vx, ref float vz, float dt)
+    {
+        // 例：名前が Player のEntityへ向かって移動する
+        var player = FindEntity("Player");
+        if (!player.HasValue)
+        {
+            return;
+        }
+
+        var targetPos = player.Value.Position;
+
+        float dx = targetPos.X - Position.X;
+        float dz = targetPos.Z - Position.Z;
+
+        // Yを無視した距離
+        float distance = MathF.Sqrt(dx * dx + dz * dz);
+
+        // 近づきすぎたら停止
+        if (distance < 1.0f)
+        {
+            return;
+        }
+
+        const float speed = 4.0f;
+
+        // 正規化して、一定速度でプレイヤーへ向かう
+        vx = dx / distance * speed;
+        vz = dz / distance * speed;
+    }
+
+    // Triggerに入った瞬間
+    public override void OnTriggerEnter(CollisionInfo other)
+    {
+        if (other.EntityName == "Player")
+        {
+            // プレイヤーが索敵範囲に入った時の処理
+        }
+    }
+
+    // Triggerから出た瞬間
+    public override void OnTriggerExit(CollisionInfo other)
+    {
+    }
+
+    // 物理衝突した瞬間
+    public override void OnCollisionEnter(CollisionInfo other)
+    {
+        if (other.EntityName == "Player")
+        {
+            // プレイヤーと接触した時の処理
+        }
+    }
+
+    // 物理衝突が終わった瞬間
+    public override void OnCollisionExit(CollisionInfo other)
+    {
+    }
+}

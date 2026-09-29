@@ -10,7 +10,7 @@ bool DynamicMeshModel::Init(TUFEngine* engine, int gridW, int gridH) {
     m_indexCount = (uint32_t)((gridW - 1) * (gridH - 1) * 6);
 
     // ═══════════════════════════════════════════════════════
-    // 📌 ダブルバッファ：2 個の頂点バッファを作成
+    // ダブルバッファ：2 個の頂点バッファを作成
     // ═══════════════════════════════════════════════════════
     for (int i = 0; i < 2; i++) {
         m_vertexBuffers[i] = CreateBufferResource(
@@ -111,14 +111,14 @@ void DynamicMeshModel::UpdateUVTransform(const Vector3& uvScale, float uvRotatio
     m_mappedMaterial->uvTransform = MakeAffineMatrix(uvScale, { 0.0f, 0.0f, uvRotation }, uvTranslation);
 }
 
-// 📌 最適化版 UpdateHeights（オプション：OpenMP で並列化）
+// 最適化版 UpdateHeights（オプション：OpenMP で並列化）
 void DynamicMeshModel::UpdateHeights(const DynamicMesh& mesh) {
     if (!m_mappedDatas[m_currentBufferIndex]) return;
 
     auto& verts = mesh.getVertices();
     VertexData* mappedData = m_mappedDatas[m_currentBufferIndex];  // 現在の書き込み対象
 
-    // 🎯 最適化：OpenMP で並列化（オプション）
+    // 最適化：OpenMP で並列化（オプション）
 #pragma omp parallel for collapse(2) if(m_gridH * m_gridW > 10000)
     for (int y = 0; y < m_gridH; y++) {
         for (int x = 0; x < m_gridW; x++) {
@@ -128,7 +128,7 @@ void DynamicMeshModel::UpdateHeights(const DynamicMesh& mesh) {
             // 高さを更新
             mappedData[i].position.y = verts[idx + 1];
 
-            // 📌 境界チェック（clamp を使うか、境界分岐を使うか）
+            //境界チェック（clamp を使うか、境界分岐を使うか）
             // ここでは clamp を使用（簡潔）
             auto getH = [&](int xi, int yi) -> float {
                 xi = std::clamp(xi, 0, m_gridW - 1);

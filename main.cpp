@@ -49,9 +49,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
  
 
 	engine->m_camera.transform.translate.x = 0.0f;
-	engine->m_camera.transform.translate.y = 5.0f;
+	engine->m_camera.transform.translate.y = 10.0f;
 	engine->m_camera.transform.translate.z = -20.0f;
-	engine->m_camera.transform.rotate.x = 0.0f;
+	engine->m_camera.transform.rotate.x = 0.3f;
 
 	float cameraRotateSpeed = 0.016f;
 
