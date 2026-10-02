@@ -56,15 +56,6 @@
             ]
         },
         {
-            "collider": {
-                "isTrigger": false,
-                "size": [
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "type": "Box"
-            },
             "displayName": "君は敵",
             "modelPath": "resources/asset\\cube/cube.obj",
             "obb": {
@@ -99,13 +90,6 @@
                 41.35599899291992,
                 -16.312999725341797
             ],
-            "rigidbody": {
-                "angularDrag": 0.0,
-                "isKinematic": false,
-                "linearDrag": 0.0,
-                "mass": 1.0,
-                "useGravity": true
-            },
             "rotation": [
                 -1.610842227935791,
                 -0.6363842487335205,

@@ -90,7 +90,7 @@ void LightManager::RemoveLight(int index) {
     m_lights[index] = LightData{};
     if (m_selectedLightIndex == index) m_selectedLightIndex = -1;
 
-    // 🌟 一番後ろの有効indexを再計算
+    //  一番後ろの有効indexを再計算
     int lastActive = 0;
     for (int i = 1; i < MAX_LIGHTS; i++) {
         if (m_lightActive[i]) lastActive = i;

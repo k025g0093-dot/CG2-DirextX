@@ -268,9 +268,8 @@ void ScriptRuntime::Tick(float dt) {
 		Entity* e = gs ? gs->GetOwner() : nullptr;
 		Vector3 p = e ? e->transform.position : Vector3{ 0,0,0 };
 
-		Vector3 velocity = e && e->m_bodyIdRaw != UINT32_MAX
-			? FacadeJolt::GetInstance()->GetLinearVelocity(e->m_bodyIdRaw)
-			: Vector3{ 0, 0, 0 };
+		// 物理エンジンなし：速度は常に0を送る
+		Vector3 velocity{ 0, 0, 0 };
 
 		PutI32(m_send, id);
 		PutF32(m_send, p.x); PutF32(m_send, p.y); PutF32(m_send, p.z);
@@ -357,35 +356,22 @@ void ScriptRuntime::Tick(float dt) {
 
 		if (!e) continue;
 
-		auto* jolt = FacadeJolt::GetInstance();
-		auto velocity = jolt->GetLinearVelocity(e->m_bodyIdRaw);
-
 		switch (mode) {
 		case 0:  // SetPosition
 			e->transform.position = { x, y, z };
 			break;
 		case 1:  // SetVelocity   ← 速度APIができたら繋ぐ
-			if (e->m_bodyIdRaw == UINT32_MAX) break;
+			// 物理エンジンなし：受け取った速度でtransformを直接動かす（Yは無視）
+			e->transform.position.x += x * dt;
+			e->transform.position.z += z * dt;
 
-			// C#が指定した左右・前後の速度だけを反映
-			velocity.x = x;
-			velocity.z = z;
-
-			// velocity.y はJoltの重力・ジャンプの結果を残す
-			jolt->SetLinearVelocity(e->m_bodyIdRaw, velocity);
 
 			break;
 
 		case 2:
 		{
 			// Jump : Y だけ上書きする。XZ は Jolt / mode1 の結果をそのまま残す
-			if (e->m_bodyIdRaw == UINT32_MAX) break;
-
-			Vector3 jumpVelocity = velocity;
-			jumpVelocity.y = y;
-
-			jolt->WakeBody(e->m_bodyIdRaw);
-			jolt->SetLinearVelocity(e->m_bodyIdRaw, jumpVelocity);
+			// 物理エンジンなし：ジャンプは今は何もしない（ログだけ残す）
 
 			char jb[160];
 			sprintf_s(jb, "[SR] Jump: id=%d vy=%.2f", id, y);
@@ -398,7 +384,6 @@ void ScriptRuntime::Tick(float dt) {
 		case 3: // scale
 
 			e->transform.scale = { x, y, z };
-			FacadeJolt::GetInstance()->RebuildBody(e);
 
 			break;
 

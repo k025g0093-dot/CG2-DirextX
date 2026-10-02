@@ -1,7 +1,6 @@
 #include "EntityManager.h"
 #include "TUFEngine.h"
 #include "MonoBehaviour.h"
-#include "FacadeJolt.h"
 #include "ScriptRuntime.h"
 Entity* EntityManager::CreateEntity(const std::string& name) {
 	auto entity = std::make_unique<Entity>();
@@ -47,7 +46,6 @@ void EntityManager::UpdateAll(float dt)
     m_accumlator += dt;
     int steps = 0;
     while (m_accumlator >= kFixedTimeStep && steps < kMaxFixedSteps) {
-        FacadeJolt::GetInstance()->Step(kFixedTimeStep);
         for (auto& entity : m_runtimeEntities) {
             for (Component* component : entity->m_components) {
                 if (!component) continue;
@@ -96,18 +94,6 @@ void EntityManager::StartPlay()
     // 編集中に残っているScript登録を消して、Runtime側だけを動かす。
     ScriptRuntime::GetInstance()->Shutdown();
 
-    // 編集用EntityのBodyを外す。残すとRuntime側のBodyと同じ場所で二重になり、
-    // 互いに押し合って動かなくなる。
-    {
-        auto* jolt = FacadeJolt::GetInstance();
-        for (const auto& editorEntity : m_entities) {
-            if (editorEntity->m_bodyIdRaw != UINT32_MAX) {
-                jolt->RemoveBody(editorEntity->m_bodyIdRaw);
-                editorEntity->m_bodyIdRaw = UINT32_MAX;
-            }
-        }
-    }
-
     m_runtimeEntities.clear();
 
     for (const auto& editorEntity : m_entities) {
@@ -143,14 +129,6 @@ void EntityManager::StopPlay()
 {
     if (m_playState == PlayState::Edit) return;
 
-    // Entityを破棄する前にJoltのBodyを必ず取り除く。
-    auto* jolt = FacadeJolt::GetInstance();
-    for (const auto& entity : m_runtimeEntities) {
-        if (entity->m_bodyIdRaw != UINT32_MAX) {
-            jolt->RemoveBody(entity->m_bodyIdRaw);
-            entity->m_bodyIdRaw = UINT32_MAX;
-        }
-    }
     m_runtimeEntities.clear();
     ScriptRuntime::GetInstance()->Shutdown();
 

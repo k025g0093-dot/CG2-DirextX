@@ -4,9 +4,10 @@
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
-#include "FacadeJolt.h"
+#include "allVector.h"
 
 class GameScript;
+class Entity;
 
 // ScriptRuntime.h
 

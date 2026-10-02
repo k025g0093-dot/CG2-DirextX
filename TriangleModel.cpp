@@ -59,7 +59,7 @@ void TriangleModel::SetWorldTransform(const Matrix4x4& wvp, const Matrix4x4& wor
     // 個別の定数バッファは使わないため、この関数も空で問題ありません
 }
 
-// 🌟 GPU駆動（インスタンシング対応）の Draw 関数
+//  GPU駆動（インスタンシング対応）の Draw 関数
 void TriangleModel::Draw(
     ID3D12GraphicsCommandList* cmdList,
     int textureIndex,

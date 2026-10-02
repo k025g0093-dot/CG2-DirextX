@@ -16,7 +16,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 
 
-// 🌟 超重要：相互参照バグを防ぐための前方宣言
+//  超重要：相互参照バグを防ぐための前方宣言
 class TUFEngine;
 
 class ImGuiUIWindow
@@ -25,7 +25,7 @@ public:
     ImGuiUIWindow();
     ~ImGuiUIWindow();
 
-    // 💡 引数に TUFEngine* を追加（virtualなので子クラスもこれに合わせる）
+    //  引数に TUFEngine* を追加（virtualなので子クラスもこれに合わせる）
     virtual void update(TUFEngine* engine);
     void Show();
 
@@ -34,7 +34,7 @@ protected:
 
     virtual bool begin(std::string name, ImGuiWindowFlags flags = 0);
     void end();
-    bool show = true; // 💡 最初から表示状態（true）にしておくとバグりにくいです
+    bool show = true; //  最初から表示状態（true）にしておくとバグりにくいです
 
     // ウィンドウ移動範囲の制限
     bool m_enableClamp = false;          // true で移動制限を有効化

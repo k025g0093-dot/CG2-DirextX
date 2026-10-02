@@ -703,7 +703,7 @@ ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
 	// PSOの設定をまとめる（グラフィックス用）
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 
-	//rootSignature = CreateShadowRootSignature(device, hr); // 🌟 シャドウ専用のルートシグネチャ
+	//rootSignature = CreateShadowRootSignature(device, hr); //  シャドウ専用のルートシグネチャ
 	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();
 
 	graphicsPipelineStateDesc.InputLayout = inputLayout;
@@ -720,7 +720,7 @@ ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
 	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT; // ShadowMapBufferと合わせる
 
-	graphicsPipelineStateDesc.NumRenderTargets = 0; // 🌟 カラー出力は無し
+	graphicsPipelineStateDesc.NumRenderTargets = 0; //  カラー出力は無し
 	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;

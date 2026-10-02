@@ -2,7 +2,6 @@
 #include "TUFEngine.h"
 #include "ModelManager.h"
 
-#include "FacadeJolt.h"
 #include "BoxCollider.h"
 #include <cmath>
 #include <cstring>
@@ -26,7 +25,7 @@ static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
 
 
 //ここら辺は基底クラスと各種構造を理解するための仮実装です。今後、必要に応じて引数を追加したり、内容を充実させていきます。
-// 💡 引数を追加
+//  引数を追加
 void ImGuiUIWindow::update(TUFEngine* engine) {
 	if (begin("Default Window")) {
 	}
@@ -88,7 +87,7 @@ void ImGuiSceneWindow::update(TUFEngine* engine) {
 #ifdef USE_IMGUI
 	if (begin("シーン", ImGuiWindowFlags_MenuBar)) {
 
-		// 🌟 メニューバー
+		//  メニューバー
 		if (ImGui::BeginMenuBar()) {
 			if (ImGui::BeginMenu("ファイル")) {
 				if (ImGui::MenuItem("保存")) {
@@ -273,7 +272,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 
 		engine->SetCurrentRenderSize(viewportSize.x, viewportSize.y);
 
-		// 🌟重要：タイトルバーを排除した、画像が描画される正確なスクリーン左上座標を取得
+		// 重要：タイトルバーを排除した、画像が描画される正確なスクリーン左上座標を取得
 		ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
 
 		ImTextureID sceneTextureId = (ImTextureID)engine->GetSceneSrvGpuHandle().ptr;
@@ -284,7 +283,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			ImVec2(0.0f, 0.0f),
 			ImVec2(1.0f, 1.0f),
 			ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // Tint（画像の色：白＝そのまま）
-			ImVec4(0.0f, 0.0f, 0.0f, 0.0f)  // 🌟Border（枠線の色：透明。ここが1.0fで黒枠になると1ピクセルズレる原因になります）
+			ImVec4(0.0f, 0.0f, 0.0f, 0.0f)  // Border（枠線の色：透明。ここが1.0fで黒枠になると1ピクセルズレる原因になります）
 		);
 
 		// --- ② ギズモ（ImGuizmo）の描画 ---
@@ -304,7 +303,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 		ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, viewportSize.x, viewportSize.y);
 
 		if (selectedLight >= 1 && selectedLight < LightManager::MAX_LIGHTS) {
-			// 🌟ライトのギズモ操作
+			// ライトのギズモ操作
 			LightData light = lm->GetLight(selectedLight);
 
 			Matrix4x4 lightTransform = MakeAffineMatrix(
@@ -327,7 +326,7 @@ void ImGuiViewportWindow::update(TUFEngine* engine) {
 			}
 		}
 		else if (hasEntitySelection) {
-			// 🌟既存のEntity用ギズモ処理
+			// 既存のEntity用ギズモ処理
 			constexpr float kDegToRad = 3.1415926535f / 180.0f;
 
 			for (int i = 0; i < (int)objects.size(); i++) {
@@ -449,7 +448,7 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 #ifdef USE_IMGUI
 
 
-	// 🌟全体のパディング（内側の余白）を少し広げる
+	// 全体のパディング（内側の余白）を少し広げる
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 
 
@@ -558,49 +557,17 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 					}
 					else if (auto* rb = dynamic_cast<Rigidbody*>(c)) {
-						bool dirty = false;
 
-						dirty |= ImGui::Checkbox("重力を受ける", &rb->useGravity);
-						dirty |= ImGui::Checkbox("キネマティック（手動で動かす）", &rb->isKinematic);
+						ImGui::Checkbox("重力を受ける", &rb->useGravity);
+						ImGui::Checkbox("キネマティック（手動で動かす）", &rb->isKinematic);
 
 						ImGui::Spacing();
-						dirty |= ImGui::DragFloat("質量", &rb->mass, 0.1f, 0.01f, 1000.0f);
-						dirty |= ImGui::DragFloat("移動の減衰", &rb->linearDrag, 0.01f, 0.0f, 10.0f);
-						dirty |= ImGui::DragFloat("回転の減衰", &rb->angularDrag, 0.01f, 0.0f, 10.0f);
+						ImGui::DragFloat("質量", &rb->mass, 0.1f, 0.01f, 1000.0f);
+						ImGui::DragFloat("移動の減衰", &rb->linearDrag, 0.01f, 0.0f, 10.0f);
+						ImGui::DragFloat("回転の減衰", &rb->angularDrag, 0.01f, 0.0f, 10.0f);
 
 						ImGui::Separator();
-
-						// ── 現在の状態（読み取り専用）──
-						if (entity->m_bodyIdRaw != UINT32_MAX) {
-							auto* jolt = FacadeJolt::GetInstance();
-							bool active = jolt->IsBodyActive(entity->m_bodyIdRaw);
-							Vector3 vel = jolt->GetLinearVelocity(entity->m_bodyIdRaw);
-							float speed = std::sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
-
-							ImGui::Text("BodyID : %u", entity->m_bodyIdRaw);
-							ImGui::TextColored(
-								active ? ImVec4(0.4f, 0.9f, 0.5f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
-								active ? "状態   : 動作中" : "状態   : 停止（スリープ）");
-							ImGui::Text("速度   : %.2f, %.2f, %.2f", vel.x, vel.y, vel.z);
-							ImGui::Text("速さ   : %.2f m/s", speed);
-
-							if (!active && ImGui::Button("叩き起こす")) {
-								jolt->WakeBody(entity->m_bodyIdRaw);
-							}
-						}
-						else {
-							ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.3f, 1.0f),
-								"物理ボディ未生成（コライダーを付けてください）");
-						}
-
-						ImGui::Separator();
-						if (dirty) {
-							ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f),
-								"変更は再生成するまで反映されません");
-						}
-						if (ImGui::Button("物理ボディを再生成")) {
-							FacadeJolt::GetInstance()->RebuildBody(entity.get());
-						}
+						ImGui::TextDisabled("物理エンジン未接続（値の保存のみ）");
 					}
 					else if (auto* camera = dynamic_cast<CameraComponent*>(c)) {
 						if (ImGui::Checkbox("メインカメラ", &camera->isMainCamera)
@@ -625,30 +592,20 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 
 						if (ImGui::Button("メッシュに合わせる##fitbox")) {
 							FitBoxColliderToMesh(entity.get(), box);
-							FacadeJolt::GetInstance()->RebuildBody(entity.get());
 						}
 						ImGui::SameLine();
 						ImGui::TextDisabled("(%.2f, %.2f, %.2f)",
 							entity->localAABB.max.x - entity->localAABB.min.x,
 							entity->localAABB.max.y - entity->localAABB.min.y,
 							entity->localAABB.max.z - entity->localAABB.min.z);
-						if (ImGui::Button("物理ボディを再生成##box")) {
-							FacadeJolt::GetInstance()->RebuildBody(entity.get());
-						}
 					}
 					else if (auto* sph = dynamic_cast<SphereCollider*>(c)) {
 						ImGui::DragFloat("半径", &sph->radius, 0.05f, 0.01f, 100.0f);
 						ImGui::Checkbox("トリガー（すり抜けて検知だけ）", &sph->isTrigger);
-						if (ImGui::Button("物理ボディを再生成##sph")) {
-							FacadeJolt::GetInstance()->RebuildBody(entity.get());
-						}
 					}
 					else if (auto* hull = dynamic_cast<ConvexHullCollider*>(c)) {
 						ImGui::Checkbox("トリガー（すり抜けて検知だけ）", &hull->isTrigger);
 						ImGui::TextDisabled("現在は AABB のボックスで代用しています");
-						if (ImGui::Button("物理ボディを再生成##hull")) {
-							FacadeJolt::GetInstance()->RebuildBody(entity.get());
-						}
 					}
 				}
 				ImGui::PopID();
@@ -657,8 +614,6 @@ void ImGuiComponentWindow::update(TUFEngine* engine)
 			// ここで実際に削除する（ループの外なので安全）
 			if (removeTarget) {
 				entity->RemoveComponent(removeTarget);
-				// Collider や Rigidbody を消した場合に備えて物理ボディを作り直す
-				FacadeJolt::GetInstance()->RebuildBody(entity.get());
 			}
 
 			ImGui::Separator();
